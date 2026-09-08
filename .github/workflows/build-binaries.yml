@@ -42,9 +42,10 @@ jobs:
       - name: Upload AppImage
         uses: actions/upload-artifact@v7
         with:
-          name: OuterClient-v4.8-AppImage
-          path: dist-release/OuterClient-v4.8-x86_64.AppImage
-
+          name: OuterClient-v4.8.1-AppImage
+          path: dist-release/OuterClient-v4.8.1-x86_64.AppImage
+          if-no-files-found: error
+          
   windows:
     name: Windows EXE
     runs-on: windows-latest
@@ -72,5 +73,6 @@ jobs:
       - name: Upload EXE
         uses: actions/upload-artifact@v7
         with:
-          name: OuterClient-v4.8-Windows
-          path: dist-release/OuterClient-v4.8-windows-x86_64.exe
+          name: OuterClient-v4.8.1-Windows
+          path: dist-release/OuterClient-v4.8.1-windows-x86_64.exe
+          if-no-files-found: error
