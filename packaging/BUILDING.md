@@ -1,4 +1,4 @@
-# OuterClient v4.8 — AppImage + EXE
+# OuterClient v4.8.1 — AppImage + EXE
 
 ## Najłatwiej: GitHub Actions
 
@@ -10,14 +10,14 @@ Repo może być **prywatne**.
 4. Otwórz **Build OuterClient binaries**.
 5. Kliknij **Run workflow**.
 6. Po zakończeniu pobierz artifacts:
-   - `OuterClient-v4.8-AppImage`
-   - `OuterClient-v4.8-Windows`
+   - `OuterClient-v4.8.1-AppImage`
+   - `OuterClient-v4.8.1-Windows`
 
 Dostaniesz:
-- `OuterClient-v4.8-x86_64.AppImage`
-- `OuterClient-v4.8-windows-x86_64.exe`
+- `OuterClient-v4.8.1-x86_64.AppImage`
+- `OuterClient-v4.8.1-windows-x86_64.exe`
 
-Workflow odpala się też po wysłaniu taga, np. `v4.8`.
+Workflow odpala się też po wysłaniu taga, np. `v4.8.1`.
 
 ## Lokalny AppImage na Linuxie
 
@@ -31,7 +31,7 @@ chmod +x packaging/build_appimage.sh
 ```
 
 Wynik:
-`dist-release/OuterClient-v4.8-x86_64.AppImage`
+`dist-release/OuterClient-v4.8.1-x86_64.AppImage`
 
 ## Lokalny EXE na Windows
 
@@ -49,7 +49,7 @@ python -m pip install -r requirements.txt pyinstaller==6.22.2
 ```
 
 Wynik:
-`dist-release\\OuterClient-v4.8-windows-x86_64.exe`
+`dist-release\\OuterClient-v4.8.1-windows-x86_64.exe`
 
 ## Ważne
 
@@ -61,3 +61,16 @@ Dlatego workflow ma dwa osobne joby.
 
 Java nie jest bundlowana. OuterClient nadal korzysta z Javy wybranej
 w ustawieniach launchera.
+
+
+## Hotfix 4.8.1
+
+Naprawiono błąd uruchamiania buildów PyInstaller z CustomTkinter/Pillow:
+
+`_tkinter.TclError: invalid command name "PyImagingPhoto"`
+
+Build jawnie dołącza teraz:
+- `PIL.ImageTk`
+- `PIL._imagingtk`
+- `PIL._tkinter_finder`
+- wszystkie binaria i dane pakietu `PIL`

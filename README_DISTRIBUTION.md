@@ -1,4 +1,4 @@
-# OuterClient v4.8 Distribution Build
+# OuterClient v4.8.1 Distribution Build
 
 Dodano gotowy system buildów dla:
 - Linux x86_64 AppImage

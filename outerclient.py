@@ -26,7 +26,7 @@ from tkinter import filedialog, messagebox
 
 
 APP_NAME = "OuterClient"
-APP_VERSION = "4.8"
+APP_VERSION = "4.8.1"
 CONFIG_PATH = Path.home() / ".outerclient.json"
 REDIRECT_URI = "http://localhost:8765/callback"
 MODRINTH_API = "https://api.modrinth.com/v2"

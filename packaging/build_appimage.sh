@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-VERSION="4.8"
+VERSION="4.8.1"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
@@ -19,6 +19,10 @@ python -m PyInstaller \
   --add-data "assets:assets" \
   --collect-all customtkinter \
   --collect-all minecraft_launcher_lib \
+  --collect-all PIL \
+  --hidden-import PIL.ImageTk \
+  --hidden-import PIL._imagingtk \
+  --hidden-import PIL._tkinter_finder \
   outerclient.py
 
 APPDIR="$ROOT/build/OuterClient.AppDir"

@@ -1,8 +1,8 @@
 # UTF-8
 VSVersionInfo(
   ffi=FixedFileInfo(
-    filevers=(4, 8, 0, 0),
-    prodvers=(4, 8, 0, 0),
+    filevers=(4, 8, 1, 0),
+    prodvers=(4, 8, 1, 0),
     mask=0x3f,
     flags=0x0,
     OS=0x40004,
@@ -17,11 +17,11 @@ VSVersionInfo(
         [
           StringStruct(u'CompanyName', u'OuterClient'),
           StringStruct(u'FileDescription', u'OuterClient Minecraft Launcher'),
-          StringStruct(u'FileVersion', u'4.8.0'),
+          StringStruct(u'FileVersion', u'4.8.1'),
           StringStruct(u'InternalName', u'OuterClient'),
           StringStruct(u'OriginalFilename', u'OuterClient.exe'),
           StringStruct(u'ProductName', u'OuterClient'),
-          StringStruct(u'ProductVersion', u'4.8.0')
+          StringStruct(u'ProductVersion', u'4.8.1')
         ]
       )
     ]),

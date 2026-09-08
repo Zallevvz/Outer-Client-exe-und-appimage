@@ -1,6 +1,6 @@
 $ErrorActionPreference = "Stop"
 
-$Version = "4.8"
+$Version = "4.8.1"
 $Root = Resolve-Path (Join-Path $PSScriptRoot "..")
 Set-Location $Root
 
@@ -22,6 +22,10 @@ python -m PyInstaller `
   --add-data "assets:assets" `
   --collect-all customtkinter `
   --collect-all minecraft_launcher_lib `
+  --collect-all PIL `
+  --hidden-import PIL.ImageTk `
+  --hidden-import PIL._imagingtk `
+  --hidden-import PIL._tkinter_finder `
   outerclient.py
 
 $Output = "dist-release/OuterClient-v$Version-windows-x86_64.exe"
