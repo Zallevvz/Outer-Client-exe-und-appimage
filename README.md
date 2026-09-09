@@ -1,50 +1,45 @@
-# OuterClient v4.9.4
+# OuterClient v5.0
 
-## Microsoft login fix
+Duża aktualizacja interfejsu i funkcji.
 
-Naprawiono kilka rzeczy jednocześnie:
+## Nowy wybór profilu
+Na ekranie Gra nie ma już małego dropdownu. Wybrany profil jest dużą kartą z nazwą, wersją Minecrafta, loaderem, presetem, RAM-em, Javą i liczbą modów. Profil można zmieniać strzałkami albo przez pełnoekranowy picker kart.
 
-1. `CallbackHandler` nie wpisuje już na sztywno portu 8765.
-   Używa dokładnego hosta i portu, na który wróciła przeglądarka.
+## Szybszy Modrinth
+- wyniki po 24 zamiast 100+100,
+- fuzzy fallback pobierany tylko gdy normalne wyszukiwanie ma mało wyników,
+- cache wyszukiwań 5 minut,
+- tylko 12 kart renderowanych naraz,
+- Pokaż więcej ładuje kolejne 12,
+- debounce wyszukiwania,
+- tylko widoczne ikony są pobierane,
+- Favorites.
 
-2. OuterClient najpierw próbuje:
-   `http://localhost:8765/callback`
+## Profile
+- Presety Low / Balanced / High / Custom,
+- backup i restore,
+- rozpoznawanie istniejących modów po SHA-1 przez Modrinth,
+- sprawdzanie i instalowanie aktualizacji,
+- Update all,
+- Fabric Performance Pack: Sodium, Lithium, FerriteCore, ImmediatelyFast, Fabric API.
 
-3. Jeśli 8765 jest zajęty, automatycznie wybiera wolny port.
+## Java Manager
+Wykrywa Javy 8/17/21, określa wymaganą wersję dla Minecrafta i może automatycznie wybrać właściwą przy uruchomieniu.
 
-4. Timeout logowania zwiększono do 10 minut.
+## OuterClient updater
+Może automatycznie sprawdzać Latest Release repozytorium GitHub i otworzyć stronę nowej wersji.
 
-5. Na Linux/AppImage przeglądarka jest otwierana przez `xdg-open`
-   z fallbackiem do `webbrowser.open`.
+## Serwery
+Nowa zakładka Serwery: adres + przypisany profil + Play.
 
-6. OuterClient zawsze pokazuje dodatkowe okno z pełnym linkiem OAuth:
-   - Otwórz przeglądarkę
-   - Kopiuj link
+## Diagnostyka
+- latest-minecraft.log,
+- OuterClient log,
+- kopiowanie raportu,
+- prosty crash detector (Java/RAM/mod conflict).
 
-## Microsoft button
+## Discord Rich Presence
+Opcjonalne. W Opcjach zaawansowanych można podać własny Discord Application ID.
 
-Kliknięcie `Microsoft` w Ustawieniach teraz naprawdę działa:
-
-- jeśli konto jest zapisane → przełącza na Microsoft,
-- jeśli konta nie ma → automatycznie otwiera manager i rozpoczyna logowanie.
-
-## AppImage
-
-Poprawka Pillow pozostaje w buildzie:
-
-- `--collect-all PIL`
-- `--hidden-import PIL.ImageTk`
-- `--hidden-import PIL._tkinter_finder`
-
-## GitHub
-
-Zastąp:
-- `outerclient.py`
-- `.github/workflows/build-binaries.yml`
-
-Następnie:
-Actions → Build and Release OuterClient 4.9.4 → Run workflow
-
-Pobierz:
-- OuterClient-v4.9.4-x86_64.AppImage
-- OuterClient-v4.9.4.exe
+## Build
+GitHub Actions buduje `OuterClient-v5.0-x86_64.AppImage` oraz `OuterClient-v5.0.exe`. Poprawka `PIL._tkinter_finder` pozostaje w workflow.

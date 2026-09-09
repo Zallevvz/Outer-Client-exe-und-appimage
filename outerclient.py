@@ -1,6 +1,9 @@
 import hashlib
 import base64
 import difflib
+import platform
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from datetime import datetime
 import json
 import os
 import queue
@@ -26,7 +29,7 @@ from tkinter import filedialog, messagebox
 
 
 APP_NAME = "OuterClient"
-APP_VERSION = "4.9.4"
+APP_VERSION = "5.0"
 CONFIG_PATH = Path.home() / ".outerclient.json"
 REDIRECT_URI = "http://localhost:8765/callback"
 MICROSOFT_CLIENT_ID = "fb14d1c4-7d14-4a35-99a7-3f921f7a1e77"
@@ -282,6 +285,66 @@ TEXTS = {
         "open_browser": "Otwórz przeglądarkę",
         "copy_link": "Kopiuj link",
         "link_copied": "Link skopiowany.",
+        "v5_profile_picker": "Wybierz profil",
+        "v5_change_profile": "Zmień profil",
+        "v5_previous": "Poprzedni",
+        "v5_next": "Następny",
+        "v5_preset": "Preset",
+        "v5_ram": "RAM",
+        "v5_java": "Java",
+        "v5_manage": "Zarządzaj",
+        "v5_more": "Pokaż więcej",
+        "v5_favorites": "Ulubione",
+        "v5_favorite_add": "Dodaj do ulubionych",
+        "v5_favorite_remove": "Usuń z ulubionych",
+        "v5_backup": "Backup",
+        "v5_restore": "Przywróć",
+        "v5_scan": "Rozpoznaj mody",
+        "v5_check_updates": "Sprawdź aktualizacje",
+        "v5_update_all": "Aktualizuj wszystkie",
+        "v5_update": "Aktualizuj",
+        "v5_no_update": "Aktualne",
+        "v5_performance_pack": "Performance Pack",
+        "v5_performance_fabric_only": "Performance Pack jest obecnie przygotowany dla Fabric.",
+        "v5_backup_done": "Utworzono backup: {path}",
+        "v5_restore_done": "Przywrócono profil {name}.",
+        "v5_scanning": "Rozpoznawanie zainstalowanych modów…",
+        "v5_updates_found": "Znaleziono aktualizacje: {count}",
+        "v5_updates_none": "Wszystkie rozpoznane mody są aktualne.",
+        "v5_java_manager": "Java Manager",
+        "v5_java_auto": "Automatycznie dobieraj Javę",
+        "v5_java_scan": "Wykryj Javy",
+        "v5_java_select": "Dobierz dla profilu",
+        "v5_java_required": "Wymagana Java: {major}",
+        "v5_java_missing": "Nie znaleziono odpowiedniej Javy {major}.",
+        "v5_launcher_updates": "Aktualizacje OuterClient",
+        "v5_check_launcher": "Sprawdź teraz",
+        "v5_new_launcher": "Dostępny OuterClient {version}",
+        "v5_latest_launcher": "Masz najnowszą wersję OuterClient.",
+        "v5_open_release": "Otworzyć stronę pobierania?",
+        "nav_servers": "Serwery",
+        "nav_diagnostics": "Diagnostyka",
+        "v5_servers_title": "Serwery",
+        "v5_servers_subtitle": "Zapisz serwer i uruchom odpowiedni profil jednym kliknięciem.",
+        "v5_add_server": "+ Dodaj serwer",
+        "v5_server_name": "Nazwa serwera",
+        "v5_server_address": "Adres (IP:port)",
+        "v5_play_server": "Graj",
+        "v5_diagnostics_title": "Diagnostyka",
+        "v5_diagnostics_subtitle": "Logi OuterClient i Minecrafta oraz szybki raport błędu.",
+        "v5_refresh_logs": "Odśwież logi",
+        "v5_copy_report": "Kopiuj raport",
+        "v5_open_logs": "Otwórz folder logów",
+        "v5_report_copied": "Raport skopiowany.",
+        "v5_crash": "Minecraft zakończył działanie z kodem {code}.\n\n{hint}",
+        "v5_crash_java": "Prawdopodobnie używana jest zła wersja Javy.",
+        "v5_crash_ram": "Minecraftowi zabrakło pamięci RAM.",
+        "v5_crash_mod": "Prawdopodobny konflikt moda lub brak zależności.",
+        "v5_crash_generic": "Sprawdź latest-minecraft.log w Diagnostyce.",
+        "v5_discord": "Discord Rich Presence",
+        "v5_discord_id": "DISCORD APPLICATION ID (OPCJONALNE)",
+        "v5_auto_updates": "Automatycznie sprawdzaj aktualizacje OuterClient",
+        "v5_fast_modrinth": "Szybkie wyniki • cache 5 min • ładowanie partiami",
     },
     "en": {
         "nav_play": "Play",
@@ -485,6 +548,66 @@ TEXTS = {
         "open_browser": "Open browser",
         "copy_link": "Copy link",
         "link_copied": "Link copied.",
+        "v5_profile_picker": "Choose profile",
+        "v5_change_profile": "Change profile",
+        "v5_previous": "Previous",
+        "v5_next": "Next",
+        "v5_preset": "Preset",
+        "v5_ram": "RAM",
+        "v5_java": "Java",
+        "v5_manage": "Manage",
+        "v5_more": "Load more",
+        "v5_favorites": "Favorites",
+        "v5_favorite_add": "Add to favorites",
+        "v5_favorite_remove": "Remove from favorites",
+        "v5_backup": "Backup",
+        "v5_restore": "Restore",
+        "v5_scan": "Identify mods",
+        "v5_check_updates": "Check updates",
+        "v5_update_all": "Update all",
+        "v5_update": "Update",
+        "v5_no_update": "Up to date",
+        "v5_performance_pack": "Performance Pack",
+        "v5_performance_fabric_only": "The Performance Pack is currently prepared for Fabric.",
+        "v5_backup_done": "Backup created: {path}",
+        "v5_restore_done": "Profile {name} restored.",
+        "v5_scanning": "Identifying installed mods…",
+        "v5_updates_found": "Updates found: {count}",
+        "v5_updates_none": "All identified mods are up to date.",
+        "v5_java_manager": "Java Manager",
+        "v5_java_auto": "Automatically select Java",
+        "v5_java_scan": "Detect Java",
+        "v5_java_select": "Select for profile",
+        "v5_java_required": "Required Java: {major}",
+        "v5_java_missing": "A suitable Java {major} installation was not found.",
+        "v5_launcher_updates": "OuterClient updates",
+        "v5_check_launcher": "Check now",
+        "v5_new_launcher": "OuterClient {version} is available",
+        "v5_latest_launcher": "You have the latest OuterClient version.",
+        "v5_open_release": "Open the download page?",
+        "nav_servers": "Servers",
+        "nav_diagnostics": "Diagnostics",
+        "v5_servers_title": "Servers",
+        "v5_servers_subtitle": "Save a server and launch its profile with one click.",
+        "v5_add_server": "+ Add server",
+        "v5_server_name": "Server name",
+        "v5_server_address": "Address (IP:port)",
+        "v5_play_server": "Play",
+        "v5_diagnostics_title": "Diagnostics",
+        "v5_diagnostics_subtitle": "OuterClient and Minecraft logs plus a quick error report.",
+        "v5_refresh_logs": "Refresh logs",
+        "v5_copy_report": "Copy report",
+        "v5_open_logs": "Open logs folder",
+        "v5_report_copied": "Report copied.",
+        "v5_crash": "Minecraft exited with code {code}.\n\n{hint}",
+        "v5_crash_java": "The wrong Java version is probably being used.",
+        "v5_crash_ram": "Minecraft ran out of RAM.",
+        "v5_crash_mod": "Probable mod conflict or missing dependency.",
+        "v5_crash_generic": "Check latest-minecraft.log in Diagnostics.",
+        "v5_discord": "Discord Rich Presence",
+        "v5_discord_id": "DISCORD APPLICATION ID (OPTIONAL)",
+        "v5_auto_updates": "Automatically check for OuterClient updates",
+        "v5_fast_modrinth": "Fast results • 5 min cache • batched rendering",
     },
 }
 
@@ -816,7 +939,7 @@ class OuterClient(ctk.CTk):
                 try:
                     import ctypes
                     ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(
-                        "OuterClient.Launcher.4.9.4"
+                        "OuterClient.Launcher.5.0"
                     )
                 except Exception:
                     pass
@@ -5630,6 +5753,1208 @@ class OuterClient(ctk.CTk):
             pass
 
         self.after(100, self.process_events)
+
+
+# ======================================================================
+# OuterClient 5.0 feature layer
+# ======================================================================
+_V49_DEFAULT_CONFIG = default_config
+_V49_LOAD_CONFIG = load_config
+_V49_INIT = OuterClient.__init__
+_V49_BUILD_SHELL = OuterClient.build_shell
+_V49_SHOW_SETTINGS = OuterClient.show_settings
+_V49_SAVE_SETTINGS = OuterClient.save_settings
+_V49_CREATE_PROFILE = OuterClient.create_profile
+_V49_IMPORT_PROFILE = OuterClient.import_profile_bundle
+_V49_DELETE_MANAGED = OuterClient.delete_managed_content
+
+
+def _v5_default_config():
+    cfg = _V49_DEFAULT_CONFIG()
+    cfg.update({
+        "favorites": [],
+        "servers": [],
+        "auto_java": True,
+        "auto_check_updates": True,
+        "update_repo": "Zallevvz/Outer-Client-exe-und-appimage",
+        "discord_client_id": "",
+    })
+    for profile in cfg.get("profiles", {}).values():
+        profile.setdefault("preset", "Balanced")
+        profile.setdefault("ram", 0)
+    return cfg
+
+
+def _v5_load_config():
+    cfg = _V49_LOAD_CONFIG()
+    raw = {}
+    try:
+        raw = json.loads(CONFIG_PATH.read_text(encoding="utf-8"))
+    except Exception:
+        raw = {}
+
+    for key, default in (
+        ("favorites", []),
+        ("servers", []),
+        ("auto_java", True),
+        ("auto_check_updates", True),
+        ("update_repo", "Zallevvz/Outer-Client-exe-und-appimage"),
+        ("discord_client_id", ""),
+    ):
+        value = raw.get(key, default)
+        cfg[key] = value
+
+    raw_profiles = raw.get("profiles", {}) if isinstance(raw, dict) else {}
+    for name, profile in cfg.get("profiles", {}).items():
+        old = raw_profiles.get(name, {}) if isinstance(raw_profiles, dict) else {}
+        profile["preset"] = old.get("preset", profile.get("preset", "Balanced"))
+        try:
+            profile["ram"] = int(old.get("ram", profile.get("ram", 0)) or 0)
+        except Exception:
+            profile["ram"] = 0
+    return cfg
+
+
+def _v5_init(self):
+    # Runtime state needed by the overridden pages during the original init.
+    self.modrinth_search_cache = {}
+    self.modrinth_cache_ttl = 300
+    self.modrinth_request_generation = 0
+    self.modrinth_current_hits = []
+    self.modrinth_visible_count = 12
+    self.modrinth_debounce_id = None
+    self.profile_update_cache = {}
+    self.available_launcher_update = None
+    self.java_installations = []
+    self.minecraft_process = None
+    self.launch_target_server = None
+    self.discord_rpc = None
+    self.profile_picker_window = None
+    _V49_INIT(self)
+    self.after(2800, self._v5_startup_tasks)
+
+
+def _v5_startup_tasks(self):
+    if self.cfg.get("auto_check_updates", True):
+        self.run_bg(lambda: self.check_launcher_update(False))
+    self.run_bg(self.detect_java_installations)
+
+
+def _v5_build_shell(self):
+    _V49_BUILD_SHELL(self)
+    # The original shell creates Settings as the last normal nav item.
+    self.nav_buttons["servers"] = self.nav_button(
+        "◎", self.t("nav_servers"), self.show_servers
+    )
+    self.nav_buttons["diagnostics"] = self.nav_button(
+        "≡", self.t("nav_diagnostics"), self.show_diagnostics
+    )
+
+
+def _v5_create_profile(self, window, name, version, loader):
+    _V49_CREATE_PROFILE(self, window, name, version, loader)
+    if name in self.cfg.get("profiles", {}):
+        self.cfg["profiles"][name].setdefault("preset", "Balanced")
+        self.cfg["profiles"][name].setdefault("ram", 0)
+        save_config(self.cfg)
+
+
+def _v5_import_profile(self):
+    before = set(self.cfg.get("profiles", {}))
+    _V49_IMPORT_PROFILE(self)
+    for name, profile in self.cfg.get("profiles", {}).items():
+        if name not in before:
+            profile.setdefault("preset", "Balanced")
+            profile.setdefault("ram", 0)
+    save_config(self.cfg)
+
+
+def _v5_profile_ram(self, profile_name):
+    profile = self.cfg["profiles"].get(profile_name, {})
+    preset = profile.get("preset", "Balanced")
+    maximum = self.max_ram_mb()
+    if preset == "Low":
+        return min(maximum, 3072)
+    if preset == "High":
+        return min(maximum, 8192)
+    if preset == "Custom":
+        custom = int(profile.get("ram", 0) or self.cfg.get("ram", 4096))
+        return max(1024, min(maximum, custom))
+    # Balanced
+    return min(maximum, 6144 if maximum >= 8192 else 4096)
+
+
+def _v5_set_profile_preset(self, profile_name, preset):
+    if profile_name not in self.cfg["profiles"]:
+        return
+    self.cfg["profiles"][profile_name]["preset"] = preset
+    if preset == "Custom" and not self.cfg["profiles"][profile_name].get("ram"):
+        self.cfg["profiles"][profile_name]["ram"] = int(self.cfg.get("ram", 4096))
+    save_config(self.cfg)
+    self.show_profile_manager(profile_name)
+
+
+def _v5_open_profile_picker(self, mode="home"):
+    old = self.profile_picker_window
+    if old is not None:
+        try:
+            if old.winfo_exists(): old.destroy()
+        except Exception:
+            pass
+    win = ctk.CTkToplevel(self)
+    self.profile_picker_window = win
+    win.title(self.t("v5_profile_picker"))
+    win.geometry("690x590")
+    win.minsize(590, 480)
+    win.configure(fg_color=BG)
+    win.transient(self)
+
+    ctk.CTkLabel(
+        win, text=self.t("v5_profile_picker"), text_color=TEXT,
+        font=ctk.CTkFont(size=26, weight="bold")
+    ).pack(anchor="w", padx=24, pady=(22, 4))
+    ctk.CTkLabel(
+        win, text=self.t("profiles_subtitle"), text_color=MUTED
+    ).pack(anchor="w", padx=24, pady=(0, 12))
+
+    body = ctk.CTkScrollableFrame(win, fg_color=BG, corner_radius=0)
+    body.pack(fill="both", expand=True, padx=16, pady=(0, 16))
+    body.grid_columnconfigure(0, weight=1)
+
+    current = self.cfg.get("selected") if mode == "home" else (
+        self.modrinth_profile.get() if hasattr(self, "modrinth_profile") else self.cfg.get("selected")
+    )
+    for row, (name, profile) in enumerate(self.cfg["profiles"].items()):
+        card = self.card(body, 14)
+        card.grid(row=row, column=0, sticky="ew", padx=8, pady=6)
+        card.grid_columnconfigure(1, weight=1)
+        selected = name == current
+        stats = self.profile_content_stats(name)
+        ctk.CTkLabel(
+            card, text=name[:1].upper(), width=54, height=54, corner_radius=14,
+            fg_color=self.accent if selected else SURFACE_3, text_color="white",
+            font=ctk.CTkFont(size=19, weight="bold")
+        ).grid(row=0, column=0, rowspan=2, padx=15, pady=14)
+        ctk.CTkLabel(
+            card, text=name, text_color=TEXT, anchor="w",
+            font=ctk.CTkFont(size=16, weight="bold")
+        ).grid(row=0, column=1, sticky="sw", pady=(13, 1))
+        ctk.CTkLabel(
+            card,
+            text=(f"Minecraft {profile.get('version')}  •  {profile.get('loader')}  •  "
+                  f"{profile.get('preset','Balanced')}  •  {stats['mods']} {self.t('mods_stat')}") ,
+            text_color=MUTED, anchor="w"
+        ).grid(row=1, column=1, sticky="nw", pady=(1, 13))
+        ctk.CTkButton(
+            card, text=self.t("select"), width=92, height=38,
+            fg_color=self.accent if selected else SURFACE_3,
+            hover_color=self.accent_hover,
+            command=lambda n=name, m=mode, w=win: self.select_profile_from_picker(n, m, w)
+        ).grid(row=0, column=2, rowspan=2, padx=14)
+
+
+def _v5_select_profile_from_picker(self, name, mode, win):
+    if name not in self.cfg["profiles"]:
+        return
+    if mode == "home":
+        self.cfg["selected"] = name
+        save_config(self.cfg)
+        try: win.destroy()
+        except Exception: pass
+        self.show_home()
+    else:
+        self.modrinth_profile.set(name)
+        try: win.destroy()
+        except Exception: pass
+        self.update_modrinth_target_ui()
+
+
+def _v5_cycle_profile(self, delta):
+    names = list(self.cfg["profiles"])
+    if not names: return
+    current = self.cfg.get("selected")
+    index = names.index(current) if current in names else 0
+    self.cfg["selected"] = names[(index + delta) % len(names)]
+    save_config(self.cfg)
+    self.show_home()
+
+
+def _v5_java_required(self, mc_version):
+    try:
+        parts = [int(x) for x in str(mc_version).split('.')[:3]]
+    except Exception:
+        return 21
+    while len(parts) < 3: parts.append(0)
+    if tuple(parts) >= (1, 20, 5): return 21
+    if tuple(parts) >= (1, 18, 0): return 17
+    return 8
+
+
+def _v5_java_version(self, executable):
+    try:
+        out = subprocess.run(
+            [str(executable), "-version"], stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT, text=True, timeout=5
+        ).stdout
+        m = re.search(r'version "(?:1\\.)?(\\d+)', out)
+        return int(m.group(1)) if m else None
+    except Exception:
+        return None
+
+
+def _v5_detect_java(self):
+    candidates = []
+    for item in (self.cfg.get("java"), shutil.which("java")):
+        if item: candidates.append(Path(item))
+    if sys.platform.startswith("win"):
+        roots = [Path(os.environ.get("ProgramFiles", "C:/Program Files")) / "Java",
+                 Path(os.environ.get("ProgramFiles", "C:/Program Files")) / "Eclipse Adoptium"]
+        for root in roots:
+            if root.exists(): candidates.extend(root.glob("*/bin/java.exe"))
+    else:
+        root = Path("/usr/lib/jvm")
+        if root.exists(): candidates.extend(root.glob("*/bin/java"))
+        root2 = Path.home()/".jdks"
+        if root2.exists(): candidates.extend(root2.glob("*/bin/java"))
+    found=[]; seen=set()
+    for path in candidates:
+        try: key=str(path.resolve())
+        except Exception: key=str(path)
+        if key in seen or not path.exists(): continue
+        seen.add(key)
+        major=self.java_major(path)
+        if major: found.append({"path": key, "major": major})
+    found.sort(key=lambda x: x["major"])
+    self.java_installations=found
+    self.events.put(("java_detected", found))
+    return found
+
+
+def _v5_best_java(self, profile_name):
+    profile=self.cfg["profiles"].get(profile_name,{})
+    required=self.required_java_major(profile.get("version","1.21.1"))
+    found=self.java_installations or self.detect_java_installations()
+    exact=[x for x in found if x["major"]==required]
+    if exact: return exact[-1]
+    compatible=[x for x in found if x["major"]>=required]
+    return compatible[0] if compatible else None
+
+
+def _v5_select_java_for_profile(self, profile_name=None, notify=True):
+    profile_name=profile_name or self.cfg.get("selected")
+    best=self.best_java_for_profile(profile_name)
+    required=self.required_java_major(self.cfg["profiles"][profile_name].get("version"))
+    if not best:
+        if notify: messagebox.showwarning("Java Manager", self.t("v5_java_missing", major=required))
+        return None
+    self.cfg["java"] = best["path"]
+    save_config(self.cfg)
+    if hasattr(self,"settings_java"): self.settings_java.set(best["path"])
+    if notify: self.set_status(f"Java {best['major']} • {best['path']}")
+    return best
+
+
+def _v5_show_home(self):
+    self.set_active_page("home")
+    self.clear_content()
+    page=self.page()
+    self.page_header(page,"OuterClient",self.t("home_title"),self.t("home_subtitle"))
+    name, profile=self.selected_profile_data()
+    stats=self.profile_content_stats(name)
+    ram=self.profile_ram(name)
+    required=self.required_java_major(profile.get("version"))
+    best=self.best_java_for_profile(name)
+
+    hero=self.card(page,20); hero.grid(row=1,column=0,sticky="ew",padx=36,pady=(0,16)); hero.grid_columnconfigure(1,weight=1)
+    ctk.CTkLabel(hero,text=name[:1].upper(),width=72,height=72,corner_radius=18,fg_color=self.accent,text_color="white",font=ctk.CTkFont(size=25,weight="bold")).grid(row=0,column=0,rowspan=3,padx=(24,18),pady=24)
+    ctk.CTkLabel(hero,text=name,text_color=TEXT,anchor="w",font=ctk.CTkFont(size=24,weight="bold")).grid(row=0,column=1,sticky="sw",pady=(22,0))
+    ctk.CTkLabel(hero,text=f"Minecraft {profile['version']}  •  {profile['loader']}  •  {profile.get('preset','Balanced')}",text_color=MUTED,anchor="w",font=ctk.CTkFont(size=13)).grid(row=1,column=1,sticky="w",pady=(2,1))
+    java_text=f"Java {best['major']} ✓" if best else f"Java {required} !"
+    ctk.CTkLabel(hero,text=f"{stats['mods']} {self.t('mods_stat')}  •  {ram} MB RAM  •  {java_text}",text_color=self.secondary if best else "#F0B35B",anchor="w").grid(row=2,column=1,sticky="nw",pady=(1,20))
+
+    nav=ctk.CTkFrame(hero,fg_color="transparent"); nav.grid(row=0,column=2,rowspan=3,padx=18,pady=20)
+    ctk.CTkButton(nav,text="‹",width=42,height=42,fg_color=SURFACE_3,hover_color="#2B3749",font=ctk.CTkFont(size=22),command=lambda:self.cycle_home_profile(-1)).pack(side="left")
+    ctk.CTkButton(nav,text=self.t("v5_change_profile"),width=128,height=42,fg_color=SURFACE_3,hover_color=self.accent,command=lambda:self.open_profile_picker("home")).pack(side="left",padx=7)
+    ctk.CTkButton(nav,text="›",width=42,height=42,fg_color=SURFACE_3,hover_color="#2B3749",font=ctk.CTkFont(size=22),command=lambda:self.cycle_home_profile(1)).pack(side="left")
+
+    action=self.card(page,14); action.grid(row=2,column=0,sticky="ew",padx=36,pady=(0,16)); action.grid_columnconfigure(0,weight=1)
+    left=ctk.CTkFrame(action,fg_color="transparent"); left.grid(row=0,column=0,sticky="w",padx=18,pady=16)
+    ctk.CTkButton(left,text=self.t("launch_minecraft"),height=50,corner_radius=12,fg_color=self.accent,hover_color=self.accent_hover,font=ctk.CTkFont(size=14,weight="bold"),command=self.launch).pack(side="left")
+    ctk.CTkButton(left,text=self.t("v5_manage"),height=50,corner_radius=12,fg_color=SURFACE_3,hover_color="#2B3749",command=lambda:self.show_profile_manager(name)).pack(side="left",padx=8)
+    ctk.CTkButton(left,text=self.t("repair_profile"),height=50,corner_radius=12,fg_color=SURFACE_3,hover_color="#2B3749",command=self.install_profile).pack(side="left")
+
+    stats_card=self.card(page,14); stats_card.grid(row=3,column=0,sticky="ew",padx=36,pady=(0,16)); stats_card.grid_columnconfigure(0,weight=1)
+    row=ctk.CTkFrame(stats_card,fg_color="transparent"); row.grid(row=0,column=0,sticky="ew",padx=18,pady=16)
+    for c,(key,val) in enumerate((("mods_stat",stats['mods']),("resources_stat",stats['resources']),("shaders_stat",stats['shaders']),("worlds_stat",stats['worlds']))):
+        box=ctk.CTkFrame(row,fg_color=SURFACE_2,corner_radius=11); box.pack(side="left",fill="x",expand=True,padx=(0 if c==0 else 5,0))
+        ctk.CTkLabel(box,text=str(val),text_color=TEXT,font=ctk.CTkFont(size=19,weight="bold")).pack(pady=(9,0)); ctk.CTkLabel(box,text=self.t(key),text_color=MUTED,font=ctk.CTkFont(size=10)).pack(pady=(0,9))
+    ctk.CTkLabel(page,textvariable=self.status_var,text_color=MUTED).grid(row=4,column=0,sticky="w",padx=38,pady=(0,26))
+
+
+def _v5_modrinth_target(self, profile_name):
+    if profile_name not in self.cfg["profiles"]: return
+    self.modrinth_profile.set(profile_name)
+    self.update_modrinth_target_ui()
+
+
+def _v5_show_modrinth(self):
+    self.set_active_page("modrinth"); self.clear_content()
+    outer=ctk.CTkFrame(self.content,fg_color=BG,corner_radius=0); outer.grid(row=0,column=0,sticky="nsew"); outer.grid_columnconfigure(0,weight=1); outer.grid_rowconfigure(5,weight=1)
+    header=ctk.CTkFrame(outer,fg_color="transparent"); header.grid(row=0,column=0,sticky="ew",padx=36,pady=(24,10)); header.grid_columnconfigure(0,weight=1)
+    title=ctk.CTkFrame(header,fg_color="transparent"); title.grid(row=0,column=0,sticky="w")
+    ctk.CTkLabel(title,text="MODRINTH + CURSEFORGE",text_color=self.secondary,font=ctk.CTkFont(size=10,weight="bold")).pack(anchor="w")
+    ctk.CTkLabel(title,text=self.t("modrinth_title"),text_color=TEXT,font=ctk.CTkFont(size=29,weight="bold")).pack(anchor="w",pady=(3,1))
+    self.modrinth_subtitle=ctk.CTkLabel(title,text=self.t("v5_fast_modrinth"),text_color=MUTED); self.modrinth_subtitle.pack(anchor="w")
+
+    self.modrinth_profile=ctk.StringVar(value=self.cfg.get("selected",next(iter(self.cfg["profiles"]))))
+    target=self.card(header,12); target.grid(row=0,column=1,sticky="e",padx=(20,0))
+    self.modrinth_target_label=ctk.CTkLabel(target,text=self.t("install_on_profile"),text_color=MUTED,font=ctk.CTkFont(size=10,weight="bold")); self.modrinth_target_label.pack(anchor="w",padx=12,pady=(8,2))
+    self.modrinth_profile_button=ctk.CTkButton(target,text="",height=48,width=235,anchor="w",fg_color=SURFACE_2,hover_color=SURFACE_3,command=lambda:self.open_profile_picker("modrinth")); self.modrinth_profile_button.pack(padx=10,pady=(0,10))
+
+    source=ctk.CTkFrame(outer,fg_color="transparent"); source.grid(row=1,column=0,sticky="ew",padx=36,pady=(0,8))
+    self.source_buttons={}
+    for source_name in ("Modrinth","CurseForge"):
+        selected=self.content_source==source_name
+        b=ctk.CTkButton(source,text=source_name,width=110,height=34,corner_radius=9,fg_color=self.accent if selected else SURFACE,hover_color=self.accent_hover if selected else SURFACE_3,border_width=1,border_color=self.accent if selected else BORDER,command=lambda v=source_name:self.switch_content_source(v)); b.pack(side="left",padx=(0,7)); self.source_buttons[source_name]=b
+    ctk.CTkButton(source,text="★ "+self.t("v5_favorites"),width=120,height=34,fg_color=SURFACE_3,hover_color=self.accent,command=self.show_favorite_projects).pack(side="left",padx=(8,0))
+
+    tabs=ctk.CTkFrame(outer,fg_color="transparent"); tabs.grid(row=2,column=0,sticky="ew",padx=36)
+    self.modrinth_tab_buttons={}
+    for tab_name in MODRINTH_TABS:
+        active=tab_name==self.modrinth_category
+        b=ctk.CTkButton(tabs,text=self.modrinth_category_label(tab_name),height=36,corner_radius=10,fg_color=self.accent if active else SURFACE,hover_color=self.accent_hover if active else SURFACE_3,border_width=1,border_color=self.accent if active else BORDER,command=lambda n=tab_name:self.switch_modrinth_tab(n)); b.pack(side="left",padx=(0,7)); self.modrinth_tab_buttons[tab_name]=b
+
+    search=ctk.CTkFrame(outer,fg_color="transparent"); search.grid(row=3,column=0,sticky="ew",padx=36,pady=(12,5)); search.grid_columnconfigure(0,weight=1)
+    self.modrinth_query=ctk.StringVar()
+    entry=ctk.CTkEntry(search,textvariable=self.modrinth_query,placeholder_text=self.t("modrinth_search"),height=44,fg_color=SURFACE,border_color=BORDER); entry.grid(row=0,column=0,sticky="ew",padx=(0,10)); entry.bind("<Return>",lambda _e:self.search_modrinth()); entry.bind("<KeyRelease>",lambda _e:self.schedule_modrinth_search())
+    ctk.CTkButton(search,text=self.t("search"),width=105,height=44,fg_color=self.accent,hover_color=self.accent_hover,command=self.search_modrinth).grid(row=0,column=1)
+    self.modrinth_speed_label=ctk.CTkLabel(outer,text=self.t("v5_fast_modrinth"),text_color=MUTED,font=ctk.CTkFont(size=10)); self.modrinth_speed_label.grid(row=4,column=0,sticky="w",padx=38,pady=(0,4))
+    self.modrinth_results=ctk.CTkScrollableFrame(outer,fg_color=BG,corner_radius=0,scrollbar_button_color=SURFACE_3); self.modrinth_results.grid(row=5,column=0,sticky="nsew",padx=28,pady=(0,10)); self.modrinth_results.grid_columnconfigure(0,weight=1)
+    self.update_modrinth_target_ui(); self.search_modrinth()
+
+
+def _v5_update_target(self):
+    if not hasattr(self,"modrinth_profile_button"): return
+    if self.modrinth_category=="Modpacki":
+        self.modrinth_target_label.configure(text=self.t("modpack_new_profile")); self.modrinth_profile_button.configure(text="New profile",state="disabled")
+    else:
+        self.modrinth_target_label.configure(text=self.t("install_on_profile")); self.modrinth_profile_button.configure(state="normal")
+        name=self.modrinth_profile.get(); profile=self.cfg["profiles"].get(name,{})
+        self.modrinth_profile_button.configure(text=f"{name}\nMinecraft {profile.get('version','?')} • {profile.get('loader','?')}")
+
+
+def _v5_schedule_search(self):
+    if self.modrinth_debounce_id:
+        try: self.after_cancel(self.modrinth_debounce_id)
+        except Exception: pass
+    self.modrinth_debounce_id=self.after(450,self.search_modrinth)
+
+
+def _v5_search_cache_key(self, query, category):
+    profile_name=self.modrinth_profile.get() if hasattr(self,"modrinth_profile") else self.cfg.get("selected")
+    profile=self.cfg["profiles"].get(profile_name,{})
+    return (self.content_source,category,query.casefold().strip(),profile.get("version"),profile.get("loader"))
+
+
+def _v5_search_modrinth(self):
+    if not hasattr(self,"modrinth_results"): return
+    self.modrinth_request_generation += 1
+    request_id=self.modrinth_request_generation
+    query=self.modrinth_query.get().strip(); category=self.modrinth_category
+    key=self.modrinth_cache_key(query,category)
+    cached=self.modrinth_search_cache.get(key)
+    if cached and time.time()-cached[0] < self.modrinth_cache_ttl:
+        self.render_modrinth_results(category,cached[1]); return
+    for child in self.modrinth_results.winfo_children(): child.destroy()
+    ctk.CTkLabel(self.modrinth_results,text=self.t("searching_projects") if self.content_source=="Modrinth" else self.t("curseforge_searching"),text_color=MUTED).grid(row=0,column=0,sticky="w",padx=10,pady=18)
+    if self.content_source=="CurseForge":
+        self.run_bg(lambda:self.fetch_curseforge_mods_fast(query,request_id,key))
+    else:
+        self.run_bg(lambda:self.fetch_modrinth_fast(query,category,request_id,key))
+
+
+def _v5_fetch_modrinth(self, query, category, request_id, cache_key):
+    try:
+        if not query:
+            hits=self.modrinth_search_request(category,index="downloads",limit=24)
+        else:
+            direct=self.modrinth_search_request(category,query=query,index="relevance",limit=24)
+            for hit in direct: hit["_source_score"]=50
+            hits=direct
+            if len(direct)<8:
+                popular=self.modrinth_search_request(category,index="downloads",limit=36)
+                for hit in popular: hit.setdefault("_source_score",0)
+                merged={}
+                for hit in direct+popular:
+                    pid=hit.get("project_id") or hit.get("id") or hit.get("slug")
+                    if pid: merged[pid]=hit
+                hits=sorted(merged.values(),key=lambda h:fuzzy_project_score(query,h),reverse=True)
+                hits=[h for h in hits if h.get("_source_score",0)>=50 or fuzzy_project_score(query,h)>=68][:30]
+        self.modrinth_search_cache[cache_key]=(time.time(),hits)
+        self.events.put(("modrinth_fast_results",(request_id,category,hits)))
+    except Exception as exc:
+        self.events.put(("error",f"Modrinth:\n{exc}"))
+
+
+def _v5_fetch_curseforge(self, query, request_id, cache_key):
+    try:
+        headers=self.curseforge_headers()
+        if not headers:
+            self.events.put(("curseforge_error",self.t("curseforge_key_missing"))); return
+        pname=self.modrinth_profile.get(); profile=self.cfg["profiles"].get(pname,{})
+        params={"gameId":432,"classId":6,"pageSize":24,"sortField":2,"sortOrder":"desc"}
+        if profile.get("version"): params["gameVersion"]=profile["version"]
+        lt=self.curseforge_loader_type(profile.get("loader","Vanilla"))
+        if lt: params["modLoaderType"]=lt
+        if query: params["searchFilter"]=query
+        r=requests.get("https://api.curseforge.com/v1/mods/search",params=params,headers=headers,timeout=20); r.raise_for_status()
+        hits=[]
+        for mod in r.json().get("data",[]):
+            authors=mod.get("authors") or []; logo=mod.get("logo") or {}
+            hits.append({"_source":"curseforge","cf_mod_id":mod.get("id"),"title":mod.get("name") or mod.get("slug") or self.t("unnamed"),"slug":mod.get("slug") or "","author":authors[0].get("name") if authors else self.t("unknown_author"),"description":mod.get("summary") or self.t("no_description"),"downloads":mod.get("downloadCount",0),"icon_url":logo.get("thumbnailUrl") or logo.get("url"),"website_url":(mod.get("links") or {}).get("websiteUrl"),"allowModDistribution":mod.get("allowModDistribution"),"isAvailable":mod.get("isAvailable",False)})
+        self.modrinth_search_cache[cache_key]=(time.time(),hits)
+        self.events.put(("modrinth_fast_results",(request_id,"Mody",hits)))
+    except Exception as exc:
+        self.events.put(("curseforge_error",str(exc)))
+
+
+def _v5_render_results(self, category, hits):
+    if category!=self.modrinth_category: return
+    self.modrinth_current_hits=list(hits); self.modrinth_visible_count=min(12,len(hits))
+    self.render_modrinth_page()
+
+
+def _v5_render_page(self):
+    if not hasattr(self,"modrinth_results"): return
+    for child in self.modrinth_results.winfo_children(): child.destroy()
+    hits=self.modrinth_current_hits
+    if not hits:
+        ctk.CTkLabel(self.modrinth_results,text=self.t("no_results"),text_color=MUTED).grid(row=0,column=0,sticky="w",padx=10,pady=18); return
+    for row,hit in enumerate(hits[:self.modrinth_visible_count]):
+        self.modrinth_card(row,hit,hit.get("_category",self.modrinth_category))
+    if self.modrinth_visible_count < len(hits):
+        ctk.CTkButton(self.modrinth_results,text=f"{self.t('v5_more')}  ({len(hits)-self.modrinth_visible_count})",height=42,fg_color=SURFACE_3,hover_color=self.accent,command=self.load_more_modrinth).grid(row=self.modrinth_visible_count,column=0,sticky="ew",padx=8,pady=12)
+
+
+def _v5_load_more(self):
+    self.modrinth_visible_count=min(len(self.modrinth_current_hits),self.modrinth_visible_count+12); self.render_modrinth_page()
+
+
+def _v5_favorite_key(self, hit):
+    source=hit.get("_source","modrinth"); pid=hit.get("cf_mod_id") if source=="curseforge" else (hit.get("project_id") or hit.get("id") or hit.get("slug")); return f"{source}:{pid}"
+
+
+def _v5_is_favorite(self, hit):
+    key=self.favorite_key(hit); return any(item.get("key")==key for item in self.cfg.get("favorites",[]))
+
+
+def _v5_toggle_favorite(self, hit, category):
+    key=self.favorite_key(hit); favs=list(self.cfg.get("favorites",[])); existing=next((i for i in favs if i.get("key")==key),None)
+    if existing: favs.remove(existing)
+    else:
+        data={k:hit.get(k) for k in ("_source","cf_mod_id","project_id","id","slug","title","author","description","downloads","icon_url","website_url","allowModDistribution","isAvailable")}; data.update({"key":key,"_category":category}); favs.append(data)
+    self.cfg["favorites"]=favs; save_config(self.cfg); self.render_modrinth_page()
+
+
+def _v5_show_favorites(self):
+    hits=list(self.cfg.get("favorites",[])); self.modrinth_current_hits=hits; self.modrinth_visible_count=min(12,len(hits)); self.render_modrinth_page()
+
+
+def _v5_modrinth_card(self,row,hit,category):
+    card=self.card(self.modrinth_results); card.grid(row=row,column=0,sticky="ew",padx=8,pady=6); card.grid_columnconfigure(1,weight=1)
+    icon=ctk.CTkLabel(card,text="◇",width=64,height=64,corner_radius=13,fg_color=SURFACE_2,text_color=MUTED,font=ctk.CTkFont(size=23,weight="bold")); icon.grid(row=0,column=0,rowspan=3,padx=(15,13),pady=15)
+    if hit.get("icon_url"): self.run_bg(lambda u=hit["icon_url"],w=icon:self.fetch_project_icon(u,w))
+    title=hit.get("title") or hit.get("slug") or self.t("unnamed"); author=hit.get("author") or self.t("unknown_author"); desc=hit.get("description") or self.t("no_description"); downloads=hit.get("downloads",0)
+    ctk.CTkLabel(card,text=title,text_color=TEXT,anchor="w",font=ctk.CTkFont(size=16,weight="bold")).grid(row=0,column=1,sticky="sw",pady=(13,0))
+    ctk.CTkLabel(card,text=f"{author}  •  {self.t('downloads',count=f'{downloads:,}'.replace(',',' '))}",text_color=MUTED,anchor="w",font=ctk.CTkFont(size=11)).grid(row=1,column=1,sticky="w",pady=(2,0))
+    ctk.CTkLabel(card,text=desc,text_color="#A8B3C2",anchor="w",justify="left",wraplength=560).grid(row=2,column=1,sticky="nw",pady=(4,13))
+    actions=ctk.CTkFrame(card,fg_color="transparent"); actions.grid(row=0,column=2,rowspan=3,padx=14)
+    ctk.CTkButton(actions,text="★" if self.is_favorite(hit) else "☆",width=42,height=34,fg_color=SURFACE_3,hover_color=self.accent,command=lambda h=hit,c=category:self.toggle_favorite(h,c)).pack(pady=(0,5))
+    install=ctk.CTkButton(actions,text=self.t("install_pack") if category=="Modpacki" else self.t("install"),width=112,height=36,fg_color=self.accent,hover_color=self.accent_hover); install.pack(pady=(0,5))
+    if hit.get("_source")=="curseforge": install.configure(text=self.t("install"),command=lambda h=hit,b=install:self.enqueue_curseforge_install(h,b))
+    else: install.configure(command=lambda h=hit,c=category,b=install:self.enqueue_modrinth_install(h,c,b))
+    slug=hit.get("slug") or ""; path=MODRINTH_TABS.get(category,{}).get("path","mod")
+    ctk.CTkButton(actions,text=self.t("open"),width=112,height=34,fg_color=SURFACE_3,hover_color="#2B3749",command=lambda h=hit,s=slug,p=path:webbrowser.open(h.get("website_url") if h.get("_source")=="curseforge" else f"https://modrinth.com/{p}/{s}")).pack()
+
+
+def _v5_content_manifest_path(self, profile_name):
+    return self.profile_instance_dir(profile_name)/".outerclient-content.json"
+
+
+def _v5_load_metadata(self, profile_name):
+    try:
+        data=json.loads(self.content_manifest_path(profile_name).read_text(encoding="utf-8")); return data if isinstance(data,dict) else {}
+    except Exception: return {}
+
+
+def _v5_save_metadata(self, profile_name, data):
+    path=self.content_manifest_path(profile_name); path.parent.mkdir(parents=True,exist_ok=True); path.write_text(json.dumps(data,ensure_ascii=False,indent=2),encoding="utf-8")
+
+
+def _v5_record_content(self, profile_name, path, meta):
+    instance=self.profile_instance_dir(profile_name)
+    try: rel=str(Path(path).resolve().relative_to(instance.resolve())).replace('\\','/')
+    except Exception: return
+    data=self.load_content_metadata(profile_name); item=dict(meta); item["path"]=rel; item["updated_at"]=int(time.time()); data[rel]=item; self.save_content_metadata(profile_name,data)
+
+
+def _v5_profile_entries(self, profile_name, category):
+    instance=self.profile_instance_dir(profile_name); metadata=self.load_content_metadata(profile_name); entries=[]
+    mappings={"mods":("mods",lambda p:p.is_file() and p.suffix.lower()==".jar"),"resources":("resourcepacks",lambda p:p.is_file() or p.is_dir()),"shaders":("shaderpacks",lambda p:p.is_file() or p.is_dir())}
+    if category in mappings:
+        folder_name,pred=mappings[category]; folder=instance/folder_name
+        if folder.exists():
+            for path in sorted(folder.iterdir(),key=lambda p:p.name.casefold()):
+                if not pred(path): continue
+                rel=str(path.relative_to(instance)).replace('\\','/'); meta=metadata.get(rel,{})
+                detail=(meta.get("version_number") or meta.get("version") or (self.human_file_size(path.stat().st_size) if path.is_file() else "Folder"))
+                source=meta.get("source");
+                if source: detail=f"{source}  •  {detail}"
+                entries.append({"path":path,"rel":rel,"name":meta.get("title") or path.name,"detail":detail,"meta":meta})
+    elif category=="datapacks":
+        saves=instance/"saves"
+        if saves.exists():
+            for world in sorted(saves.iterdir(),key=lambda p:p.name.casefold()):
+                dp=world/"datapacks"
+                if not world.is_dir() or not dp.exists(): continue
+                for path in sorted(dp.iterdir(),key=lambda p:p.name.casefold()):
+                    if path.is_file() or path.is_dir(): entries.append({"path":path,"rel":str(path.relative_to(instance)).replace('\\','/'),"name":path.name,"detail":self.t("manage_world",world=world.name),"meta":{}})
+    return entries
+
+
+def _v5_scan_metadata(self, profile_name):
+    self.set_status(self.t("v5_scanning")); self.run_bg(lambda:self.scan_profile_metadata_worker(profile_name))
+
+
+def _v5_scan_worker(self, profile_name):
+    try:
+        instance=self.profile_instance_dir(profile_name); files=[p for p in (instance/"mods").glob("*.jar") if p.is_file()]
+        hashes={hashlib.sha1(p.read_bytes()).hexdigest():p for p in files}; found={}
+        hs=list(hashes)
+        for start in range(0,len(hs),100):
+            chunk=hs[start:start+100]
+            r=requests.post(f"{MODRINTH_API}/version_files",json={"hashes":chunk,"algorithm":"sha1"},headers={"User-Agent":f"OuterClient/{APP_VERSION}"},timeout=30); r.raise_for_status(); found.update(r.json())
+        project_ids=sorted({v.get("project_id") for v in found.values() if v.get("project_id")}); projects={}
+        for start in range(0,len(project_ids),100):
+            ids=project_ids[start:start+100]
+            if not ids: continue
+            r=requests.get(f"{MODRINTH_API}/projects",params={"ids":json.dumps(ids)},headers={"User-Agent":f"OuterClient/{APP_VERSION}"},timeout=25); r.raise_for_status(); projects.update({p.get("id"):p for p in r.json()})
+        metadata=self.load_content_metadata(profile_name)
+        for sha,version in found.items():
+            path=hashes.get(sha)
+            if not path: continue
+            project=projects.get(version.get("project_id"),{}); rel=str(path.relative_to(instance)).replace('\\','/')
+            metadata[rel]={"path":rel,"source":"Modrinth","project_id":version.get("project_id"),"version_id":version.get("id"),"version_number":version.get("version_number"),"title":project.get("title") or project.get("slug") or path.stem,"slug":project.get("slug"),"icon_url":project.get("icon_url"),"author":project.get("author") or "","category":"Mody","updated_at":int(time.time())}
+        self.save_content_metadata(profile_name,metadata); self.events.put(("profile_metadata_done",profile_name))
+    except Exception as exc: self.events.put(("error",f"Metadata:\n{exc}"))
+
+
+def _v5_check_updates(self, profile_name):
+    self.set_status(self.t("v5_check_updates")); self.run_bg(lambda:self.check_profile_updates_worker(profile_name))
+
+
+def _v5_check_updates_worker(self, profile_name):
+    metadata=self.load_content_metadata(profile_name); profile=self.cfg["profiles"][profile_name]
+    candidates=[(rel,m) for rel,m in metadata.items() if m.get("source") in ("Modrinth","CurseForge") and m.get("project_id") or m.get("cf_mod_id")]
+    updates={}
+    def check(item):
+        rel,meta=item
+        try:
+            if meta.get("source")=="Modrinth":
+                latest=self.find_modrinth_version(meta.get("project_id"),meta.get("category","Mody"),profile["version"],profile["loader"])
+                if latest and latest.get("id")!=meta.get("version_id"): return rel,{"source":"Modrinth","latest":latest}
+            elif meta.get("source")=="CurseForge":
+                files=self.curseforge_get_files(meta.get("cf_mod_id"),profile["version"],profile["loader"])
+                if files and files[0].get("id")!=meta.get("file_id"): return rel,{"source":"CurseForge","latest":files[0]}
+        except Exception: pass
+        return None
+    with ThreadPoolExecutor(max_workers=6) as pool:
+        for future in as_completed([pool.submit(check,x) for x in candidates]):
+            result=future.result()
+            if result: updates[result[0]]=result[1]
+    self.profile_update_cache={k:v for k,v in self.profile_update_cache.items() if k[0]!=profile_name}
+    for rel,val in updates.items(): self.profile_update_cache[(profile_name,rel)]=val
+    self.events.put(("profile_updates_done",(profile_name,len(updates))))
+
+
+def _v5_update_entry(self, profile_name, entry):
+    self.run_bg(lambda:self.update_content_worker(profile_name,entry))
+
+
+def _v5_update_worker(self, profile_name, entry):
+    try:
+        rel=entry["rel"]; meta=entry.get("meta",{}); update=self.profile_update_cache.get((profile_name,rel)); profile=self.cfg["profiles"][profile_name]
+        if not update: return
+        old=Path(entry["path"]); dest=old.parent
+        if update["source"]=="Modrinth":
+            latest=update["latest"]; target=self.download_modrinth_version(latest,dest)
+            if target.resolve()!=old.resolve(): old.unlink(missing_ok=True)
+            self.record_installed_content(profile_name,target,{**meta,"source":"Modrinth","version_id":latest.get("id"),"version_number":latest.get("version_number"),"project_id":latest.get("project_id") or meta.get("project_id"),"category":meta.get("category","Mody")})
+        else:
+            latest=update["latest"]; url=self.curseforge_download_url(meta.get("cf_mod_id"),latest); target=dest/(latest.get("fileName") or old.name); self.stream_download(url,target,self.curseforge_hashes(latest));
+            if target.resolve()!=old.resolve(): old.unlink(missing_ok=True)
+            self.record_installed_content(profile_name,target,{**meta,"source":"CurseForge","file_id":latest.get("id"),"version_number":latest.get("displayName") or latest.get("fileName")})
+        data=self.load_content_metadata(profile_name); data.pop(rel,None); self.save_content_metadata(profile_name,data)
+        self.profile_update_cache.pop((profile_name,rel),None); self.events.put(("content_updated",profile_name))
+    except Exception as exc: self.events.put(("error",f"Update:\n{exc}"))
+
+
+def _v5_update_all(self, profile_name):
+    entries=[]
+    for cat in ("mods","resources","shaders"):
+        entries.extend(self.profile_manage_entries(profile_name,cat))
+    updates=[e for e in entries if (profile_name,e.get("rel")) in self.profile_update_cache]
+    if not updates: self.set_status(self.t("v5_updates_none")); return
+    self.run_bg(lambda:self.update_all_worker(profile_name,updates))
+
+
+def _v5_update_all_worker(self, profile_name, entries):
+    for entry in entries: self.update_content_worker(profile_name,entry)
+    self.events.put(("content_updated",profile_name))
+
+
+def _v5_backup(self, profile_name):
+    instance=self.profile_instance_dir(profile_name); backups=Path(self.cfg["game_dir"])/"backups"; backups.mkdir(parents=True,exist_ok=True); stamp=datetime.now().strftime("%Y%m%d-%H%M%S"); target=backups/f"{re.sub(r'[^A-Za-z0-9_.-]+','_',profile_name)}-{stamp}.zip"
+    try:
+        with zipfile.ZipFile(target,"w",zipfile.ZIP_DEFLATED) as z:
+            z.writestr("outerclient-backup.json",json.dumps({"profile":profile_name,"version":self.cfg["profiles"][profile_name],"created":stamp},ensure_ascii=False,indent=2))
+            if instance.exists():
+                for file in instance.rglob("*"):
+                    if file.is_file(): z.write(file,Path("instance")/file.relative_to(instance))
+        self.set_status(self.t("v5_backup_done",path=target.name))
+    except Exception as exc: messagebox.showerror("Backup",str(exc))
+
+
+def _v5_restore(self, profile_name):
+    backups=Path(self.cfg["game_dir"])/"backups"; backups.mkdir(parents=True,exist_ok=True)
+    source=filedialog.askopenfilename(title=self.t("v5_restore"),initialdir=str(backups),filetypes=[("ZIP","*.zip")]);
+    if not source: return
+    if not messagebox.askyesno(self.t("v5_restore"),f"{self.t('v5_restore')} {profile_name}?"): return
+    try:
+        instance=self.profile_instance_dir(profile_name); instance.mkdir(parents=True,exist_ok=True)
+        with zipfile.ZipFile(source,"r") as z:
+            for member in z.infolist():
+                if member.is_dir() or not member.filename.startswith("instance/"): continue
+                rel=member.filename[len("instance/"):]; target=safe_child(instance,rel); target.parent.mkdir(parents=True,exist_ok=True)
+                with z.open(member) as a,target.open("wb") as b: shutil.copyfileobj(a,b)
+        self.set_status(self.t("v5_restore_done",name=profile_name)); self.show_profile_manager(profile_name)
+    except Exception as exc: messagebox.showerror("Backup",str(exc))
+
+
+def _v5_performance_pack(self, profile_name):
+    profile=self.cfg["profiles"].get(profile_name,{})
+    if profile.get("loader")!="Fabric": messagebox.showinfo("Performance Pack",self.t("v5_performance_fabric_only")); return
+    self.run_bg(lambda:self.performance_pack_worker(profile_name))
+
+
+def _v5_performance_worker(self, profile_name):
+    projects=[("sodium","Sodium"),("lithium","Lithium"),("ferrite-core","FerriteCore"),("immediatelyfast","ImmediatelyFast"),("fabric-api","Fabric API")]; profile=self.cfg["profiles"][profile_name]; dest=self.profile_instance_dir(profile_name)/"mods"; dest.mkdir(parents=True,exist_ok=True)
+    try:
+        for i,(pid,title) in enumerate(projects):
+            ver=self.find_modrinth_version(pid,"Mody",profile["version"],profile["loader"])
+            if not ver: continue
+            target=self.download_modrinth_version(ver,dest,lambda ratio,filename,pos=i:self.queue_bar_event(f"Performance Pack • {title}",(pos+ratio)/len(projects),len(projects)-pos-1))
+            self.record_installed_content(profile_name,target,{"source":"Modrinth","project_id":ver.get("project_id") or pid,"version_id":ver.get("id"),"version_number":ver.get("version_number"),"title":title,"category":"Mody"})
+        self.events.put(("content_updated",profile_name))
+    except Exception as exc: self.events.put(("error",f"Performance Pack:\n{exc}"))
+
+
+def _v5_show_profile_manager(self, profile_name):
+    if profile_name not in self.cfg["profiles"]: return
+    self.set_active_page("profiles"); self.clear_content(); self.manage_profile_name=profile_name; self.manage_category=getattr(self,"manage_category","mods")
+    outer=ctk.CTkFrame(self.content,fg_color=BG,corner_radius=0); outer.grid(row=0,column=0,sticky="nsew"); outer.grid_columnconfigure(0,weight=1); outer.grid_rowconfigure(4,weight=1)
+    top=ctk.CTkFrame(outer,fg_color="transparent"); top.grid(row=0,column=0,sticky="ew",padx=36,pady=(24,8)); top.grid_columnconfigure(1,weight=1)
+    ctk.CTkButton(top,text=self.t("back_to_profiles"),width=115,height=36,fg_color=SURFACE_3,hover_color="#2B3749",command=self.show_profiles).grid(row=0,column=0,padx=(0,14))
+    box=ctk.CTkFrame(top,fg_color="transparent"); box.grid(row=0,column=1,sticky="w"); profile=self.cfg["profiles"][profile_name]
+    ctk.CTkLabel(box,text=self.t("manage_for_profile",name=profile_name),text_color=TEXT,font=ctk.CTkFont(size=27,weight="bold")).pack(anchor="w"); ctk.CTkLabel(box,text=f"Minecraft {profile.get('version')} • {profile.get('loader')} • {self.profile_ram(profile_name)} MB",text_color=MUTED).pack(anchor="w")
+    presets=ctk.CTkFrame(outer,fg_color="transparent"); presets.grid(row=1,column=0,sticky="ew",padx=36,pady=(4,8)); ctk.CTkLabel(presets,text=self.t("v5_preset"),text_color=MUTED).pack(side="left",padx=(0,8))
+    for preset in ("Low","Balanced","High","Custom"):
+        active=profile.get("preset","Balanced")==preset; ctk.CTkButton(presets,text=preset,width=92,height=34,fg_color=self.accent if active else SURFACE_3,hover_color=self.accent_hover,command=lambda p=preset:self.set_profile_preset(profile_name,p)).pack(side="left",padx=(0,5))
+    categories=ctk.CTkFrame(outer,fg_color="transparent"); categories.grid(row=2,column=0,sticky="ew",padx=36,pady=(0,8)); self.manage_category_buttons={}
+    for key,text_key in (("mods","manage_mods"),("resources","manage_resources"),("shaders","manage_shaders"),("datapacks","manage_datapacks")):
+        active=key==self.manage_category; b=ctk.CTkButton(categories,text=self.t(text_key),height=34,fg_color=self.accent if active else SURFACE,border_width=1,border_color=self.accent if active else BORDER,hover_color=self.accent_hover if active else SURFACE_3,command=lambda v=key:self.manage_category_changed(v)); b.pack(side="left",padx=(0,6)); self.manage_category_buttons[key]=b
+    actions=ctk.CTkFrame(outer,fg_color="transparent"); actions.grid(row=3,column=0,sticky="ew",padx=36,pady=(0,8))
+    for text,cmd in ((self.t("v5_backup"),lambda:self.backup_profile(profile_name)),(self.t("v5_restore"),lambda:self.restore_profile_backup(profile_name)),(self.t("v5_scan"),lambda:self.scan_profile_metadata(profile_name)),(self.t("v5_check_updates"),lambda:self.check_profile_updates(profile_name)),(self.t("v5_update_all"),lambda:self.update_all_content(profile_name)),(self.t("v5_performance_pack"),lambda:self.install_performance_pack(profile_name))):
+        ctk.CTkButton(actions,text=text,height=34,fg_color=SURFACE_3,hover_color=self.accent,command=cmd).pack(side="left",padx=(0,6))
+    self.manage_list=ctk.CTkScrollableFrame(outer,fg_color=BG,corner_radius=0,scrollbar_button_color=SURFACE_3); self.manage_list.grid(row=4,column=0,sticky="nsew",padx=28,pady=(0,16)); self.manage_list.grid_columnconfigure(0,weight=1); self.render_manage_file_list()
+
+
+def _v5_render_manage(self):
+    if not hasattr(self,"manage_list"): return
+    for child in self.manage_list.winfo_children(): child.destroy()
+    entries=self.profile_manage_entries(self.manage_profile_name,self.manage_category)
+    if not entries:
+        ctk.CTkLabel(self.manage_list,text=self.t("manage_empty"),text_color=MUTED).grid(row=0,column=0,sticky="w",padx=14,pady=18); return
+    for row,entry in enumerate(entries):
+        card=self.card(self.manage_list,12); card.grid(row=row,column=0,sticky="ew",pady=5); card.grid_columnconfigure(1,weight=1)
+        meta=entry.get("meta",{})
+        icon=ctk.CTkLabel(card,text="◇",width=48,height=48,corner_radius=10,fg_color=SURFACE_2,text_color=MUTED,font=ctk.CTkFont(size=18,weight="bold"))
+        icon.grid(row=0,column=0,rowspan=2,padx=(13,10),pady=10)
+        if meta.get("icon_url"):
+            self.run_bg(lambda u=meta.get("icon_url"),w=icon:self.fetch_project_icon(u,w))
+        ctk.CTkLabel(card,text=entry["name"],text_color=TEXT,anchor="w",font=ctk.CTkFont(size=14,weight="bold")).grid(row=0,column=1,sticky="sw",pady=(10,0))
+        detail=entry["detail"]
+        if meta.get("author"): detail=f"{meta['author']}  •  {detail}"
+        ctk.CTkLabel(card,text=detail,text_color=MUTED,anchor="w",font=ctk.CTkFont(size=10)).grid(row=1,column=1,sticky="nw",pady=(2,10))
+        update=self.profile_update_cache.get((self.manage_profile_name,entry.get("rel")))
+        if update:
+            ctk.CTkButton(card,text=self.t("v5_update"),width=90,height=32,fg_color=self.accent,hover_color=self.accent_hover,command=lambda e=entry:self.update_managed_content(self.manage_profile_name,e)).grid(row=0,column=2,rowspan=2,padx=(5,5))
+        ctk.CTkButton(card,text=self.t("manage_delete"),width=80,height=32,fg_color="#3B2028",hover_color="#512933",text_color="#FFB7C0",command=lambda e=entry:self.delete_managed_content(e)).grid(row=0,column=3,rowspan=2,padx=(5,13))
+
+def _v5_delete_managed(self, entry):
+    rel=entry.get("rel")
+    _V49_DELETE_MANAGED(self,entry)
+    if rel and hasattr(self,"manage_profile_name"):
+        data=self.load_content_metadata(self.manage_profile_name); data.pop(rel,None); self.save_content_metadata(self.manage_profile_name,data)
+
+
+def _v5_show_settings(self):
+    self.settings_auto_java=ctk.BooleanVar(value=bool(self.cfg.get("auto_java",True)))
+    self.settings_auto_updates=ctk.BooleanVar(value=bool(self.cfg.get("auto_check_updates",True)))
+    self.settings_discord=ctk.StringVar(value=self.cfg.get("discord_client_id",""))
+    _V49_SHOW_SETTINGS(self)
+    # Discord ID belongs to advanced options.
+    if hasattr(self,"advanced_client_frame"):
+        self.settings_field(self.advanced_client_frame,1,self.t("v5_discord_id"),self.settings_discord)
+        self.toggle_advanced_settings_ui()
+    pages=self.content.winfo_children(); page=pages[0] if pages else None
+    if page is None: return
+    tools=self.card(page); tools.grid(row=4,column=0,sticky="ew",padx=36,pady=(0,16)); tools.grid_columnconfigure(0,weight=1)
+    ctk.CTkLabel(tools,text=self.t("v5_java_manager"),text_color=TEXT,font=ctk.CTkFont(size=16,weight="bold")).grid(row=0,column=0,sticky="w",padx=20,pady=(15,2)); name=self.cfg.get("selected"); profile=self.cfg["profiles"].get(name,{})
+    self.java_manager_label=ctk.CTkLabel(tools,text=self.t("v5_java_required",major=self.required_java_major(profile.get("version"))),text_color=MUTED); self.java_manager_label.grid(row=1,column=0,sticky="w",padx=20)
+    row=ctk.CTkFrame(tools,fg_color="transparent"); row.grid(row=2,column=0,sticky="ew",padx=20,pady=(10,12))
+    ctk.CTkSwitch(row,text=self.t("v5_java_auto"),variable=self.settings_auto_java,progress_color=self.accent).pack(side="left")
+    ctk.CTkButton(row,text=self.t("v5_java_scan"),fg_color=SURFACE_3,hover_color=self.accent,command=lambda:self.run_bg(self.detect_java_installations)).pack(side="left",padx=8)
+    ctk.CTkButton(row,text=self.t("v5_java_select"),fg_color=SURFACE_3,hover_color=self.accent,command=lambda:self.auto_select_java_for_profile()).pack(side="left")
+    ctk.CTkLabel(tools,text=self.t("v5_launcher_updates"),text_color=TEXT,font=ctk.CTkFont(size=16,weight="bold")).grid(row=3,column=0,sticky="w",padx=20,pady=(8,2))
+    upd=ctk.CTkFrame(tools,fg_color="transparent"); upd.grid(row=4,column=0,sticky="ew",padx=20,pady=(5,16))
+    ctk.CTkSwitch(upd,text=self.t("v5_auto_updates"),variable=self.settings_auto_updates,progress_color=self.accent).pack(side="left")
+    ctk.CTkButton(upd,text=self.t("v5_check_launcher"),fg_color=SURFACE_3,hover_color=self.accent,command=lambda:self.run_bg(lambda:self.check_launcher_update(True))).pack(side="left",padx=8)
+
+
+def _v5_save_settings(self):
+    _V49_SAVE_SETTINGS(self)
+    if hasattr(self,"settings_auto_java"): self.cfg["auto_java"]=bool(self.settings_auto_java.get())
+    if hasattr(self,"settings_auto_updates"): self.cfg["auto_check_updates"]=bool(self.settings_auto_updates.get())
+    if hasattr(self,"settings_discord"): self.cfg["discord_client_id"]=self.settings_discord.get().strip()
+    save_config(self.cfg)
+
+
+def _v5_version_tuple(value):
+    return tuple(int(x) for x in re.findall(r"\d+",str(value))[:4])
+
+
+def _v5_check_launcher(self, manual=False):
+    try:
+        repo=self.cfg.get("update_repo","Zallevvz/Outer-Client-exe-und-appimage")
+        r=requests.get(f"https://api.github.com/repos/{repo}/releases/latest",headers={"Accept":"application/vnd.github+json","User-Agent":f"OuterClient/{APP_VERSION}"},timeout=15); r.raise_for_status(); data=r.json(); version=str(data.get("tag_name") or "").lstrip("v")
+        if version and self.version_tuple(version)>self.version_tuple(APP_VERSION): self.events.put(("launcher_update",(version,data.get("html_url"),manual)))
+        elif manual: self.events.put(("launcher_latest",None))
+    except Exception as exc:
+        if manual: self.events.put(("error",f"Update check:\n{exc}"))
+
+
+def _v5_logs_dir(self):
+    path=Path(self.cfg["game_dir"])/"logs"; path.mkdir(parents=True,exist_ok=True); return path
+
+
+def _v5_log(self,text):
+    try:
+        with (self.logs_dir()/"outerclient.log").open("a",encoding="utf-8") as f: f.write(f"[{datetime.now().isoformat(timespec='seconds')}] {text}\n")
+    except Exception: pass
+
+
+def _v5_analyze_crash(self, text, code):
+    low=text.lower()
+    if "unsupportedclassversionerror" in low or "class file version" in low: return self.t("v5_crash_java")
+    if "outofmemoryerror" in low or "java heap space" in low: return self.t("v5_crash_ram")
+    if "mixin apply failed" in low or "requires" in low or "mod resolution" in low: return self.t("v5_crash_mod")
+    return self.t("v5_crash_generic")
+
+
+def _v5_monitor_process(self, process, profile_name, log_path):
+    code=process.wait()
+    try: text=Path(log_path).read_text(encoding="utf-8",errors="ignore")[-30000:]
+    except Exception: text=""
+    self.events.put(("minecraft_exit",(code,self.analyze_crash(text,code),profile_name)))
+
+
+def _v5_launch(self, server_address=None):
+    name,profile=self.selected_profile_data(); self.set_status(self.t("preparing_game")); self.run_bg(lambda:self.install_worker_v5(name,profile["version"],profile["loader"],True,server_address))
+
+
+def _v5_install_worker(self, profile_name, version, loader, launch_after, server_address=None):
+    try:
+        instance=self.profile_instance_dir(profile_name); instance.mkdir(parents=True,exist_ok=True); launch_version=self.install_loader(version,loader,instance); self.events.put(("status",self.t("profile_ready",profile=profile_name)))
+        if launch_after: self.launch_installed_v5(launch_version,instance,profile_name,server_address)
+    except Exception as exc: self.events.put(("error",self.t("profile_error",error=exc)))
+
+
+def _v5_launch_installed(self, launch_version, instance, profile_name, server_address=None):
+    mode=self.cfg.get("account_mode","Offline"); ram=self.profile_ram(profile_name)
+    if mode=="Microsoft":
+        if not self.auth: raise RuntimeError(self.t("microsoft_not_authenticated"))
+        auth=self.refresh_active_microsoft_account(); options={"username":auth.get("name","Player"),"uuid":auth.get("id") or auth.get("uuid",""),"token":auth.get("access_token","")}
+    else:
+        name=self.cfg.get("offline_name","Player").strip() or "Player"; options={"username":name,"uuid":java_offline_uuid(name),"token":"0"}
+    options.update({"jvmArguments":[f"-Xmx{ram}M","-Xms1024M"],"gameDirectory":str(instance),"launcherName":APP_NAME,"launcherVersion":APP_VERSION})
+    if self.cfg.get("auto_java",True): best=self.best_java_for_profile(profile_name); java=best["path"] if best else self.cfg.get("java","")
+    else: java=self.cfg.get("java","")
+    if java: options["executablePath"]=java
+    command=minecraft_launcher_lib.command.get_minecraft_command(launch_version,str(instance),options)
+    if server_address:
+        address=server_address.strip(); host=address; port=None
+        if ":" in address and not address.startswith("["):
+            host,maybe=address.rsplit(":",1); port=maybe if maybe.isdigit() else None
+        command.extend(["--server",host]);
+        if port: command.extend(["--port",port])
+    log_path=self.logs_dir()/"latest-minecraft.log"; log_file=log_path.open("w",encoding="utf-8",errors="ignore")
+    process=subprocess.Popen(command,cwd=str(instance),stdout=log_file,stderr=subprocess.STDOUT); self.minecraft_process=process; self.write_log(f"Launch {profile_name}: {' '.join(map(str,command[:4]))} ..."); self.start_discord_presence(profile_name)
+    self.run_bg(lambda:self.monitor_minecraft_process(process,profile_name,log_path)); self.events.put(("status",self.t("minecraft_launched")))
+
+
+def _v5_discord(self, profile_name):
+    client_id=str(self.cfg.get("discord_client_id","")).strip()
+    if not client_id: return
+    try:
+        from pypresence import Presence
+        if self.discord_rpc is None: self.discord_rpc=Presence(client_id); self.discord_rpc.connect()
+        profile=self.cfg["profiles"].get(profile_name,{}); self.discord_rpc.update(details=f"Minecraft {profile.get('version','')}",state=f"{profile_name} • {profile.get('loader','')}",large_text=f"OuterClient {APP_VERSION}")
+    except Exception: self.discord_rpc=None
+
+
+def _v5_show_servers(self):
+    self.set_active_page("servers"); self.clear_content(); page=self.page(); self.page_header(page,self.t("nav_servers"),self.t("v5_servers_title"),self.t("v5_servers_subtitle"))
+    ctk.CTkButton(page,text=self.t("v5_add_server"),height=42,fg_color=self.accent,hover_color=self.accent_hover,command=self.open_add_server_dialog).grid(row=1,column=0,sticky="w",padx=36,pady=(0,10))
+    for row,server in enumerate(self.cfg.get("servers",[]),start=2):
+        card=self.card(page,13); card.grid(row=row,column=0,sticky="ew",padx=36,pady=5); card.grid_columnconfigure(0,weight=1)
+        ctk.CTkLabel(card,text=server.get("name") or server.get("address"),text_color=TEXT,font=ctk.CTkFont(size=15,weight="bold"),anchor="w").grid(row=0,column=0,sticky="sw",padx=16,pady=(11,0)); ctk.CTkLabel(card,text=f"{server.get('address')} • {server.get('profile')}",text_color=MUTED,anchor="w").grid(row=1,column=0,sticky="nw",padx=16,pady=(2,11))
+        ctk.CTkButton(card,text=self.t("v5_play_server"),width=80,fg_color=self.accent,hover_color=self.accent_hover,command=lambda s=server:self.launch_server_entry(s)).grid(row=0,column=1,rowspan=2,padx=(5,5))
+        ctk.CTkButton(card,text=self.t("delete"),width=75,fg_color="#3B2028",hover_color="#512933",command=lambda s=server:self.remove_server_entry(s)).grid(row=0,column=2,rowspan=2,padx=(5,14))
+
+
+def _v5_add_server_dialog(self):
+    win=ctk.CTkToplevel(self); win.title(self.t("v5_add_server")); win.geometry("520x390"); win.configure(fg_color=BG); win.transient(self)
+    name=ctk.StringVar(); address=ctk.StringVar(); profile=ctk.StringVar(value=self.cfg.get("selected"))
+    box=self.card(win,16); box.pack(fill="both",expand=True,padx=20,pady=20)
+    for label,var in ((self.t("v5_server_name"),name),(self.t("v5_server_address"),address)):
+        ctk.CTkLabel(box,text=label,text_color=MUTED).pack(anchor="w",padx=18,pady=(14,3)); ctk.CTkEntry(box,textvariable=var,height=40,fg_color=SURFACE_2,border_color=BORDER).pack(fill="x",padx=18)
+    ctk.CTkLabel(box,text=self.t("v5_profile_picker"),text_color=MUTED).pack(anchor="w",padx=18,pady=(14,3)); self.themed_option_menu(box,variable=profile,values=list(self.cfg["profiles"])).pack(fill="x",padx=18)
+    def save():
+        if not address.get().strip(): return
+        self.cfg.setdefault("servers",[]).append({"name":name.get().strip() or address.get().strip(),"address":address.get().strip(),"profile":profile.get()}); save_config(self.cfg); win.destroy(); self.show_servers()
+    ctk.CTkButton(box,text=self.t("save"),height=40,fg_color=self.accent,hover_color=self.accent_hover,command=save).pack(anchor="e",padx=18,pady=18)
+
+
+def _v5_remove_server(self, server):
+    servers=self.cfg.get("servers",[]); self.cfg["servers"]=[x for x in servers if x is not server and x!=server]; save_config(self.cfg); self.show_servers()
+
+
+def _v5_launch_server(self, server):
+    profile=server.get("profile");
+    if profile in self.cfg["profiles"]: self.cfg["selected"]=profile; save_config(self.cfg)
+    self.launch(server.get("address"))
+
+
+def _v5_show_diagnostics(self):
+    self.set_active_page("diagnostics"); self.clear_content(); outer=ctk.CTkFrame(self.content,fg_color=BG); outer.grid(row=0,column=0,sticky="nsew"); outer.grid_columnconfigure(0,weight=1); outer.grid_rowconfigure(2,weight=1)
+    head=ctk.CTkFrame(outer,fg_color="transparent"); head.grid(row=0,column=0,sticky="ew",padx=36,pady=(26,10)); ctk.CTkLabel(head,text=self.t("v5_diagnostics_title"),text_color=TEXT,font=ctk.CTkFont(size=29,weight="bold")).pack(anchor="w"); ctk.CTkLabel(head,text=self.t("v5_diagnostics_subtitle"),text_color=MUTED).pack(anchor="w")
+    actions=ctk.CTkFrame(outer,fg_color="transparent"); actions.grid(row=1,column=0,sticky="ew",padx=36,pady=(0,8)); ctk.CTkButton(actions,text=self.t("v5_refresh_logs"),fg_color=SURFACE_3,hover_color=self.accent,command=self.show_diagnostics).pack(side="left"); ctk.CTkButton(actions,text=self.t("v5_copy_report"),fg_color=SURFACE_3,hover_color=self.accent,command=self.copy_diagnostic_report).pack(side="left",padx=7); ctk.CTkButton(actions,text=self.t("v5_open_logs"),fg_color=SURFACE_3,hover_color=self.accent,command=lambda:self.open_profile_folder_path(self.logs_dir())).pack(side="left")
+    self.diagnostics_text=ctk.CTkTextbox(outer,fg_color=SURFACE,border_width=1,border_color=BORDER,text_color="#B9C5D6",font=ctk.CTkFont(family="monospace",size=12)); self.diagnostics_text.grid(row=2,column=0,sticky="nsew",padx=36,pady=(0,18)); log=self.logs_dir()/"latest-minecraft.log"; launcher=self.logs_dir()/"outerclient.log"; text="=== OuterClient ===\n"+(launcher.read_text(encoding="utf-8",errors="ignore")[-12000:] if launcher.exists() else "")+"\n\n=== Minecraft ===\n"+(log.read_text(encoding="utf-8",errors="ignore")[-30000:] if log.exists() else ""); self.diagnostics_text.insert("1.0",text); self.diagnostics_text.configure(state="disabled")
+
+
+def _v5_open_path(self,path):
+    try:
+        if sys.platform.startswith("win"): os.startfile(str(path))
+        elif sys.platform=="darwin": subprocess.Popen(["open",str(path)])
+        else: subprocess.Popen(["xdg-open",str(path)])
+    except Exception as exc: messagebox.showerror("OuterClient",str(exc))
+
+
+def _v5_copy_report(self):
+    name,profile=self.selected_profile_data(); log=self.logs_dir()/"latest-minecraft.log"; tail=log.read_text(encoding="utf-8",errors="ignore")[-12000:] if log.exists() else ""; report=f"OuterClient {APP_VERSION}\nOS: {platform.platform()}\nProfile: {name}\nMinecraft: {profile.get('version')}\nLoader: {profile.get('loader')}\nJava: {self.cfg.get('java')}\nRAM: {self.profile_ram(name)} MB\n\n--- Minecraft log ---\n{tail}"; self.clipboard_clear(); self.clipboard_append(report); self.set_status(self.t("v5_report_copied"))
+
+# Attach v5 methods.
+default_config = _v5_default_config
+load_config = _v5_load_config
+OuterClient.__init__ = _v5_init
+OuterClient.build_shell = _v5_build_shell
+OuterClient.create_profile = _v5_create_profile
+OuterClient.import_profile_bundle = _v5_import_profile
+OuterClient.profile_ram = _v5_profile_ram
+OuterClient.set_profile_preset = _v5_set_profile_preset
+OuterClient.open_profile_picker = _v5_open_profile_picker
+OuterClient.select_profile_from_picker = _v5_select_profile_from_picker
+OuterClient.cycle_home_profile = _v5_cycle_profile
+OuterClient.required_java_major = _v5_java_required
+OuterClient.java_major = _v5_java_version
+OuterClient.detect_java_installations = _v5_detect_java
+OuterClient.best_java_for_profile = _v5_best_java
+OuterClient.auto_select_java_for_profile = _v5_select_java_for_profile
+OuterClient.show_home = _v5_show_home
+OuterClient.set_modrinth_target_profile = _v5_modrinth_target
+OuterClient.show_modrinth = _v5_show_modrinth
+OuterClient.update_modrinth_target_ui = _v5_update_target
+OuterClient.schedule_modrinth_search = _v5_schedule_search
+OuterClient.modrinth_cache_key = _v5_search_cache_key
+OuterClient.search_modrinth = _v5_search_modrinth
+OuterClient.fetch_modrinth_fast = _v5_fetch_modrinth
+OuterClient.fetch_curseforge_mods_fast = _v5_fetch_curseforge
+OuterClient.render_modrinth_results = _v5_render_results
+OuterClient.render_modrinth_page = _v5_render_page
+OuterClient.load_more_modrinth = _v5_load_more
+OuterClient.favorite_key = _v5_favorite_key
+OuterClient.is_favorite = _v5_is_favorite
+OuterClient.toggle_favorite = _v5_toggle_favorite
+OuterClient.show_favorite_projects = _v5_show_favorites
+OuterClient.modrinth_card = _v5_modrinth_card
+OuterClient.content_manifest_path = _v5_content_manifest_path
+OuterClient.load_content_metadata = _v5_load_metadata
+OuterClient.save_content_metadata = _v5_save_metadata
+OuterClient.record_installed_content = _v5_record_content
+OuterClient.profile_manage_entries = _v5_profile_entries
+OuterClient.scan_profile_metadata = _v5_scan_metadata
+OuterClient.scan_profile_metadata_worker = _v5_scan_worker
+OuterClient.check_profile_updates = _v5_check_updates
+OuterClient.check_profile_updates_worker = _v5_check_updates_worker
+OuterClient.update_managed_content = _v5_update_entry
+OuterClient.update_content_worker = _v5_update_worker
+OuterClient.update_all_content = _v5_update_all
+OuterClient.update_all_worker = _v5_update_all_worker
+OuterClient.backup_profile = _v5_backup
+OuterClient.restore_profile_backup = _v5_restore
+OuterClient.install_performance_pack = _v5_performance_pack
+OuterClient.performance_pack_worker = _v5_performance_worker
+OuterClient.show_profile_manager = _v5_show_profile_manager
+OuterClient.render_manage_file_list = _v5_render_manage
+OuterClient.delete_managed_content = _v5_delete_managed
+OuterClient.show_settings = _v5_show_settings
+OuterClient.save_settings = _v5_save_settings
+OuterClient.version_tuple = staticmethod(_v5_version_tuple)
+OuterClient.check_launcher_update = _v5_check_launcher
+OuterClient.logs_dir = _v5_logs_dir
+OuterClient.write_log = _v5_log
+OuterClient.analyze_crash = _v5_analyze_crash
+OuterClient.monitor_minecraft_process = _v5_monitor_process
+OuterClient.launch = _v5_launch
+OuterClient.install_worker_v5 = _v5_install_worker
+OuterClient.launch_installed_v5 = _v5_launch_installed
+OuterClient.start_discord_presence = _v5_discord
+OuterClient.show_servers = _v5_show_servers
+OuterClient.open_add_server_dialog = _v5_add_server_dialog
+OuterClient.remove_server_entry = _v5_remove_server
+OuterClient.launch_server_entry = _v5_launch_server
+OuterClient.show_diagnostics = _v5_show_diagnostics
+OuterClient.open_profile_folder_path = _v5_open_path
+OuterClient.copy_diagnostic_report = _v5_copy_report
+
+# Wrap process_events by teaching the original event loop about v5 events.
+_V49_PROCESS_EVENTS = OuterClient.process_events
+
+def _v5_process_events(self):
+    # Drain only v5-specific events first, put legacy events back for the old loop.
+    legacy=[]
+    try:
+        while True:
+            kind,value=self.events.get_nowait()
+            if kind=="modrinth_fast_results":
+                request_id,category,hits=value
+                if request_id==self.modrinth_request_generation: self.render_modrinth_results(category,hits)
+            elif kind=="java_detected":
+                if hasattr(self,"java_manager_label"):
+                    name=self.cfg.get("selected"); required=self.required_java_major(self.cfg["profiles"][name].get("version")); found=[x for x in value if x["major"]==required]; self.java_manager_label.configure(text=f"{self.t('v5_java_required',major=required)} • {'✓' if found else '!'}")
+            elif kind=="profile_metadata_done":
+                self.set_status(self.t("v5_scanning").replace("…"," ✓"));
+                if hasattr(self,"manage_profile_name") and self.manage_profile_name==value: self.render_manage_file_list()
+            elif kind=="profile_updates_done":
+                profile_name,count=value; self.set_status(self.t("v5_updates_found",count=count) if count else self.t("v5_updates_none"));
+                if hasattr(self,"manage_profile_name") and self.manage_profile_name==profile_name: self.render_manage_file_list()
+            elif kind=="content_updated":
+                if hasattr(self,"manage_profile_name") and self.manage_profile_name==value: self.render_manage_file_list()
+            elif kind=="launcher_update":
+                version,url,manual=value; self.available_launcher_update=(version,url); self.set_status(self.t("v5_new_launcher",version=version));
+                if manual and messagebox.askyesno(self.t("v5_new_launcher",version=version),self.t("v5_open_release")): self.open_external_url(url)
+            elif kind=="launcher_latest":
+                self.set_status(self.t("v5_latest_launcher")); messagebox.showinfo("OuterClient",self.t("v5_latest_launcher"))
+            elif kind=="minecraft_exit":
+                code,hint,profile_name=value; self.write_log(f"Minecraft exit {code} ({profile_name})")
+                if code!=0: messagebox.showerror("Minecraft",self.t("v5_crash",code=code,hint=hint))
+            else:
+                legacy.append((kind,value))
+    except queue.Empty:
+        pass
+    for item in legacy: self.events.put(item)
+    # Call the original loop once; it will schedule itself. We prevent duplicate scheduling below.
+    try:
+        while True:
+            kind,value=self.events.get_nowait()
+            if kind=="status": self.set_status(value)
+            elif kind=="versions": self.version_cache=value
+            elif kind=="oauth_url": self.show_login_link_dialog(value)
+            elif kind=="account":
+                self.store_microsoft_account(value); self.refresh_account_ui(); self.set_status(self.t("signed_in",name=value.get("name","Microsoft"))); self.render_account_manager();
+                dialog=getattr(self,"microsoft_link_dialog",None)
+                if dialog is not None:
+                    try:
+                        if dialog.winfo_exists(): dialog.destroy()
+                    except Exception: pass
+                if self.active_page=="home": self.show_home()
+            elif kind=="modrinth_results":
+                category,hits=value; self.render_modrinth_results(category,hits)
+            elif kind=="curseforge_results": self.render_modrinth_results("Mody",value)
+            elif kind=="curseforge_error":
+                if hasattr(self,"modrinth_results"):
+                    for child in self.modrinth_results.winfo_children(): child.destroy()
+                    ctk.CTkLabel(self.modrinth_results,text=value,text_color=MUTED).grid(row=0,column=0,sticky="w",padx=14,pady=18)
+            elif kind=="project_icon":
+                widget,image=value
+                try:
+                    if widget.winfo_exists(): widget.configure(image=image,text="",fg_color="transparent")
+                except Exception: pass
+            elif kind=="account_head":
+                key,head=value
+                if key==self.account_head_request_key and hasattr(self,"account_head_label"):
+                    try:
+                        self.account_head_image=ctk.CTkImage(light_image=head,dark_image=head,size=(48,48)); self.account_head_label.configure(image=self.account_head_image,text="")
+                    except Exception: pass
+            elif kind=="download_bar":
+                data=value; self.download_text_var.set(data.get("text",self.t("downloading"))); self.download_progress_var.set(data.get("progress",0.0)); q=data.get("queue",0); rem=data.get("remaining"); self.download_queue_var.set(self.t("queue",count=q) if rem is None else self.t("queue_files",queue=q,remaining=rem))
+            elif kind=="download_idle": self.download_text_var.set(self.t("no_downloads")); self.download_progress_var.set(0.0); self.download_queue_var.set(self.t("queue",count=0))
+            elif kind=="modrinth_done":
+                button,title,profile,files_count=value
+                try:
+                    if button.winfo_exists(): button.configure(text=self.t("installed"),state="normal",fg_color=self.secondary,hover_color=self.secondary)
+                except Exception: pass
+                self.set_status(self.t("installed_with_deps",title=title,profile=profile,count=files_count))
+            elif kind=="modpack_done":
+                button,title,profile,files_count=value; self.cfg["selected"]=profile; save_config(self.cfg); self.set_status(self.t("modpack_installed",title=title,profile=profile,count=files_count))
+            elif kind=="modrinth_failed":
+                button,title,error=value
+                try:
+                    if button.winfo_exists(): button.configure(text=self.t("install"),state="normal",fg_color=self.accent,hover_color=self.accent_hover)
+                except Exception: pass
+                messagebox.showerror("Modrinth",f"{title}\n\n{error}")
+            elif kind=="error": messagebox.showerror("OuterClient",value); self.set_status(self.t("generic_error"))
+    except queue.Empty: pass
+    self.after(100,self.process_events)
+
+OuterClient.process_events = _v5_process_events
+
+
+# --- OuterClient 5.0 metadata hotfixes / fast post-install indexing ---
+def _v5_scan_recent_modrinth(self, profile_name, since):
+    try:
+        instance=self.profile_instance_dir(profile_name)
+        files=[p for p in (instance/"mods").glob("*.jar") if p.is_file() and p.stat().st_mtime >= since-2]
+        if not files: return
+        hashes={hashlib.sha1(p.read_bytes()).hexdigest():p for p in files}
+        r=requests.post(
+            f"{MODRINTH_API}/version_files",
+            json={"hashes":list(hashes),"algorithm":"sha1"},
+            headers={"User-Agent":f"OuterClient/{APP_VERSION}"},
+            timeout=25,
+        )
+        r.raise_for_status(); found=r.json()
+        ids=sorted({v.get("project_id") for v in found.values() if v.get("project_id")})
+        projects={}
+        if ids:
+            pr=requests.get(
+                f"{MODRINTH_API}/projects",
+                params={"ids":json.dumps(ids)},
+                headers={"User-Agent":f"OuterClient/{APP_VERSION}"},
+                timeout=20,
+            )
+            pr.raise_for_status(); projects={x.get("id"):x for x in pr.json()}
+        metadata=self.load_content_metadata(profile_name)
+        for sha,ver in found.items():
+            path=hashes.get(sha)
+            if not path: continue
+            project=projects.get(ver.get("project_id"),{})
+            rel=str(path.relative_to(instance)).replace("\\","/")
+            metadata[rel]={
+                "path":rel,"source":"Modrinth","project_id":ver.get("project_id"),
+                "version_id":ver.get("id"),"version_number":ver.get("version_number"),
+                "title":project.get("title") or project.get("slug") or path.stem,
+                "slug":project.get("slug"),"icon_url":project.get("icon_url"),
+                "category":"Mody","updated_at":int(time.time()),
+            }
+        self.save_content_metadata(profile_name,metadata)
+        self.events.put(("profile_metadata_done",profile_name))
+    except Exception:
+        pass
+
+_V49_PROCESS_DOWNLOAD_JOB = OuterClient.process_download_job
+def _v5_process_download_job(self, job):
+    started=time.time()
+    _V49_PROCESS_DOWNLOAD_JOB(self,job)
+    if (
+        job.get("source") != "curseforge"
+        and job.get("category") == "Mody"
+        and job.get("profile_name")
+    ):
+        self.scan_recent_modrinth_files(job["profile_name"],started)
+
+
+def _v5_update_worker_fixed(self, profile_name, entry):
+    try:
+        rel=entry["rel"]; meta=entry.get("meta",{}); update=self.profile_update_cache.get((profile_name,rel))
+        if not update: return
+        old=Path(entry["path"]); dest=old.parent
+        if update["source"]=="Modrinth":
+            latest=update["latest"]; target=self.download_modrinth_version(latest,dest)
+            new_rel=str(Path(target).relative_to(self.profile_instance_dir(profile_name))).replace("\\","/")
+            if Path(target).resolve()!=old.resolve(): old.unlink(missing_ok=True)
+            self.record_installed_content(profile_name,target,{**meta,"source":"Modrinth","version_id":latest.get("id"),"version_number":latest.get("version_number"),"project_id":latest.get("project_id") or meta.get("project_id"),"category":meta.get("category","Mody")})
+        else:
+            latest=update["latest"]; url=self.curseforge_download_url(meta.get("cf_mod_id"),latest); target=dest/(latest.get("fileName") or old.name)
+            self.stream_download(url,target,self.curseforge_hashes(latest)); new_rel=str(Path(target).relative_to(self.profile_instance_dir(profile_name))).replace("\\","/")
+            if Path(target).resolve()!=old.resolve(): old.unlink(missing_ok=True)
+            self.record_installed_content(profile_name,target,{**meta,"source":"CurseForge","file_id":latest.get("id"),"version_number":latest.get("displayName") or latest.get("fileName")})
+        if new_rel != rel:
+            data=self.load_content_metadata(profile_name); data.pop(rel,None); self.save_content_metadata(profile_name,data)
+        self.profile_update_cache.pop((profile_name,rel),None); self.events.put(("content_updated",profile_name))
+    except Exception as exc:
+        self.events.put(("error",f"Update:\n{exc}"))
+
+OuterClient.scan_recent_modrinth_files = _v5_scan_recent_modrinth
+OuterClient.process_download_job = _v5_process_download_job
+OuterClient.update_content_worker = _v5_update_worker_fixed
+
+
+# CurseForge post-install metadata for the main downloaded mod.
+_V49_INSTALL_CURSEFORGE_JOB = OuterClient.install_curseforge_job
+
+def _v5_install_curseforge_job(self, job):
+    started=time.time()
+    _V49_INSTALL_CURSEFORGE_JOB(self, job)
+    try:
+        profile_name=job.get("profile_name")
+        if not profile_name: return
+        folder=self.profile_instance_dir(profile_name)/"mods"
+        recent=sorted(
+            [p for p in folder.glob("*.jar") if p.is_file() and p.stat().st_mtime >= started-2],
+            key=lambda p:p.stat().st_mtime,
+        )
+        if not recent: return
+        target=recent[-1]
+        hit=job.get("hit",{})
+        profile=self.cfg["profiles"][profile_name]
+        files=self.curseforge_get_files(hit.get("cf_mod_id"),profile["version"],profile["loader"])
+        latest=files[0] if files else {}
+        self.record_installed_content(profile_name,target,{
+            "source":"CurseForge",
+            "cf_mod_id":hit.get("cf_mod_id"),
+            "file_id":latest.get("id"),
+            "version_number":latest.get("displayName") or latest.get("fileName"),
+            "title":hit.get("title") or target.stem,
+            "author":hit.get("author") or "",
+            "icon_url":hit.get("icon_url"),
+            "category":"Mody",
+        })
+    except Exception:
+        pass
+
+OuterClient.install_curseforge_job = _v5_install_curseforge_job
 
 
 if __name__ == "__main__":
