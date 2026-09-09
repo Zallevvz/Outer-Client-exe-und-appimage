@@ -1,62 +1,42 @@
-# OuterClient v5.3
+# OuterClient v5.4
 
-## Minecraft 26.x / Java 25
-Naprawiono ważny błąd Java Managera.
+## Minecraft launch
+Launch flow rebuilt around minecraft-launcher-lib repair/install behavior.
 
-v5.2 traktował Minecraft 26.1.x jak starą numerację i wybierał Java 21.
-Minecraft 26.1 wymaga Java 25.
+Before launch:
+- base Minecraft is verified/repaired,
+- the Minecraft-provided Java runtime is installed with the game,
+- the mod loader is found or installed,
+- the local modded version is repaired where possible,
+- the command uses the runtime declared by Minecraft instead of forcibly replacing it with a system Java.
 
-v5.3:
-- Minecraft 26.x → Java 25
-- Minecraft 1.20.5–1.21.x → Java 21
-- Minecraft 1.18–1.20.4 → Java 17
-- starsze → Java 8
+## Microsoft
+OAuth opens in the normal system browser from the Tk main thread.
+Account management remains inside the main OuterClient window.
 
-Przed instalacją/uruchomieniem OuterClient sprawdza właściwą Javę.
-Jeśli jej brakuje, od razu pokazuje czytelny błąd zamiast wisieć na „Przygotowywanie gry”.
+## Desktop shortcut + updates
+Settings → System tools:
+- Add / update desktop shortcut
+- Remove shortcut
 
-## Dolny pasek
-Podczas uruchamiania Minecrafta pasek pobierania przełącza się w animowany tryb:
-`Uruchamianie Minecrafta…`
+Managed target:
+- Windows: `%LOCALAPPDATA%\OuterClient\OuterClient.exe`
+- Linux: `~/.local/share/OuterClient/OuterClient.AppImage`
 
-Po uruchomieniu/niepowodzeniu wraca do normalnego paska pobierania.
+The shortcut points to this stable target. When OuterClient installs a newer release,
+the target is replaced and the shortcut automatically starts the newest version.
 
-## UI
-Naprawiono obie duże puste przestrzenie:
-- Ustawienia
-- Zarządzaj profilem
+## Profile icon
+If no custom icon is selected, the OuterClient logo is saved as the profile icon.
 
-Ustawienia są budowane od nowa w zwartym układzie:
-- Ogólne
-- Narzędzia systemowe
+## Mods / Modrinth
+- Manage Profile reads mods directly from disk before online metadata lookup finishes.
+- Search cards include an in-launcher Details page.
+- Install + version arrow remains available.
 
-Manager profilu ma:
-- nagłówek
-- kategorie
-- akcje
-- listę modów
+## Build
+Actions → Build and Release OuterClient 5.4
 
-bez ważonego pustego wiersza pomiędzy elementami.
-
-## Performance Pack
-Performance Pack został usunięty z:
-- tworzenia profilu,
-- zarządzania profilem.
-
-## Modpacki
-Nowe profile z `.mrpack` zapisują również dokładną wersję loadera, jeśli manifest ją podaje.
-OuterClient nadal próbuje pobrać ikonę projektu i ustawić ją jako ikonę profilu.
-
-## Launch
-- właściwa Java jest wybierana przed instalacją loadera,
-- Java jest przekazywana także do instalatora modloadera,
-- zapisywany jest dokładny loader version z modpacka,
-- pełna komenda startowa trafia do logu,
-- szybki crash pokazuje końcówkę `latest-minecraft.log`.
-
-## GitHub
-Actions → Build and Release OuterClient 5.3 → Run workflow
-
-Pliki:
-- OuterClient-v5.3-x86_64.AppImage
-- OuterClient-v5.3.exe
+Assets:
+- OuterClient-v5.4-x86_64.AppImage
+- OuterClient-v5.4.exe

@@ -29,7 +29,7 @@ from tkinter import filedialog, messagebox
 
 
 APP_NAME = "OuterClient"
-APP_VERSION = "5.3"
+APP_VERSION = "5.4"
 CONFIG_PATH = Path.home() / ".outerclient.json"
 REDIRECT_URI = "http://localhost:8765/callback"
 MICROSOFT_CLIENT_ID = "fb14d1c4-7d14-4a35-99a7-3f921f7a1e77"
@@ -331,6 +331,26 @@ TEXTS = {
         "v53_launch_failed": "Minecraft nie uruchomił się. Kod: {code}\n\nOstatnie linie logu:\n{log}",
         "v53_game_dir": "KATALOG INSTANCJI",
         "v53_settings_saved": "Ustawienia zapisane.",
+        "v54_shortcut": "Skrót OuterClient",
+        "v54_shortcut_desc": "Skrót wskazuje na stałą lokalizację OuterClient, więc po aktualizacji nadal uruchamia najnowszą wersję.",
+        "v54_create_shortcut": "Dodaj / aktualizuj skrót na pulpicie",
+        "v54_remove_shortcut": "Usuń skrót",
+        "v54_shortcut_done": "Skrót OuterClient został zaktualizowany.",
+        "v54_shortcut_removed": "Skrót OuterClient został usunięty.",
+        "v54_download_update": "Pobrać i zainstalować OuterClient {version}?",
+        "v54_update_downloading": "Pobieranie OuterClient {version}…",
+        "v54_update_installed": "OuterClient {version} został pobrany. Skrót wskazuje już na nową wersję.",
+        "v54_no_asset": "Release nie zawiera pliku odpowiedniego dla tego systemu.",
+        "v54_browser_fallback": "Nie udało się automatycznie otworzyć przeglądarki. Link został skopiowany do schowka.",
+        "v54_login_start": "Otwieranie logowania Microsoft w przeglądarce…",
+        "v54_login_wait": "Czekam na zakończenie logowania Microsoft…",
+        "v54_details": "Szczegóły",
+        "v54_back_modrinth": "← Wróć do Modrinth",
+        "v54_project_versions": "Wersje zgodne z profilem",
+        "v54_repairing": "Sprawdzanie plików Minecrafta…",
+        "v54_runtime": "Dołączona Java {major}",
+        "v54_launch_version": "Wersja startowa: {version}",
+        "v54_mods_visible": "Mody są odczytywane bezpośrednio z folderu profilu.",
         "v5_change_profile": "Zmień profil",
         "v5_previous": "Poprzedni",
         "v5_next": "Następny",
@@ -639,6 +659,26 @@ TEXTS = {
         "v53_launch_failed": "Minecraft failed to start. Exit code: {code}\n\nLast log lines:\n{log}",
         "v53_game_dir": "INSTANCE DIRECTORY",
         "v53_settings_saved": "Settings saved.",
+        "v54_shortcut": "OuterClient shortcut",
+        "v54_shortcut_desc": "The shortcut points to a stable OuterClient location, so after an update it still starts the newest version.",
+        "v54_create_shortcut": "Add / update desktop shortcut",
+        "v54_remove_shortcut": "Remove shortcut",
+        "v54_shortcut_done": "The OuterClient shortcut was updated.",
+        "v54_shortcut_removed": "The OuterClient shortcut was removed.",
+        "v54_download_update": "Download and install OuterClient {version}?",
+        "v54_update_downloading": "Downloading OuterClient {version}…",
+        "v54_update_installed": "OuterClient {version} was downloaded. The shortcut now points to the new version.",
+        "v54_no_asset": "The release does not contain a file for this operating system.",
+        "v54_browser_fallback": "The browser could not be opened automatically. The link was copied to the clipboard.",
+        "v54_login_start": "Opening Microsoft sign-in in your browser…",
+        "v54_login_wait": "Waiting for Microsoft sign-in to finish…",
+        "v54_details": "Details",
+        "v54_back_modrinth": "← Back to Modrinth",
+        "v54_project_versions": "Versions compatible with the profile",
+        "v54_repairing": "Checking Minecraft files…",
+        "v54_runtime": "Bundled Java {major}",
+        "v54_launch_version": "Launch version: {version}",
+        "v54_mods_visible": "Mods are read directly from the profile folder.",
         "v5_change_profile": "Change profile",
         "v5_previous": "Previous",
         "v5_next": "Next",
@@ -1029,7 +1069,7 @@ class OuterClient(ctk.CTk):
                 try:
                     import ctypes
                     ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(
-                        "OuterClient.Launcher.5.3"
+                        "OuterClient.Launcher.5.4"
                     )
                 except Exception:
                     pass
@@ -6888,8 +6928,14 @@ def _v5_process_events(self):
             elif kind=="content_updated":
                 if hasattr(self,"manage_profile_name") and self.manage_profile_name==value: self.render_manage_file_list()
             elif kind=="launcher_update":
-                version,url,manual=value; self.available_launcher_update=(version,url); self.set_status(self.t("v5_new_launcher",version=version));
-                if manual and messagebox.askyesno(self.t("v5_new_launcher",version=version),self.t("v5_open_release")): self.open_external_url(url)
+                version,release,manual=value
+                self.available_launcher_update=(version,release)
+                self.set_status(self.t("v5_new_launcher",version=version))
+                self.handle_launcher_update(version,release,manual)
+            elif kind=="launcher_installed":
+                version=value
+                self.set_status(self.t("v54_update_installed",version=version))
+                messagebox.showinfo("OuterClient",self.t("v54_update_installed",version=version))
             elif kind=="launcher_latest":
                 self.set_status(self.t("v5_latest_launcher")); messagebox.showinfo("OuterClient",self.t("v5_latest_launcher"))
             elif kind=="minecraft_exit":
@@ -6905,6 +6951,16 @@ def _v5_process_events(self):
         while True:
             kind,value=self.events.get_nowait()
             if kind=="status": self.set_status(value)
+            elif kind=="open_url":
+                opened=self.open_external_url(value)
+                if not opened:
+                    try:
+                        self.clipboard_clear()
+                        self.clipboard_append(value)
+                        self.update_idletasks()
+                    except Exception:
+                        pass
+                    messagebox.showwarning("OuterClient",self.t("v54_browser_fallback"))
             elif kind=="versions": self.version_cache=value
             elif kind=="oauth_url": self.show_login_link_dialog(value)
             elif kind=="account":
@@ -14638,6 +14694,1260 @@ OuterClient.launch_installed_v5 = _v53_launch_installed
 OuterClient.launch = _v53_launch
 
 OuterClient.install_modpack_job = _v53_install_modpack_job
+
+
+
+# ============================================================
+# OuterClient 5.4 — launch repair / shortcut updater / OAuth
+# ============================================================
+
+_V54_SYSTEM_TOOLS_BASE = OuterClient.show_system_tools_settings
+
+
+def _v54_current_package(self):
+    if sys.platform.startswith("win"):
+        if getattr(sys, "frozen", False):
+            return Path(sys.executable)
+        return None
+
+    appimage = os.environ.get("APPIMAGE")
+    if appimage:
+        path = Path(appimage)
+        if path.exists():
+            return path
+
+    return None
+
+
+def _v54_managed_install_dir(self):
+    if sys.platform.startswith("win"):
+        base = Path(
+            os.environ.get(
+                "LOCALAPPDATA",
+                str(Path.home() / "AppData/Local"),
+            )
+        )
+        return base / "OuterClient"
+
+    return Path.home() / ".local" / "share" / "OuterClient"
+
+
+def _v54_managed_executable(self):
+    root = self.managed_install_dir()
+    if sys.platform.startswith("win"):
+        return root / "OuterClient.exe"
+    return root / "OuterClient.AppImage"
+
+
+def _v54_copy_client_logo(self):
+    root = self.managed_install_dir()
+    root.mkdir(parents=True, exist_ok=True)
+    target = root / "outerclient-logo.png"
+    try:
+        source = asset_path("assets", "outerclient-logo.png")
+        shutil.copy2(source, target)
+    except Exception:
+        pass
+    return target
+
+
+def _v54_write_shortcut(self):
+    root = self.managed_install_dir()
+    root.mkdir(parents=True, exist_ok=True)
+
+    target = self.managed_executable()
+    current = self.current_outerclient_package()
+
+    if current is not None:
+        try:
+            same = current.resolve() == target.resolve()
+        except Exception:
+            same = False
+
+        if not same:
+            temp = target.with_suffix(target.suffix + ".new")
+            shutil.copy2(current, temp)
+            if not sys.platform.startswith("win"):
+                os.chmod(temp, 0o755)
+            os.replace(temp, target)
+
+    if not target.exists():
+        raise RuntimeError("Uruchom tę funkcję z wersji AppImage lub EXE.")
+
+    logo = self.copy_managed_logo()
+
+    if sys.platform.startswith("win"):
+        desktop = Path(
+            os.environ.get("USERPROFILE", str(Path.home()))
+        ) / "Desktop"
+        desktop.mkdir(parents=True, exist_ok=True)
+        shortcut = desktop / "OuterClient.lnk"
+
+        escaped_target = str(target).replace("'", "''")
+        escaped_shortcut = str(shortcut).replace("'", "''")
+        escaped_root = str(root).replace("'", "''")
+
+        command = (
+            "$ws=New-Object -ComObject WScript.Shell;"
+            f"$s=$ws.CreateShortcut('{escaped_shortcut}');"
+            f"$s.TargetPath='{escaped_target}';"
+            f"$s.WorkingDirectory='{escaped_root}';"
+            f"$s.IconLocation='{escaped_target},0';"
+            "$s.Save();"
+        )
+
+        subprocess.run(
+            [
+                "powershell",
+                "-NoProfile",
+                "-ExecutionPolicy",
+                "Bypass",
+                "-Command",
+                command,
+            ],
+            check=True,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+    else:
+        desktop = Path.home() / "Desktop"
+        desktop.mkdir(parents=True, exist_ok=True)
+
+        desktop_file = desktop / "OuterClient.desktop"
+        application_file = (
+            Path.home()
+            / ".local"
+            / "share"
+            / "applications"
+            / "outerclient.desktop"
+        )
+        application_file.parent.mkdir(parents=True, exist_ok=True)
+
+        content = f"""[Desktop Entry]
+Type=Application
+Name=OuterClient
+Comment=Minecraft launcher
+Exec={target}
+Icon={logo}
+Categories=Game;
+Terminal=false
+StartupWMClass=OuterClient
+"""
+        desktop_file.write_text(content, encoding="utf-8")
+        application_file.write_text(content, encoding="utf-8")
+        os.chmod(desktop_file, 0o755)
+        os.chmod(target, 0o755)
+
+    self.cfg["desktop_shortcut"] = True
+    self.cfg["managed_version"] = APP_VERSION
+    save_config(self.cfg)
+    return True
+
+
+def _v54_create_shortcut(self):
+    try:
+        self.write_outerclient_shortcut()
+        self.set_status(self.t("v54_shortcut_done"))
+        messagebox.showinfo("OuterClient", self.t("v54_shortcut_done"))
+    except Exception as exc:
+        messagebox.showerror("OuterClient", str(exc))
+
+
+def _v54_remove_shortcut(self):
+    try:
+        if sys.platform.startswith("win"):
+            desktop = Path(
+                os.environ.get("USERPROFILE", str(Path.home()))
+            ) / "Desktop"
+            (desktop / "OuterClient.lnk").unlink(missing_ok=True)
+        else:
+            (Path.home() / "Desktop" / "OuterClient.desktop").unlink(missing_ok=True)
+            (
+                Path.home()
+                / ".local"
+                / "share"
+                / "applications"
+                / "outerclient.desktop"
+            ).unlink(missing_ok=True)
+
+        self.cfg["desktop_shortcut"] = False
+        save_config(self.cfg)
+        self.set_status(self.t("v54_shortcut_removed"))
+    except Exception as exc:
+        messagebox.showerror("OuterClient", str(exc))
+
+
+def _v54_sync_shortcut(self):
+    if not self.cfg.get("desktop_shortcut", False):
+        return
+
+    current = self.current_outerclient_package()
+    if current is None:
+        return
+
+    managed_version = self.cfg.get("managed_version", "0")
+
+    if self.version_tuple(APP_VERSION) >= self.version_tuple(managed_version):
+        try:
+            self.write_outerclient_shortcut()
+        except Exception:
+            pass
+
+
+def _v54_show_system_tools(self):
+    _V54_SYSTEM_TOOLS_BASE(self)
+
+    pages = self.content.winfo_children()
+    page = pages[0] if pages else None
+    if page is None:
+        return
+
+    shortcut = self.card(page, 14)
+    shortcut.grid(
+        row=4,
+        column=0,
+        sticky="ew",
+        padx=36,
+        pady=(0, 18),
+    )
+    shortcut.grid_columnconfigure(0, weight=1)
+
+    ctk.CTkLabel(
+        shortcut,
+        text=self.t("v54_shortcut"),
+        text_color=TEXT,
+        font=ctk.CTkFont(size=19, weight="bold"),
+    ).grid(
+        row=0,
+        column=0,
+        sticky="w",
+        padx=20,
+        pady=(16, 3),
+    )
+
+    ctk.CTkLabel(
+        shortcut,
+        text=self.t("v54_shortcut_desc"),
+        text_color=MUTED,
+        anchor="w",
+        justify="left",
+        wraplength=760,
+    ).grid(
+        row=1,
+        column=0,
+        sticky="w",
+        padx=20,
+        pady=(0, 12),
+    )
+
+    buttons = ctk.CTkFrame(shortcut, fg_color="transparent")
+    buttons.grid(
+        row=2,
+        column=0,
+        sticky="w",
+        padx=20,
+        pady=(0, 16),
+    )
+
+    ctk.CTkButton(
+        buttons,
+        text=self.t("v54_create_shortcut"),
+        fg_color=self.accent,
+        hover_color=self.accent_hover,
+        command=self.create_desktop_shortcut,
+    ).pack(side="left")
+
+    ctk.CTkButton(
+        buttons,
+        text=self.t("v54_remove_shortcut"),
+        fg_color=SURFACE_3,
+        hover_color="#2B3749",
+        command=self.remove_desktop_shortcut,
+    ).pack(side="left", padx=8)
+
+
+def _v54_check_launcher(self, manual=False):
+    try:
+        repo = self.cfg.get(
+            "update_repo",
+            "Zallevvz/Outer-Client-exe-und-appimage",
+        )
+
+        response = requests.get(
+            f"https://api.github.com/repos/{repo}/releases/latest",
+            headers={
+                "Accept": "application/vnd.github+json",
+                "User-Agent": f"OuterClient/{APP_VERSION}",
+            },
+            timeout=20,
+        )
+        response.raise_for_status()
+        release = response.json()
+        version = str(release.get("tag_name") or "").lstrip("v")
+
+        if version and self.version_tuple(version) > self.version_tuple(APP_VERSION):
+            self.events.put(
+                ("launcher_update", (version, release, manual))
+            )
+        elif manual:
+            self.events.put(("launcher_latest", None))
+
+    except Exception as exc:
+        if manual:
+            self.events.put(("error", f"Update check:\n{exc}"))
+
+
+def _v54_handle_update(self, version, release, manual):
+    if not manual:
+        return
+
+    if not messagebox.askyesno(
+        self.t("v5_new_launcher", version=version),
+        self.t("v54_download_update", version=version),
+    ):
+        return
+
+    self.set_status(
+        self.t("v54_update_downloading", version=version)
+    )
+    self.run_bg(
+        lambda: self.install_launcher_release(version, release)
+    )
+
+
+def _v54_release_asset(self, release):
+    assets = release.get("assets", [])
+
+    if sys.platform.startswith("win"):
+        candidates = [
+            asset
+            for asset in assets
+            if str(asset.get("name", "")).lower().endswith(".exe")
+        ]
+    else:
+        candidates = [
+            asset
+            for asset in assets
+            if str(asset.get("name", "")).lower().endswith(".appimage")
+        ]
+
+    return candidates[0] if candidates else None
+
+
+def _v54_install_release(self, version, release):
+    try:
+        asset = self.release_asset_for_platform(release)
+        if not asset:
+            raise RuntimeError(self.t("v54_no_asset"))
+
+        url = asset.get("browser_download_url")
+        if not url:
+            raise RuntimeError(self.t("v54_no_asset"))
+
+        root = self.managed_install_dir()
+        root.mkdir(parents=True, exist_ok=True)
+
+        target = self.managed_executable()
+        temp = root / (target.name + ".download")
+
+        with requests.get(
+            url,
+            stream=True,
+            timeout=90,
+            headers={"User-Agent": f"OuterClient/{APP_VERSION}"},
+        ) as response:
+            response.raise_for_status()
+            with temp.open("wb") as handle:
+                for chunk in response.iter_content(chunk_size=1024 * 1024):
+                    if chunk:
+                        handle.write(chunk)
+
+        if not sys.platform.startswith("win"):
+            os.chmod(temp, 0o755)
+            os.replace(temp, target)
+
+            self.cfg["managed_version"] = version
+            self.cfg["desktop_shortcut"] = True
+            save_config(self.cfg)
+
+            self.write_outerclient_shortcut()
+            self.events.put(("launcher_installed", version))
+            return
+
+        current = self.current_outerclient_package()
+        try:
+            same_target = (
+                current is not None
+                and current.resolve() == target.resolve()
+            )
+        except Exception:
+            same_target = False
+
+        if not same_target:
+            os.replace(temp, target)
+            self.cfg["managed_version"] = version
+            self.cfg["desktop_shortcut"] = True
+            save_config(self.cfg)
+            self.write_outerclient_shortcut()
+            self.events.put(("launcher_installed", version))
+            return
+
+        script = root / "update_outerclient.cmd"
+        script.write_text(
+            "@echo off\n"
+            "timeout /t 2 /nobreak >nul\n"
+            f'move /Y "{temp}" "{target}" >nul\n'
+            f'start "" "{target}"\n'
+            'del "%~f0"\n',
+            encoding="utf-8",
+        )
+
+        self.cfg["managed_version"] = version
+        self.cfg["desktop_shortcut"] = True
+        save_config(self.cfg)
+
+        subprocess.Popen(
+            ["cmd", "/c", str(script)],
+            creationflags=(
+                getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0)
+                | getattr(subprocess, "DETACHED_PROCESS", 0)
+            ),
+            close_fds=True,
+        )
+
+        self.after(500, self.destroy)
+
+    except Exception as exc:
+        self.events.put(("error", f"Update:\n{exc}"))
+
+
+def _v54_login_worker(self, client_id):
+    server = None
+    callback_port = None
+
+    try:
+        CallbackHandler.callback_url = None
+
+        try:
+            server = ReusableHTTPServer(
+                ("", 8765),
+                CallbackHandler,
+            )
+            callback_port = 8765
+        except OSError:
+            server = ReusableHTTPServer(
+                ("", 0),
+                CallbackHandler,
+            )
+            callback_port = int(server.server_address[1])
+
+        server.timeout = 1
+        redirect_uri = f"http://localhost:{callback_port}/callback"
+
+        url, state, verifier = (
+            minecraft_launcher_lib.microsoft_account.get_secure_login_data(
+                client_id,
+                redirect_uri,
+            )
+        )
+
+        if "prompt=" not in url:
+            separator = "&" if "?" in url else "?"
+            url = f"{url}{separator}prompt=select_account"
+
+        self.events.put(("status", self.t("v54_login_start")))
+        self.events.put(("open_url", url))
+        self.events.put(("status", self.t("v54_login_wait")))
+
+        deadline = time.time() + 600
+        while time.time() < deadline and not CallbackHandler.callback_url:
+            server.handle_request()
+
+        if not CallbackHandler.callback_url:
+            raise TimeoutError("Microsoft login timed out.")
+
+        code = (
+            minecraft_launcher_lib.microsoft_account.parse_auth_code_url(
+                CallbackHandler.callback_url,
+                state,
+            )
+        )
+
+        auth = (
+            minecraft_launcher_lib.microsoft_account.complete_login(
+                client_id,
+                None,
+                redirect_uri,
+                code,
+                verifier,
+            )
+        )
+
+        auth["_outerclient_redirect_uri"] = redirect_uri
+        self.events.put(("account", auth))
+
+    except Exception as exc:
+        self.events.put(
+            (
+                "error",
+                (
+                    "Microsoft login:\n"
+                    f"OuterClient {APP_VERSION}\n"
+                    f"Callback port: {callback_port or 'not-bound'}\n"
+                    f"{exc}"
+                ),
+            )
+        )
+
+    finally:
+        self.microsoft_login_in_progress = False
+        if server:
+            try:
+                server.server_close()
+            except Exception:
+                pass
+
+
+def _v54_default_profile_icon(self, profile_name):
+    target = self.profile_icon_path(profile_name)
+    if target.exists():
+        return
+
+    try:
+        source = asset_path("assets", "outerclient-logo.png")
+        self.save_profile_icon_from_file(profile_name, source)
+    except Exception:
+        pass
+
+
+def _v54_create_profile(
+    self,
+    name,
+    version,
+    loader,
+    icon_path=None,
+):
+    name = str(name or "").strip()
+
+    if not name:
+        messagebox.showwarning(
+            self.t("profile_title"),
+            self.t("profile_name_empty"),
+        )
+        return
+
+    if name in self.cfg["profiles"]:
+        messagebox.showwarning(
+            self.t("profile_title"),
+            self.t("profile_exists"),
+        )
+        return
+
+    self.cfg["profiles"][name] = {
+        "version": version,
+        "loader": loader,
+        "preset": "Balanced",
+        "ram": 0,
+    }
+
+    self.cfg["selected"] = name
+    save_config(self.cfg)
+
+    self.profile_instance_dir(name).mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+
+    if icon_path:
+        self.save_profile_icon_from_file(name, icon_path)
+    else:
+        self.ensure_default_profile_icon(name)
+
+    self.show_profile_manager(name)
+
+
+def _v54_vanilla_runtime(
+    self,
+    minecraft_version,
+    instance,
+):
+    try:
+        info = (
+            minecraft_launcher_lib.runtime.get_version_runtime_information(
+                minecraft_version,
+                str(instance),
+            )
+        )
+
+        if not info:
+            return None
+
+        runtime_name = info.get("name")
+        if not runtime_name:
+            return None
+
+        executable = (
+            minecraft_launcher_lib.runtime.get_executable_path(
+                runtime_name,
+                str(instance),
+            )
+        )
+
+        if not executable:
+            return None
+
+        return {
+            "path": str(executable),
+            "major": int(info.get("javaMajorVersion", 0) or 0),
+            "runtime": runtime_name,
+        }
+
+    except Exception:
+        return None
+
+
+def _v54_prepare_profile(self, profile_name):
+    profile = self.cfg["profiles"][profile_name]
+    instance = self.profile_instance_dir(profile_name)
+    instance.mkdir(parents=True, exist_ok=True)
+
+    self.events.put(("status", self.t("v54_repairing")))
+
+    # Verify base game and download the Minecraft-provided runtime.
+    minecraft_launcher_lib.install.install_minecraft_version(
+        profile["version"],
+        str(instance),
+    )
+
+    runtime = self.vanilla_runtime_for_profile(
+        profile["version"],
+        instance,
+    )
+
+    loader = profile.get("loader", "Vanilla")
+
+    if loader == "Vanilla":
+        launch_version = profile["version"]
+    else:
+        launch_version = self.installed_launch_version(profile_name)
+
+        if not launch_version:
+            mod_loader = (
+                minecraft_launcher_lib.mod_loader.get_mod_loader(
+                    loader.lower()
+                )
+            )
+
+            kwargs = {}
+            loader_version = profile.get("loader_version")
+
+            if loader_version:
+                kwargs["loader_version"] = loader_version
+            if runtime:
+                kwargs["java"] = runtime["path"]
+
+            launch_version = mod_loader.install(
+                profile["version"],
+                str(instance),
+                **kwargs,
+            )
+
+        # Local modded versions can be repaired through their local version json.
+        try:
+            minecraft_launcher_lib.install.install_minecraft_version(
+                launch_version,
+                str(instance),
+            )
+        except Exception as exc:
+            self.write_log(
+                "Modded version repair skipped: " + str(exc)
+            )
+
+    profile["launch_version"] = launch_version
+    save_config(self.cfg)
+
+    return instance, launch_version, runtime
+
+
+def _v54_launch_installed(
+    self,
+    launch_version,
+    instance,
+    profile_name,
+    server_address=None,
+    runtime=None,
+):
+    mode = self.cfg.get("account_mode", "Offline")
+    ram = self.profile_ram(profile_name)
+
+    if mode == "Microsoft":
+        if not self.auth:
+            raise RuntimeError(
+                self.t("microsoft_not_authenticated")
+            )
+
+        auth = self.refresh_active_microsoft_account()
+        options = {
+            "username": auth.get("name", "Player"),
+            "uuid": auth.get("id") or auth.get("uuid", ""),
+            "token": auth.get("access_token", ""),
+        }
+    else:
+        name = self.cfg.get("offline_name", "Player").strip() or "Player"
+        options = {
+            "username": name,
+            "uuid": java_offline_uuid(name),
+            "token": "0",
+        }
+
+    options.update(
+        {
+            "jvmArguments": [
+                f"-Xmx{ram}M",
+                "-Xms1024M",
+            ],
+            "gameDirectory": str(instance),
+            "launcherName": APP_NAME,
+            "launcherVersion": APP_VERSION,
+        }
+    )
+
+    # Do not force system Java over Minecraft's own runtime.
+    if runtime and runtime.get("path"):
+        options["defaultExecutablePath"] = runtime["path"]
+    else:
+        best = self.best_java_for_profile(profile_name)
+        if best:
+            options["defaultExecutablePath"] = best["path"]
+
+    if server_address:
+        address = server_address.strip()
+        host = address
+        port = None
+
+        if ":" in address and not address.startswith("["):
+            host, maybe_port = address.rsplit(":", 1)
+            if maybe_port.isdigit():
+                port = maybe_port
+
+        options["server"] = host
+        if port:
+            options["port"] = port
+
+    command = (
+        minecraft_launcher_lib.command.get_minecraft_command(
+            launch_version,
+            str(instance),
+            options,
+        )
+    )
+
+    if not command:
+        raise RuntimeError("Minecraft command is empty.")
+
+    command = [str(item) for item in command]
+
+    self.write_log(
+        self.t(
+            "v54_launch_version",
+            version=launch_version,
+        )
+    )
+
+    if runtime:
+        self.write_log(
+            self.t(
+                "v54_runtime",
+                major=runtime.get("major", "?"),
+            )
+            + " • "
+            + runtime.get("path", "")
+        )
+
+    self.write_log(
+        "Command: "
+        + (
+            subprocess.list2cmdline(command)
+            if sys.platform.startswith("win")
+            else " ".join(command)
+        )
+    )
+
+    log_path = self.logs_dir() / "latest-minecraft.log"
+    log_file = log_path.open(
+        "w",
+        encoding="utf-8",
+        errors="ignore",
+    )
+    self.minecraft_log_handle = log_file
+
+    env = os.environ.copy()
+
+    try:
+        java_command = Path(command[0])
+        if java_command.exists():
+            env["JAVA_HOME"] = str(java_command.parent.parent)
+    except Exception:
+        pass
+
+    creationflags = 0
+    if sys.platform.startswith("win"):
+        creationflags = getattr(
+            subprocess,
+            "CREATE_NEW_PROCESS_GROUP",
+            0,
+        )
+
+    process = subprocess.Popen(
+        command,
+        cwd=str(instance),
+        stdout=log_file,
+        stderr=subprocess.STDOUT,
+        env=env,
+        shell=False,
+        creationflags=creationflags,
+    )
+
+    self.minecraft_process = process
+
+    time.sleep(2.5)
+    code = process.poll()
+
+    if code is not None:
+        try:
+            log_file.flush()
+        except Exception:
+            pass
+
+        try:
+            tail = log_path.read_text(
+                encoding="utf-8",
+                errors="ignore",
+            )[-9000:]
+        except Exception:
+            tail = f"Exit code: {code}"
+
+        raise RuntimeError(
+            self.t(
+                "v53_launch_failed",
+                code=code,
+                log=tail,
+            )
+        )
+
+    self.start_discord_presence(profile_name)
+
+    self.run_bg(
+        lambda: self.monitor_minecraft_process(
+            process,
+            profile_name,
+            log_path,
+        )
+    )
+
+    self.events.put(
+        ("status", self.t("minecraft_launched"))
+    )
+
+
+def _v54_launch(self, server_address=None):
+    process = getattr(self, "minecraft_process", None)
+
+    if process is not None and process.poll() is None:
+        self.set_status(self.t("v52_already_running"))
+        return
+
+    profile_name = self.cfg.get("selected")
+    if profile_name not in self.cfg["profiles"]:
+        return
+
+    self.set_status(self.t("v53_game_loading"))
+
+    def worker():
+        try:
+            instance, launch_version, runtime = (
+                self.prepare_profile_for_launch(profile_name)
+            )
+
+            self.launch_installed_v54(
+                launch_version,
+                instance,
+                profile_name,
+                server_address,
+                runtime,
+            )
+
+        except Exception as exc:
+            self.events.put(
+                (
+                    "error",
+                    self.t(
+                        "profile_error",
+                        error=exc,
+                    ),
+                )
+            )
+
+    self.run_bg(worker)
+
+
+def _v54_show_project_details(self, hit, category):
+    self.set_active_page("modrinth")
+    self.clear_content()
+
+    page = self.page()
+
+    ctk.CTkButton(
+        page,
+        text=self.t("v54_back_modrinth"),
+        width=160,
+        height=38,
+        fg_color=SURFACE_3,
+        hover_color=self.accent,
+        command=self.show_modrinth,
+    ).grid(
+        row=0,
+        column=0,
+        sticky="w",
+        padx=36,
+        pady=(28, 12),
+    )
+
+    card = self.card(page, 18)
+    card.grid(
+        row=1,
+        column=0,
+        sticky="ew",
+        padx=36,
+        pady=(0, 12),
+    )
+    card.grid_columnconfigure(1, weight=1)
+
+    icon = ctk.CTkLabel(
+        card,
+        text="◇",
+        width=88,
+        height=88,
+        corner_radius=16,
+        fg_color=SURFACE_2,
+        text_color=MUTED,
+        font=ctk.CTkFont(size=28, weight="bold"),
+    )
+    icon.grid(
+        row=0,
+        column=0,
+        rowspan=3,
+        padx=18,
+        pady=18,
+    )
+
+    if hit.get("icon_url"):
+        self.run_bg(
+            lambda u=hit.get("icon_url"), w=icon:
+                self.fetch_project_icon(u, w)
+        )
+
+    title = hit.get("title") or hit.get("slug") or self.t("unnamed")
+
+    ctk.CTkLabel(
+        card,
+        text=title,
+        text_color=TEXT,
+        font=ctk.CTkFont(size=24, weight="bold"),
+        anchor="w",
+    ).grid(
+        row=0,
+        column=1,
+        sticky="sw",
+        pady=(18, 0),
+    )
+
+    ctk.CTkLabel(
+        card,
+        text=hit.get("author") or self.t("unknown_author"),
+        text_color=MUTED,
+        anchor="w",
+    ).grid(
+        row=1,
+        column=1,
+        sticky="w",
+    )
+
+    ctk.CTkLabel(
+        card,
+        text=hit.get("description") or self.t("no_description"),
+        text_color="#A8B3C2",
+        anchor="w",
+        justify="left",
+        wraplength=760,
+    ).grid(
+        row=2,
+        column=1,
+        sticky="nw",
+        pady=(6, 18),
+    )
+
+    actions = ctk.CTkFrame(card, fg_color="transparent")
+    actions.grid(
+        row=0,
+        column=2,
+        rowspan=3,
+        padx=18,
+    )
+
+    install = ctk.CTkButton(
+        actions,
+        text=(
+            self.t("install_pack")
+            if category == "Modpacki"
+            else self.t("install")
+        ),
+        width=130,
+        height=40,
+        fg_color=self.accent,
+        hover_color=self.accent_hover,
+    )
+    install.pack(pady=(0, 6))
+
+    if hit.get("_source") == "curseforge":
+        install.configure(
+            command=lambda:
+                self.enqueue_curseforge_install(hit, install)
+        )
+    else:
+        install.configure(
+            command=lambda:
+                self.enqueue_modrinth_install(hit, category, install)
+        )
+
+    ctk.CTkButton(
+        actions,
+        text=self.t("open"),
+        width=130,
+        height=36,
+        fg_color=SURFACE_3,
+        hover_color=self.accent,
+        command=lambda:
+            self.open_external_url(
+                hit.get("website_url")
+                if hit.get("_source") == "curseforge"
+                else (
+                    "https://modrinth.com/"
+                    + MODRINTH_TABS.get(category, {}).get("path", "mod")
+                    + "/"
+                    + (hit.get("slug") or "")
+                )
+            ),
+    ).pack()
+
+
+def _v54_modrinth_card(self, row, hit, category):
+    card = self.card(self.modrinth_results)
+    card.grid(
+        row=row,
+        column=0,
+        sticky="ew",
+        padx=8,
+        pady=6,
+    )
+    card.grid_columnconfigure(1, weight=1)
+
+    icon = ctk.CTkLabel(
+        card,
+        text="◇",
+        width=64,
+        height=64,
+        corner_radius=13,
+        fg_color=SURFACE_2,
+        text_color=MUTED,
+        font=ctk.CTkFont(size=23, weight="bold"),
+    )
+    icon.grid(
+        row=0,
+        column=0,
+        rowspan=3,
+        padx=(15, 13),
+        pady=15,
+    )
+
+    if hit.get("icon_url"):
+        self.run_bg(
+            lambda u=hit["icon_url"], w=icon:
+                self.fetch_project_icon(u, w)
+        )
+
+    title = hit.get("title") or hit.get("slug") or self.t("unnamed")
+    author = hit.get("author") or self.t("unknown_author")
+    desc = hit.get("description") or self.t("no_description")
+
+    ctk.CTkLabel(
+        card,
+        text=title,
+        text_color=TEXT,
+        anchor="w",
+        font=ctk.CTkFont(size=16, weight="bold"),
+    ).grid(
+        row=0,
+        column=1,
+        sticky="sw",
+        pady=(13, 0),
+    )
+
+    ctk.CTkLabel(
+        card,
+        text=author,
+        text_color=MUTED,
+        anchor="w",
+    ).grid(
+        row=1,
+        column=1,
+        sticky="w",
+        pady=(2, 0),
+    )
+
+    ctk.CTkLabel(
+        card,
+        text=desc,
+        text_color="#A8B3C2",
+        anchor="w",
+        justify="left",
+        wraplength=570,
+    ).grid(
+        row=2,
+        column=1,
+        sticky="nw",
+        pady=(4, 13),
+    )
+
+    actions = ctk.CTkFrame(card, fg_color="transparent")
+    actions.grid(
+        row=0,
+        column=2,
+        rowspan=3,
+        padx=14,
+    )
+
+    install_row = ctk.CTkFrame(actions, fg_color="transparent")
+    install_row.pack(pady=(0, 5))
+
+    install = ctk.CTkButton(
+        install_row,
+        text=(
+            self.t("install_pack")
+            if category == "Modpacki"
+            else self.t("install")
+        ),
+        width=92,
+        height=36,
+        fg_color=self.accent,
+        hover_color=self.accent_hover,
+    )
+    install.pack(side="left")
+
+    if hit.get("_source") == "curseforge":
+        install.configure(
+            command=lambda h=hit, b=install:
+                self.enqueue_curseforge_install(h, b)
+        )
+    else:
+        install.configure(
+            command=lambda h=hit, c=category, b=install:
+                self.enqueue_modrinth_install(h, c, b)
+        )
+
+        if category != "Modpacki":
+            ctk.CTkButton(
+                install_row,
+                text="⌄",
+                width=32,
+                height=36,
+                fg_color=self.accent,
+                hover_color=self.accent_hover,
+                command=lambda c=card, h=hit, cat=category, b=install:
+                    self.toggle_modrinth_versions(c, h, cat, b),
+            ).pack(
+                side="left",
+                padx=(3, 0),
+            )
+
+    ctk.CTkButton(
+        actions,
+        text=self.t("v54_details"),
+        width=127,
+        height=34,
+        fg_color=SURFACE_3,
+        hover_color=self.accent,
+        command=lambda h=hit, c=category:
+            self.show_project_details(h, c),
+    ).pack(pady=(0, 5))
+
+    ctk.CTkButton(
+        actions,
+        text=(
+            "★"
+            if self.is_favorite(hit)
+            else "☆"
+        ),
+        width=127,
+        height=32,
+        fg_color=SURFACE_3,
+        hover_color=self.accent,
+        command=lambda h=hit, c=category:
+            self.toggle_favorite(h, c),
+    ).pack()
+
+
+def _v54_profile_manager(self, profile_name):
+    _v53_show_profile_manager(self, profile_name)
+    self.set_status(self.t("v54_mods_visible"))
+
+
+def _v54_startup_tasks(self):
+    self.cfg.setdefault("desktop_shortcut", False)
+    self.cfg.setdefault("managed_version", "0")
+
+    if self.cfg.get("desktop_shortcut", False):
+        self.run_bg(self.sync_managed_shortcut)
+
+    if self.cfg.get("auto_check_updates", True):
+        self.run_bg(
+            lambda: self.check_launcher_update(False)
+        )
+
+    self.run_bg(self.detect_java_installations)
+
+
+OuterClient.current_outerclient_package = _v54_current_package
+OuterClient.managed_install_dir = _v54_managed_install_dir
+OuterClient.managed_executable = _v54_managed_executable
+OuterClient.copy_managed_logo = _v54_copy_client_logo
+OuterClient.write_outerclient_shortcut = _v54_write_shortcut
+OuterClient.create_desktop_shortcut = _v54_create_shortcut
+OuterClient.remove_desktop_shortcut = _v54_remove_shortcut
+OuterClient.sync_managed_shortcut = _v54_sync_shortcut
+
+OuterClient.show_system_tools_settings = _v54_show_system_tools
+OuterClient.check_launcher_update = _v54_check_launcher
+OuterClient.handle_launcher_update = _v54_handle_update
+OuterClient.release_asset_for_platform = _v54_release_asset
+OuterClient.install_launcher_release = _v54_install_release
+
+OuterClient.login_worker = _v54_login_worker
+
+OuterClient.ensure_default_profile_icon = _v54_default_profile_icon
+OuterClient.create_profile_v53 = _v54_create_profile
+
+OuterClient.vanilla_runtime_for_profile = _v54_vanilla_runtime
+OuterClient.prepare_profile_for_launch = _v54_prepare_profile
+OuterClient.launch_installed_v54 = _v54_launch_installed
+OuterClient.launch = _v54_launch
+
+OuterClient.show_project_details = _v54_show_project_details
+OuterClient.modrinth_card = _v54_modrinth_card
+OuterClient.show_profile_manager = _v54_profile_manager
+
+def _v5_startup_tasks(self):
+    return _v54_startup_tasks(self)
 
 
 
