@@ -26,7 +26,7 @@ from tkinter import filedialog, messagebox
 
 
 APP_NAME = "OuterClient"
-APP_VERSION = "4.9.3"
+APP_VERSION = "4.9.4"
 CONFIG_PATH = Path.home() / ".outerclient.json"
 REDIRECT_URI = "http://localhost:8765/callback"
 MICROSOFT_CLIENT_ID = "fb14d1c4-7d14-4a35-99a7-3f921f7a1e77"
@@ -277,6 +277,11 @@ TEXTS = {
         "refresh_failed": "Sesja Microsoft wygasła. Zaloguj to konto ponownie.",
         "login_already_running": "Logowanie Microsoft jest już uruchomione.",
         "login_callback_ready": "Microsoft callback gotowy: localhost:{port}",
+        "login_link_title": "Logowanie Microsoft",
+        "login_link_help": "Jeśli przeglądarka nie otworzyła się automatycznie, kliknij „Otwórz przeglądarkę” albo skopiuj link.",
+        "open_browser": "Otwórz przeglądarkę",
+        "copy_link": "Kopiuj link",
+        "link_copied": "Link skopiowany.",
     },
     "en": {
         "nav_play": "Play",
@@ -475,6 +480,11 @@ TEXTS = {
         "refresh_failed": "The Microsoft session expired. Sign in to this account again.",
         "login_already_running": "Microsoft sign-in is already running.",
         "login_callback_ready": "Microsoft callback ready: localhost:{port}",
+        "login_link_title": "Microsoft sign-in",
+        "login_link_help": "If the browser did not open automatically, click “Open browser” or copy the link.",
+        "open_browser": "Open browser",
+        "copy_link": "Copy link",
+        "link_copied": "Link copied.",
     },
 }
 
@@ -723,7 +733,10 @@ class CallbackHandler(BaseHTTPRequestHandler):
     callback_url = None
 
     def do_GET(self):
-        CallbackHandler.callback_url = "http://localhost:8765" + self.path
+        host = self.headers.get("Host", "localhost")
+        CallbackHandler.callback_url = (
+            f"http://{host}{self.path}"
+        )
         self.send_response(200)
         self.send_header("Content-Type", "text/html; charset=utf-8")
         self.end_headers()
@@ -740,6 +753,10 @@ class CallbackHandler(BaseHTTPRequestHandler):
 
     def log_message(self, *_):
         pass
+
+
+class ReusableHTTPServer(HTTPServer):
+    allow_reuse_address = True
 
 
 class OuterClient(ctk.CTk):
@@ -799,7 +816,7 @@ class OuterClient(ctk.CTk):
                 try:
                     import ctypes
                     ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(
-                        "OuterClient.Launcher.4.9.3"
+                        "OuterClient.Launcher.4.9.4"
                     )
                 except Exception:
                     pass
@@ -4551,12 +4568,78 @@ class OuterClient(ctk.CTk):
     def select_account_mode_settings(self, mode):
         if mode not in ("Offline", "Microsoft"):
             return
-        self.settings_mode.set(mode)
-        for value, button in self.account_mode_buttons.items():
-            selected = value == mode
+
+        if mode == "Offline":
+            self.settings_mode.set("Offline")
+            self.cfg["account_mode"] = "Offline"
+            save_config(self.cfg)
+            self.refresh_account_ui()
+
+        else:
+            active = (
+                active_microsoft_account_from_config(
+                    self.cfg
+                )
+            )
+
+            if active is not None:
+                self.settings_mode.set(
+                    "Microsoft"
+                )
+                self.cfg["account_mode"] = (
+                    "Microsoft"
+                )
+                self.cfg["account"] = active
+                self.auth = active
+                save_config(self.cfg)
+                self.refresh_account_ui()
+            else:
+                accounts = self.cfg.get(
+                    "microsoft_accounts",
+                    []
+                )
+
+                if accounts:
+                    account = accounts[0]
+                    self.cfg[
+                        "selected_microsoft_account"
+                    ] = self.account_key(account)
+                    self.cfg["account"] = account
+                    self.cfg["account_mode"] = (
+                        "Microsoft"
+                    )
+                    self.auth = account
+                    self.settings_mode.set(
+                        "Microsoft"
+                    )
+                    save_config(self.cfg)
+                    self.refresh_account_ui()
+                else:
+                    # No account yet: immediately start login.
+                    self.settings_mode.set(
+                        "Offline"
+                    )
+                    self.open_account_manager()
+                    self.login()
+
+        for value, button in (
+            self.account_mode_buttons.items()
+        ):
+            selected = (
+                self.settings_mode.get()
+                == value
+            )
             button.configure(
-                fg_color=self.accent if selected else SURFACE_2,
-                border_color=self.accent if selected else BORDER,
+                fg_color=(
+                    self.accent
+                    if selected
+                    else SURFACE_2
+                ),
+                border_color=(
+                    self.accent
+                    if selected
+                    else BORDER
+                ),
             )
 
     def toggle_advanced_settings_ui(self):
@@ -4648,6 +4731,157 @@ class OuterClient(ctk.CTk):
                 if self.cfg.get("language") == "pl"
                 else "Settings saved."
             )
+
+    def open_external_url(self, url):
+        if sys.platform.startswith("linux"):
+            try:
+                subprocess.Popen(
+                    ["xdg-open", url],
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                    start_new_session=True,
+                )
+                return True
+            except Exception:
+                pass
+
+        try:
+            return bool(
+                webbrowser.open(
+                    url,
+                    new=2,
+                    autoraise=True,
+                )
+            )
+        except Exception:
+            return False
+
+    def copy_login_url(self, url):
+        try:
+            self.clipboard_clear()
+            self.clipboard_append(url)
+            self.update_idletasks()
+            self.set_status(
+                self.t("link_copied")
+            )
+        except Exception:
+            pass
+
+    def show_login_link_dialog(self, url):
+        old = getattr(
+            self,
+            "microsoft_link_dialog",
+            None,
+        )
+        if old is not None:
+            try:
+                if old.winfo_exists():
+                    old.destroy()
+            except Exception:
+                pass
+
+        win = ctk.CTkToplevel(self)
+        self.microsoft_link_dialog = win
+        win.title(self.t("login_link_title"))
+        win.geometry("700x340")
+        win.minsize(620, 310)
+        win.configure(fg_color=BG)
+        win.transient(self)
+
+        box = ctk.CTkFrame(
+            win,
+            fg_color=SURFACE,
+            corner_radius=16,
+            border_width=1,
+            border_color=BORDER,
+        )
+        box.pack(
+            fill="both",
+            expand=True,
+            padx=20,
+            pady=20,
+        )
+        box.grid_columnconfigure(0, weight=1)
+
+        ctk.CTkLabel(
+            box,
+            text=self.t("login_link_title"),
+            text_color=TEXT,
+            font=ctk.CTkFont(
+                size=22,
+                weight="bold",
+            ),
+        ).grid(
+            row=0,
+            column=0,
+            sticky="w",
+            padx=20,
+            pady=(20, 4),
+        )
+
+        ctk.CTkLabel(
+            box,
+            text=self.t("login_link_help"),
+            text_color=MUTED,
+            justify="left",
+            wraplength=630,
+        ).grid(
+            row=1,
+            column=0,
+            sticky="w",
+            padx=20,
+            pady=(0, 14),
+        )
+
+        url_box = ctk.CTkTextbox(
+            box,
+            height=100,
+            fg_color=SURFACE_2,
+            border_width=1,
+            border_color=BORDER,
+            text_color=TEXT,
+            wrap="char",
+        )
+        url_box.grid(
+            row=2,
+            column=0,
+            sticky="ew",
+            padx=20,
+        )
+        url_box.insert("1.0", url)
+        url_box.configure(state="disabled")
+
+        actions = ctk.CTkFrame(
+            box,
+            fg_color="transparent",
+        )
+        actions.grid(
+            row=3,
+            column=0,
+            sticky="ew",
+            padx=20,
+            pady=18,
+        )
+
+        ctk.CTkButton(
+            actions,
+            text=self.t("open_browser"),
+            height=40,
+            fg_color=self.accent,
+            hover_color=self.accent_hover,
+            command=lambda:
+                self.open_external_url(url),
+        ).pack(side="left")
+
+        ctk.CTkButton(
+            actions,
+            text=self.t("copy_link"),
+            height=40,
+            fg_color=SURFACE_3,
+            hover_color="#2B3749",
+            command=lambda:
+                self.copy_login_url(url),
+        ).pack(side="left", padx=8)
 
     def account_action(self):
         self.open_account_manager()
@@ -4898,20 +5132,23 @@ class OuterClient(ctk.CTk):
         try:
             CallbackHandler.callback_url = None
 
-            # Bind directly to IPv4 loopback. Passing port 0 asks the
-            # operating system for a currently unused ephemeral port.
-            server = HTTPServer(
-                ("127.0.0.1", 0),
-                CallbackHandler,
-            )
+            try:
+                server = ReusableHTTPServer(
+                    ("localhost", 8765),
+                    CallbackHandler,
+                )
+                callback_port = 8765
+            except OSError:
+                server = ReusableHTTPServer(
+                    ("localhost", 0),
+                    CallbackHandler,
+                )
+                callback_port = int(
+                    server.server_address[1]
+                )
+
             server.timeout = 1
 
-            callback_port = int(
-                server.server_address[1]
-            )
-
-            # Keep localhost in the OAuth URI because the approved
-            # Microsoft application uses a localhost redirect.
             redirect_uri = (
                 f"http://localhost:"
                 f"{callback_port}/callback"
@@ -4925,7 +5162,10 @@ class OuterClient(ctk.CTk):
             )
 
             if "prompt=" not in url:
-                separator = "&" if "?" in url else "?"
+                separator = (
+                    "&" if "?" in url
+                    else "?"
+                )
                 url = (
                     f"{url}{separator}"
                     "prompt=select_account"
@@ -4941,9 +5181,15 @@ class OuterClient(ctk.CTk):
                 )
             )
 
-            webbrowser.open(url)
+            # Always show the exact OAuth URL inside OuterClient.
+            self.events.put(
+                ("oauth_url", url)
+            )
 
-            deadline = time.time() + 180
+            # AppImage-friendly automatic browser open.
+            self.open_external_url(url)
+
+            deadline = time.time() + 600
 
             while (
                 time.time() < deadline
@@ -5189,11 +5435,35 @@ class OuterClient(ctk.CTk):
                 elif kind == "versions":
                     self.version_cache = value
 
+                elif kind == "oauth_url":
+                    self.show_login_link_dialog(
+                        value
+                    )
+
                 elif kind == "account":
                     self.store_microsoft_account(value)
                     self.refresh_account_ui()
                     self.set_status(self.t("signed_in", name=value.get("name", "Microsoft")))
                     self.render_account_manager()
+
+                    dialog = getattr(
+                        self,
+                        "microsoft_link_dialog",
+                        None,
+                    )
+                    if dialog is not None:
+                        try:
+                            if dialog.winfo_exists():
+                                dialog.destroy()
+                        except Exception:
+                            pass
+                        self.microsoft_link_dialog = None
+
+                    if hasattr(self, "settings_mode"):
+                        self.settings_mode.set(
+                            "Microsoft"
+                        )
+
                     if self.active_page == "home":
                         self.show_home()
 

@@ -1,43 +1,50 @@
-# OuterClient v4.9.3
+# OuterClient v4.9.4
 
-## AppImage crash naprawiony
+## Microsoft login fix
 
-Błąd:
+Naprawiono kilka rzeczy jednocześnie:
 
-`ModuleNotFoundError: No module named 'PIL._tkinter_finder'`
+1. `CallbackHandler` nie wpisuje już na sztywno portu 8765.
+   Używa dokładnego hosta i portu, na który wróciła przeglądarka.
 
-pochodził z builda PyInstaller. Pillow/ImageTk wymaga tego modułu do tworzenia obrazów Tk.
+2. OuterClient najpierw próbuje:
+   `http://localhost:8765/callback`
 
-Build v4.9.3 dodaje:
+3. Jeśli 8765 jest zajęty, automatycznie wybiera wolny port.
+
+4. Timeout logowania zwiększono do 10 minut.
+
+5. Na Linux/AppImage przeglądarka jest otwierana przez `xdg-open`
+   z fallbackiem do `webbrowser.open`.
+
+6. OuterClient zawsze pokazuje dodatkowe okno z pełnym linkiem OAuth:
+   - Otwórz przeglądarkę
+   - Kopiuj link
+
+## Microsoft button
+
+Kliknięcie `Microsoft` w Ustawieniach teraz naprawdę działa:
+
+- jeśli konto jest zapisane → przełącza na Microsoft,
+- jeśli konta nie ma → automatycznie otwiera manager i rozpoczyna logowanie.
+
+## AppImage
+
+Poprawka Pillow pozostaje w buildzie:
 
 - `--collect-all PIL`
 - `--hidden-import PIL.ImageTk`
 - `--hidden-import PIL._tkinter_finder`
 
-zarówno dla Linux AppImage, jak i Windows EXE.
-
-Workflow przed buildem dodatkowo sprawdza, czy:
-- `PIL.ImageTk` się importuje,
-- `PIL._tkinter_finder` się importuje,
-- Tkinter jest dostępny.
-
 ## GitHub
 
-Zastąp w repo:
+Zastąp:
 - `outerclient.py`
 - `.github/workflows/build-binaries.yml`
-- najlepiej całą zawartość tej paczki
 
 Następnie:
-
-GitHub → Actions → Build and Release OuterClient 4.9.3 → Run workflow
+Actions → Build and Release OuterClient 4.9.4 → Run workflow
 
 Pobierz:
-- `OuterClient-v4.9.3-x86_64.AppImage`
-- `OuterClient-v4.9.3.exe`
-
-Nie uruchamiaj starego artifactu 4.9.2.
-
-## Fontconfig
-
-Komunikaty `Fontconfig warning` widoczne na Archu nie są przyczyną crasha.
+- OuterClient-v4.9.4-x86_64.AppImage
+- OuterClient-v4.9.4.exe

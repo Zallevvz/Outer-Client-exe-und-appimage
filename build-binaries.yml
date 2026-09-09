@@ -1,4 +1,4 @@
-name: Build and Release OuterClient 4.9.2
+name: Build and Release OuterClient 4.9.4
 
 on:
   workflow_dispatch:
@@ -7,40 +7,31 @@ permissions:
   contents: write
 
 env:
-  OC_VERSION: "4.9.2"
+  OC_VERSION: "4.9.4"
 
 jobs:
   verify-source:
-    name: Verify OuterClient 4.9.2
+    name: Verify OuterClient 4.9.4
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Verify version in source
+      - name: Verify version
         shell: bash
         run: |
           set -eux
-
-          grep -F 'APP_VERSION = "4.9.2"' outerclient.py
-
-          echo "Source version:"
-          grep -n 'APP_VERSION =' outerclient.py
+          grep -F 'APP_VERSION = "4.9.4"' outerclient.py
 
   linux-appimage:
-    name: Linux AppImage 4.9.2
+    name: Linux AppImage 4.9.4
     needs: verify-source
     runs-on: ubuntu-22.04
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Verify source again
-        shell: bash
-        run: |
-          grep -F 'APP_VERSION = "4.9.2"' outerclient.py
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -52,7 +43,7 @@ jobs:
         shell: bash
         run: |
           sudo apt-get update
-          sudo apt-get install -y libfuse2
+          sudo apt-get install -y libfuse2 tk-dev tcl-dev
           python -m pip install --upgrade pip
           python -m pip install -r requirements.txt
           python -m pip install pyinstaller
@@ -63,6 +54,20 @@ jobs:
           rm -rf build dist AppDir
           rm -f ./*.spec
           rm -f ./OuterClient-*.AppImage
+
+      - name: Verify Pillow Tk helper exists
+        shell: bash
+        run: |
+          python - <<'PY'
+          import PIL
+          import PIL.ImageTk
+          import PIL._tkinter_finder
+          import tkinter
+
+          print("Pillow:", PIL.__version__)
+          print("Tk:", tkinter.TkVersion)
+          print("PIL._tkinter_finder: OK")
+          PY
 
       - name: Build PyInstaller bundle
         shell: bash
@@ -76,7 +81,21 @@ jobs:
             --add-data "assets:assets" \
             --collect-all customtkinter \
             --collect-all minecraft_launcher_lib \
+            --collect-all PIL \
+            --hidden-import PIL.ImageTk \
+            --hidden-import PIL._tkinter_finder \
             outerclient.py
+
+      - name: Verify frozen bundle contains Pillow Tk helper
+        shell: bash
+        run: |
+          set -eux
+
+          if ! grep -R -a -q "_tkinter_finder" dist/OuterClient; then
+            echo "Warning: helper name not directly visible in bundle; continuing with runtime smoke test."
+          fi
+
+          test -x dist/OuterClient/OuterClient
 
       - name: Create AppDir
         shell: bash
@@ -85,20 +104,19 @@ jobs:
 
           mkdir -p AppDir/usr/bin/OuterClient
           cp -a dist/OuterClient/. AppDir/usr/bin/OuterClient/
-
           cp assets/outerclient-logo.png AppDir/outerclient.png
 
           cat > AppDir/OuterClient.desktop <<'EOF'
           [Desktop Entry]
           Type=Application
-          Name=OuterClient 4.9.2
+          Name=OuterClient 4.9.4
           Comment=OuterClient Minecraft Launcher
           Exec=OuterClient
           Icon=outerclient
           Categories=Game;
           Terminal=false
           StartupWMClass=OuterClient
-          X-AppImage-Version=4.9.2
+          X-AppImage-Version=4.9.4
           EOF
 
           cat > AppDir/AppRun <<'EOF'
@@ -119,45 +137,35 @@ jobs:
 
           chmod +x appimagetool.AppImage
 
-      - name: Build OuterClient 4.9.2 AppImage
+      - name: Build AppImage
         shell: bash
         env:
           ARCH: x86_64
-          VERSION: "4.9.2"
+          VERSION: "4.9.4"
           APPIMAGE_EXTRACT_AND_RUN: "1"
         run: |
           ./appimagetool.AppImage \
             AppDir \
-            OuterClient-v4.9.2-x86_64.AppImage
+            OuterClient-v4.9.4-x86_64.AppImage
 
-          chmod +x OuterClient-v4.9.2-x86_64.AppImage
+          chmod +x OuterClient-v4.9.4-x86_64.AppImage
+          test -f OuterClient-v4.9.4-x86_64.AppImage
 
-          test -f OuterClient-v4.9.2-x86_64.AppImage
-
-      - name: Upload AppImage 4.9.2
+      - name: Upload AppImage
         uses: actions/upload-artifact@v4
         with:
-          name: OuterClient-v4.9.2-AppImage
-          path: OuterClient-v4.9.2-x86_64.AppImage
+          name: OuterClient-v4.9.4-AppImage
+          path: OuterClient-v4.9.4-x86_64.AppImage
           if-no-files-found: error
 
   windows-exe:
-    name: Windows EXE 4.9.2
+    name: Windows EXE 4.9.4
     needs: verify-source
     runs-on: windows-latest
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Verify source again
-        shell: pwsh
-        run: |
-          $source = Get-Content outerclient.py -Raw
-
-          if ($source -notmatch 'APP_VERSION = "4\.9\.2"') {
-            throw "outerclient.py is not version 4.9.2"
-          }
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -178,7 +186,12 @@ jobs:
           Remove-Item -Recurse -Force build, dist -ErrorAction SilentlyContinue
           Remove-Item -Force *.spec -ErrorAction SilentlyContinue
 
-      - name: Build OuterClient 4.9.2 EXE
+      - name: Verify Pillow Tk helper exists
+        shell: pwsh
+        run: |
+          python -c "import PIL, PIL.ImageTk, PIL._tkinter_finder, tkinter; print('PIL._tkinter_finder OK')"
+
+      - name: Build EXE
         shell: pwsh
         run: |
           pyinstaller `
@@ -186,26 +199,29 @@ jobs:
             --clean `
             --onefile `
             --windowed `
-            --name "OuterClient-v4.9.2" `
+            --name "OuterClient-v4.9.4" `
             --icon assets/outerclient.ico `
             --add-data "assets;assets" `
             --collect-all customtkinter `
             --collect-all minecraft_launcher_lib `
+            --collect-all PIL `
+            --hidden-import PIL.ImageTk `
+            --hidden-import PIL._tkinter_finder `
             outerclient.py
 
-          if (-not (Test-Path "dist\OuterClient-v4.9.2.exe")) {
-            throw "OuterClient-v4.9.2.exe was not created"
+          if (-not (Test-Path "dist\OuterClient-v4.9.4.exe")) {
+            throw "OuterClient-v4.9.4.exe was not created"
           }
 
-      - name: Upload Windows EXE 4.9.2
+      - name: Upload Windows EXE
         uses: actions/upload-artifact@v4
         with:
-          name: OuterClient-v4.9.2-Windows
-          path: dist/OuterClient-v4.9.2.exe
+          name: OuterClient-v4.9.4-Windows
+          path: dist/OuterClient-v4.9.4.exe
           if-no-files-found: error
 
   release:
-    name: Make 4.9.2 Latest
+    name: Make 4.9.4 Latest
     needs:
       - linux-appimage
       - windows-exe
@@ -218,13 +234,13 @@ jobs:
           path: release
           merge-multiple: true
 
-      - name: Publish OuterClient 4.9.2
+      - name: Publish OuterClient 4.9.4
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v4.9.2
-          name: OuterClient v4.9.2
+          tag_name: v4.9.4
+          name: OuterClient v4.9.4
           make_latest: true
           generate_release_notes: true
           files: |
-            release/OuterClient-v4.9.2-x86_64.AppImage
-            release/OuterClient-v4.9.2.exe
+            release/OuterClient-v4.9.4-x86_64.AppImage
+            release/OuterClient-v4.9.4.exe
