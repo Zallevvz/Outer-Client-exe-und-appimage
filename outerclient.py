@@ -26,9 +26,10 @@ from tkinter import filedialog, messagebox
 
 
 APP_NAME = "OuterClient"
-APP_VERSION = "4.8.1"
+APP_VERSION = "4.9"
 CONFIG_PATH = Path.home() / ".outerclient.json"
 REDIRECT_URI = "http://localhost:8765/callback"
+MICROSOFT_CLIENT_ID = "fb14d1c4-7d14-4a35-99a7-3f921f7a1e77"
 MODRINTH_API = "https://api.modrinth.com/v2"
 ASSETS_DIR = Path(__file__).resolve().parent / "assets"
 LOGO_PNG = ASSETS_DIR / "outerclient-logo.png"
@@ -256,6 +257,24 @@ TEXTS = {
         "curseforge_no_file": "Nie znaleziono zgodnego pliku CurseForge dla tego profilu.",
         "curseforge_dependency_missing": "Nie znaleziono wymaganej zależności CurseForge: {mod_id}",
         "curseforge_searching": "Szukanie modów na CurseForge…",
+
+        "accounts": "Konta",
+        "manage_accounts": "Zarządzaj kontami Microsoft",
+        "add_microsoft_account": "＋ Dodaj konto Microsoft",
+        "switch_account": "Zmień konto",
+        "use_account": "Użyj",
+        "active_account": "Aktywne konto",
+        "saved_accounts": "ZAPISANE KONTA MICROSOFT",
+        "no_saved_accounts": "Nie masz jeszcze zapisanych kont Microsoft.",
+        "logout": "Wyloguj",
+        "remove_account": "Usuń",
+        "use_offline": "Przełącz na Offline",
+        "account_removed": "Konto {name} zostało usunięte z OuterClient.",
+        "account_switched": "Aktywne konto: {name}",
+        "signed_in": "Zalogowano jako {name}.",
+        "microsoft_app_ready": "Microsoft Application jest już skonfigurowane w OuterClient — nie musisz wpisywać Client ID.",
+        "refreshing_account": "Odświeżanie sesji Microsoft…",
+        "refresh_failed": "Sesja Microsoft wygasła. Zaloguj to konto ponownie.",
     },
     "en": {
         "nav_play": "Play",
@@ -434,6 +453,24 @@ TEXTS = {
         "curseforge_no_file": "No compatible CurseForge file was found for this profile.",
         "curseforge_dependency_missing": "Required CurseForge dependency was not found: {mod_id}",
         "curseforge_searching": "Searching CurseForge mods…",
+
+        "accounts": "Accounts",
+        "manage_accounts": "Manage Microsoft accounts",
+        "add_microsoft_account": "＋ Add Microsoft account",
+        "switch_account": "Switch account",
+        "use_account": "Use",
+        "active_account": "Active account",
+        "saved_accounts": "SAVED MICROSOFT ACCOUNTS",
+        "no_saved_accounts": "You do not have any saved Microsoft accounts yet.",
+        "logout": "Sign out",
+        "remove_account": "Remove",
+        "use_offline": "Switch to Offline",
+        "account_removed": "Account {name} was removed from OuterClient.",
+        "account_switched": "Active account: {name}",
+        "signed_in": "Signed in as {name}.",
+        "microsoft_app_ready": "Microsoft Application is already configured in OuterClient — you do not need to enter a Client ID.",
+        "refreshing_account": "Refreshing Microsoft session…",
+        "refresh_failed": "The Microsoft session expired. Sign in to this account again.",
     },
 }
 
@@ -544,8 +581,10 @@ def default_config():
         "game_dir": str(default_game_dir()),
         "java": shutil.which("java") or "",
         "ram": 4096,
-        "client_id": "",
+        "client_id": MICROSOFT_CLIENT_ID,
         "account": None,
+        "microsoft_accounts": [],
+        "selected_microsoft_account": None,
         "account_mode": "Offline",
         "offline_name": "Player",
         "theme": "Fioletowy",
@@ -562,6 +601,22 @@ def default_config():
     }
 
 
+def microsoft_account_key(auth):
+    if not isinstance(auth, dict):
+        return None
+    value = auth.get("id") or auth.get("uuid") or auth.get("name")
+    return str(value).strip().lower() if value else None
+
+
+def active_microsoft_account_from_config(cfg):
+    selected = cfg.get("selected_microsoft_account")
+    for account in cfg.get("microsoft_accounts", []):
+        if microsoft_account_key(account) == selected:
+            return account
+    legacy = cfg.get("account")
+    return legacy if isinstance(legacy, dict) else None
+
+
 def load_config():
     cfg = default_config()
     try:
@@ -570,6 +625,7 @@ def load_config():
             # Migrate selected v4/v4.1 settings but intentionally ignore Prism keys.
             for key in (
                 "game_dir", "java", "ram", "client_id", "account",
+                "microsoft_accounts", "selected_microsoft_account",
                 "account_mode", "offline_name", "theme", "language",
                 "advanced_settings", "curseforge_api_key",
                 "selected", "profiles"
@@ -604,6 +660,40 @@ def load_config():
             cfg["advanced_settings"] = bool(
                 cfg.get("advanced_settings", False)
             )
+
+            # The approved OuterClient Microsoft Application ID is built in.
+            cfg["client_id"] = MICROSOFT_CLIENT_ID
+
+            accounts = cfg.get("microsoft_accounts")
+            if not isinstance(accounts, list):
+                accounts = []
+            cleaned_accounts = []
+            seen_accounts = set()
+            for account in accounts:
+                key = microsoft_account_key(account)
+                if not key or key in seen_accounts:
+                    continue
+                seen_accounts.add(key)
+                cleaned_accounts.append(account)
+
+            # Migrate the legacy single-account field automatically.
+            legacy = cfg.get("account")
+            legacy_key = microsoft_account_key(legacy)
+            if legacy_key and legacy_key not in seen_accounts:
+                cleaned_accounts.append(legacy)
+                seen_accounts.add(legacy_key)
+
+            selected_account = cfg.get("selected_microsoft_account")
+            if selected_account not in seen_accounts:
+                selected_account = legacy_key if legacy_key in seen_accounts else None
+            if selected_account is None and cleaned_accounts:
+                selected_account = microsoft_account_key(cleaned_accounts[0])
+
+            cfg["microsoft_accounts"] = cleaned_accounts
+            cfg["selected_microsoft_account"] = selected_account
+            cfg["account"] = active_microsoft_account_from_config(cfg)
+            if cfg.get("account_mode") == "Microsoft" and not cfg["account"]:
+                cfg["account_mode"] = "Offline"
     except Exception:
         pass
     return cfg
@@ -654,7 +744,8 @@ class OuterClient(ctk.CTk):
         ctk.set_appearance_mode("dark")
 
         self.cfg = load_config()
-        self.auth = self.cfg.get("account")
+        self.auth = active_microsoft_account_from_config(self.cfg)
+        self.account_manager = None
         self.events = queue.Queue()
         self.version_cache = []
         self.modrinth_category = "Mody"
@@ -703,7 +794,7 @@ class OuterClient(ctk.CTk):
                 try:
                     import ctypes
                     ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(
-                        "OuterClient.Launcher.4.4"
+                        "OuterClient.Launcher.4.9"
                     )
                 except Exception:
                     pass
@@ -4120,9 +4211,6 @@ class OuterClient(ctk.CTk):
         self.settings_offline = ctk.StringVar(
             value=self.cfg.get("offline_name", "Player")
         )
-        self.settings_client = ctk.StringVar(
-            value=self.cfg.get("client_id", "")
-        )
         self.settings_curseforge = ctk.StringVar(
             value=self.cfg.get("curseforge_api_key", "")
         )
@@ -4203,26 +4291,21 @@ class OuterClient(ctk.CTk):
         self.settings_field(
             self.advanced_client_frame,
             0,
-            self.t("client_id"),
-            self.settings_client,
-        )
-        self.settings_field(
-            self.advanced_client_frame,
-            1,
             self.t("curseforge_api_key"),
             self.settings_curseforge,
         )
 
+        account_actions = ctk.CTkFrame(account, fg_color="transparent")
+        account_actions.grid(row=5, column=0, sticky="ew", padx=20, pady=18)
         ctk.CTkButton(
-            account,
-            text=self.t("login_microsoft"),
-            fg_color=SURFACE_3,
-            hover_color="#2B3749",
-            command=self.login,
-        ).grid(
-            row=5, column=0, sticky="w",
-            padx=20, pady=18
-        )
+            account_actions, text=self.t("manage_accounts"),
+            fg_color=SURFACE_3, hover_color="#2B3749",
+            command=self.open_account_manager,
+        ).pack(side="left")
+        ctk.CTkLabel(
+            account_actions, text=self.t("microsoft_app_ready"),
+            text_color=MUTED, justify="left", wraplength=510,
+        ).pack(side="left", padx=14)
 
         self.toggle_advanced_settings_ui()
 
@@ -4516,7 +4599,7 @@ class OuterClient(ctk.CTk):
         self.cfg["offline_name"] = (
             self.settings_offline.get().strip() or "Player"
         )
-        self.cfg["client_id"] = self.settings_client.get().strip()
+        self.cfg["client_id"] = MICROSOFT_CLIENT_ID
         self.cfg["curseforge_api_key"] = self.settings_curseforge.get().strip()
         self.cfg["advanced_settings"] = bool(
             self.settings_advanced.get()
@@ -4526,6 +4609,16 @@ class OuterClient(ctk.CTk):
         self.cfg["java"] = self.settings_java.get().strip()
         self.cfg["ram"] = ram
         self.cfg["game_dir"] = self.settings_dir.get().strip()
+        if self.cfg.get("account_mode") == "Microsoft":
+            active = active_microsoft_account_from_config(self.cfg)
+            if active is None:
+                accounts = self.cfg.get("microsoft_accounts", [])
+                if accounts:
+                    active = accounts[0]
+                    self.cfg["selected_microsoft_account"] = self.account_key(active)
+                    self.cfg["account"] = active
+            self.auth = active
+
         save_config(self.cfg)
 
         needs_rebuild = (
@@ -4552,90 +4645,282 @@ class OuterClient(ctk.CTk):
             )
 
     def account_action(self):
-        if self.cfg.get("account_mode") == "Microsoft":
-            self.login()
-        else:
-            self.show_settings()
+        self.open_account_manager()
 
     def refresh_account_ui(self):
         if not hasattr(self, "account_name"):
             return
-
         mode = self.cfg.get("account_mode", "Offline")
+        accounts = self.cfg.get("microsoft_accounts", [])
         if mode == "Offline":
             name = self.cfg.get("offline_name", "Player")
             self.account_name.configure(text=f"Offline: {name}")
+            self.account_button.configure(text=self.t("accounts"))
+        elif self.auth:
+            self.account_name.configure(text=self.auth.get("name", "Microsoft"))
             self.account_button.configure(
-                text=self.t("account_settings")
+                text=self.t("switch_account") if len(accounts) > 1 else self.t("accounts")
             )
         else:
-            if self.auth:
-                self.account_name.configure(
-                    text=self.auth.get("name", "Microsoft")
-                )
-                self.account_button.configure(
-                    text=self.t("microsoft_account")
-                )
-            else:
-                self.account_name.configure(
-                    text=self.t("microsoft_not_logged")
-                )
-                self.account_button.configure(
-                    text=self.t("login_microsoft")
-                )
-
+            self.account_name.configure(text=self.t("microsoft_not_logged"))
+            self.account_button.configure(text=self.t("add_microsoft_account"))
         self.request_account_head()
 
-    def login(self):
-        client_id = self.cfg.get("client_id", "").strip()
-        if not client_id:
-            messagebox.showwarning(
-                "Microsoft Client ID",
-                self.t("client_id_first")
+    def account_key(self, auth):
+        return microsoft_account_key(auth)
+
+    def store_microsoft_account(self, auth):
+        key = self.account_key(auth)
+        if not key:
+            return
+        accounts = list(self.cfg.get("microsoft_accounts", []))
+        for index, existing in enumerate(accounts):
+            if self.account_key(existing) == key:
+                accounts[index] = auth
+                break
+        else:
+            accounts.append(auth)
+        self.cfg["microsoft_accounts"] = accounts
+        self.cfg["selected_microsoft_account"] = key
+        self.cfg["account"] = auth
+        self.cfg["account_mode"] = "Microsoft"
+        self.cfg["client_id"] = MICROSOFT_CLIENT_ID
+        self.auth = auth
+        save_config(self.cfg)
+
+    def switch_microsoft_account(self, account_key):
+        for account in self.cfg.get("microsoft_accounts", []):
+            if self.account_key(account) != account_key:
+                continue
+            self.cfg["selected_microsoft_account"] = account_key
+            self.cfg["account"] = account
+            self.cfg["account_mode"] = "Microsoft"
+            self.auth = account
+            save_config(self.cfg)
+            self.refresh_account_ui()
+            self.set_status(self.t("account_switched", name=account.get("name", "Microsoft")))
+            self.render_account_manager()
+            if self.active_page == "home":
+                self.show_home()
+            return
+
+    def use_offline_account(self):
+        self.cfg["account_mode"] = "Offline"
+        save_config(self.cfg)
+        self.refresh_account_ui()
+        self.render_account_manager()
+        if self.active_page == "home":
+            self.show_home()
+
+    def remove_microsoft_account(self, account_key):
+        accounts = list(self.cfg.get("microsoft_accounts", []))
+        removed, kept = None, []
+        for account in accounts:
+            if self.account_key(account) == account_key:
+                removed = account
+            else:
+                kept.append(account)
+        if removed is None:
+            return
+        was_active = self.cfg.get("selected_microsoft_account") == account_key
+        self.cfg["microsoft_accounts"] = kept
+        if was_active:
+            next_account = kept[0] if kept else None
+            self.cfg["selected_microsoft_account"] = self.account_key(next_account) if next_account else None
+            self.cfg["account"] = next_account
+            self.cfg["account_mode"] = "Offline"
+            self.auth = next_account
+        else:
+            active = active_microsoft_account_from_config(self.cfg)
+            self.cfg["account"] = active
+            self.auth = active
+        save_config(self.cfg)
+        self.skin_head_cache.clear()
+        self.refresh_account_ui()
+        self.set_status(self.t("account_removed", name=removed.get("name", "Microsoft")))
+        self.render_account_manager()
+        if self.active_page == "home":
+            self.show_home()
+
+    def logout_current_microsoft(self):
+        key = self.cfg.get("selected_microsoft_account")
+        if key:
+            self.remove_microsoft_account(key)
+        else:
+            self.use_offline_account()
+
+    def open_account_manager(self):
+        if self.account_manager is not None:
+            try:
+                if self.account_manager.winfo_exists():
+                    self.account_manager.lift()
+                    self.account_manager.focus_force()
+                    self.render_account_manager()
+                    return
+            except Exception:
+                pass
+        win = ctk.CTkToplevel(self)
+        self.account_manager = win
+        win.title(self.t("manage_accounts"))
+        win.geometry("640x600")
+        win.minsize(560, 500)
+        win.configure(fg_color=BG)
+        win.transient(self)
+        win.protocol("WM_DELETE_WINDOW", self.close_account_manager)
+        try:
+            if self.app_icon_image is not None:
+                win.iconphoto(True, self.app_icon_image)
+        except Exception:
+            pass
+        self.render_account_manager()
+
+    def close_account_manager(self):
+        if self.account_manager is not None:
+            try:
+                self.account_manager.destroy()
+            except Exception:
+                pass
+        self.account_manager = None
+
+    def render_account_manager(self):
+        win = self.account_manager
+        if win is None:
+            return
+        try:
+            if not win.winfo_exists():
+                return
+        except Exception:
+            return
+        for child in win.winfo_children():
+            child.destroy()
+        outer = ctk.CTkFrame(win, fg_color=BG, corner_radius=0)
+        outer.pack(fill="both", expand=True)
+        outer.grid_columnconfigure(0, weight=1)
+        outer.grid_rowconfigure(3, weight=1)
+        ctk.CTkLabel(
+            outer, text=self.t("manage_accounts"), text_color=TEXT,
+            font=ctk.CTkFont(size=26, weight="bold"),
+        ).grid(row=0, column=0, sticky="w", padx=24, pady=(24, 4))
+        ctk.CTkLabel(
+            outer, text=self.t("microsoft_app_ready"), text_color=MUTED,
+            justify="left", wraplength=560,
+        ).grid(row=1, column=0, sticky="w", padx=24, pady=(0, 16))
+        actions = ctk.CTkFrame(outer, fg_color="transparent")
+        actions.grid(row=2, column=0, sticky="ew", padx=24, pady=(0, 12))
+        ctk.CTkButton(
+            actions, text=self.t("add_microsoft_account"), height=40,
+            fg_color=self.accent, hover_color=self.accent_hover, command=self.login,
+        ).pack(side="left")
+        ctk.CTkButton(
+            actions, text=self.t("use_offline"), height=40,
+            fg_color=SURFACE_3, hover_color="#2B3749", command=self.use_offline_account,
+        ).pack(side="left", padx=8)
+        body = ctk.CTkScrollableFrame(
+            outer, fg_color=BG, corner_radius=0,
+            scrollbar_button_color=SURFACE_3, scrollbar_button_hover_color=BORDER,
+        )
+        body.grid(row=3, column=0, sticky="nsew", padx=16, pady=(0, 18))
+        body.grid_columnconfigure(0, weight=1)
+        ctk.CTkLabel(
+            body, text=self.t("saved_accounts"), text_color=MUTED,
+            font=ctk.CTkFont(size=10, weight="bold"),
+        ).grid(row=0, column=0, sticky="w", padx=8, pady=(4, 8))
+        accounts = self.cfg.get("microsoft_accounts", [])
+        active_key = self.cfg.get("selected_microsoft_account")
+        if not accounts:
+            empty = self.card(body, 12)
+            empty.grid(row=1, column=0, sticky="ew", padx=8, pady=6)
+            ctk.CTkLabel(empty, text=self.t("no_saved_accounts"), text_color=MUTED).pack(
+                anchor="w", padx=18, pady=18
             )
             return
-        self.run_bg(lambda: self.login_worker(client_id))
+        for row, account in enumerate(accounts, start=1):
+            key = self.account_key(account)
+            active = self.cfg.get("account_mode") == "Microsoft" and key == active_key
+            card = self.card(body, 12)
+            card.grid(row=row, column=0, sticky="ew", padx=8, pady=5)
+            card.grid_columnconfigure(1, weight=1)
+            ctk.CTkLabel(
+                card, text=account.get("name", "M")[:1].upper(), width=46, height=46,
+                corner_radius=10, fg_color=self.accent if active else SURFACE_3,
+                text_color="white", font=ctk.CTkFont(size=17, weight="bold"),
+            ).grid(row=0, column=0, rowspan=2, padx=14, pady=14)
+            ctk.CTkLabel(
+                card, text=account.get("name", "Microsoft"), text_color=TEXT,
+                anchor="w", font=ctk.CTkFont(size=14, weight="bold"),
+            ).grid(row=0, column=1, sticky="sw", pady=(12, 0))
+            ctk.CTkLabel(
+                card, text=self.t("active_account") if active else account.get("id", ""),
+                text_color=self.secondary if active else MUTED, anchor="w",
+                font=ctk.CTkFont(size=10),
+            ).grid(row=1, column=1, sticky="nw", pady=(2, 12))
+            if active:
+                ctk.CTkButton(
+                    card, text=self.t("logout"), width=90, height=34,
+                    fg_color="#3B2028", hover_color="#512933", text_color="#FFB7C0",
+                    command=lambda k=key: self.remove_microsoft_account(k),
+                ).grid(row=0, column=2, rowspan=2, padx=14)
+            else:
+                ctk.CTkButton(
+                    card, text=self.t("use_account"), width=76, height=34,
+                    fg_color=self.accent, hover_color=self.accent_hover,
+                    command=lambda k=key: self.switch_microsoft_account(k),
+                ).grid(row=0, column=2, rowspan=2, padx=(8, 5))
+                ctk.CTkButton(
+                    card, text=self.t("remove_account"), width=76, height=34,
+                    fg_color="#3B2028", hover_color="#512933", text_color="#FFB7C0",
+                    command=lambda k=key: self.remove_microsoft_account(k),
+                ).grid(row=0, column=3, rowspan=2, padx=(0, 14))
+
+    def login(self):
+        self.run_bg(lambda: self.login_worker(MICROSOFT_CLIENT_ID))
 
     def login_worker(self, client_id):
         server = None
         try:
-            url, state, verifier = (
-                minecraft_launcher_lib.microsoft_account.get_secure_login_data(
-                    client_id, REDIRECT_URI
-                )
+            url, state, verifier = minecraft_launcher_lib.microsoft_account.get_secure_login_data(
+                client_id, REDIRECT_URI
             )
+            if "prompt=" not in url:
+                url = f"{url}{'&' if '?' in url else '?'}prompt=select_account"
             CallbackHandler.callback_url = None
             server = HTTPServer(("localhost", 8765), CallbackHandler)
             server.timeout = 1
             webbrowser.open(url)
             self.events.put(("status", self.t("browser_login")))
-
-            deadline = time.time() + 120
+            deadline = time.time() + 180
             while time.time() < deadline and not CallbackHandler.callback_url:
                 server.handle_request()
-
             if not CallbackHandler.callback_url:
-                raise TimeoutError("Limit czasu logowania.")
-
+                raise TimeoutError("Microsoft login timed out.")
             code = minecraft_launcher_lib.microsoft_account.parse_auth_code_url(
                 CallbackHandler.callback_url, state
             )
             auth = minecraft_launcher_lib.microsoft_account.complete_login(
                 client_id, None, REDIRECT_URI, code, verifier
             )
-
-            self.auth = auth
-            self.cfg["account"] = auth
-            self.cfg["account_mode"] = "Microsoft"
-            save_config(self.cfg)
             self.events.put(("account", auth))
         except Exception as exc:
-            self.events.put(("error", f"Logowanie Microsoft:\n{exc}"))
+            self.events.put(("error", f"Microsoft login:\n{exc}"))
         finally:
             if server:
                 server.server_close()
 
-    # ---------- Minecraft ----------
+    def refresh_active_microsoft_account(self):
+        if not self.auth:
+            raise RuntimeError(self.t("microsoft_not_authenticated"))
+        refresh_token = self.auth.get("refresh_token")
+        if not refresh_token:
+            return self.auth
+        self.events.put(("status", self.t("refreshing_account")))
+        try:
+            refreshed = minecraft_launcher_lib.microsoft_account.complete_refresh(
+                MICROSOFT_CLIENT_ID, None, REDIRECT_URI, refresh_token
+            )
+        except Exception as exc:
+            raise RuntimeError(self.t("refresh_failed")) from exc
+        self.store_microsoft_account(refreshed)
+        return refreshed
 
     def load_versions(self):
         try:
@@ -4734,14 +5019,15 @@ class OuterClient(ctk.CTk):
         ram = int(self.cfg.get("ram", 4096))
 
         if mode == "Microsoft":
-            if not self.auth or not self.auth.get("access_token"):
-                raise RuntimeError(
-                    self.t("microsoft_not_authenticated")
-                )
+            if not self.auth:
+                raise RuntimeError(self.t("microsoft_not_authenticated"))
+            auth = self.refresh_active_microsoft_account()
+            if not auth.get("access_token"):
+                raise RuntimeError(self.t("microsoft_not_authenticated"))
             options = {
-                "username": self.auth.get("name", "Player"),
-                "uuid": self.auth.get("id") or self.auth.get("uuid", ""),
-                "token": self.auth["access_token"],
+                "username": auth.get("name", "Player"),
+                "uuid": auth.get("id") or auth.get("uuid", ""),
+                "token": auth["access_token"],
             }
         else:
             name = self.cfg.get("offline_name", "Player").strip() or "Player"
@@ -4791,12 +5077,12 @@ class OuterClient(ctk.CTk):
                     self.version_cache = value
 
                 elif kind == "account":
-                    self.auth = value
-                    self.cfg["account"] = value
-                    self.cfg["account_mode"] = "Microsoft"
-                    save_config(self.cfg)
+                    self.store_microsoft_account(value)
                     self.refresh_account_ui()
-                    self.show_home()
+                    self.set_status(self.t("signed_in", name=value.get("name", "Microsoft")))
+                    self.render_account_manager()
+                    if self.active_page == "home":
+                        self.show_home()
 
                 elif kind == "modrinth_results":
                     category, hits = value

@@ -1,58 +1,40 @@
-# OuterClient v4.8
+# OuterClient v4.9
 
-## Profile manager przebudowany
+## Microsoft Application jest wbudowane
+OuterClient używa teraz zatwierdzonego Application (client) ID automatycznie.
+Nie ma już pola Client ID do ręcznego wpisywania.
 
-Usunięto górne przyciski:
-- Profiles
-- Manage profile
+## Wiele kont Microsoft
+Kliknij panel konta w lewym dolnym rogu, aby otworzyć manager kont.
 
-Teraz każdy profil ma własny przycisk:
-- Select
-- Manage
-- Delete
+Możesz:
+- dodać kolejne konto Microsoft,
+- zapisać kilka kont,
+- przełączyć konto jednym kliknięciem,
+- wylogować aktywne konto,
+- usunąć zapisane nieaktywne konto,
+- przełączyć się na Offline bez usuwania pozostałych kont.
 
-Kliknięcie **Manage** otwiera manager od razu dla tego konkretnego profilu.
+Podczas dodawania nowego konta Microsoft launcher wymusza ekran wyboru konta,
+co ułatwia dodanie drugiego lub trzeciego konta.
 
-W lewym górnym rogu managera jest:
-`← Profiles`
+## Migracja ze starszych wersji
+Jeżeli `~/.outerclient.json` zawiera stare pojedyncze pole `account`,
+v4.9 automatycznie przenosi je do nowej listy kont.
+Profile i pozostałe ustawienia nie wymagają usuwania.
 
-Powrót prowadzi bezpośrednio do głównej listy profili.
+## Odświeżanie sesji
+Przed uruchomieniem Minecrafta OuterClient próbuje odświeżyć aktywną sesję
+Microsoft przy użyciu zapisanego refresh tokenu.
 
-## Zarządzanie zawartością profilu
-
-Manager nadal pozwala usuwać:
-- Mods
-- Resource packs
-- Shaders
-- Datapacks
-
-Dodałem również szybki przycisk do otwarcia folderu zarządzanego profilu.
-
-## CurseForge Mods — opcjonalnie
-
-v4.8 ma eksperymentalną integrację z CurseForge dla modów.
-
-Wymagany jest własny **CurseForge API Key**:
-`Settings → Advanced options → CURSEFORGE API KEY`
-
-W ekranie zawartości można przełączyć źródło:
-- Modrinth
-- CurseForge
-
-CurseForge w v4.8:
-- wyszukuje mody dla wersji Minecrafta wybranego profilu,
-- filtruje po Fabric / Forge / Quilt / NeoForge,
-- pobiera pliki przez oficjalne API,
-- instaluje wymagane zależności (`RequiredDependency`),
-- sprawdza `allowModDistribution` oraz `isAvailable`,
-- nie instaluje projektu, jeśli CurseForge blokuje dystrybucję.
-
-CurseForge wymaga klucza API i nie wszystkie projekty pozwalają na dystrybucję przez zewnętrzne launchery.
+## Ustawienia zaawansowane
+Microsoft Client ID został usunięty z ustawień, ponieważ jest wbudowany.
+CurseForge API Key nadal znajduje się w `Settings → Advanced options`.
 
 ## Arch Linux
 
 ```bash
-cd OuterClient_v4_8
+cd OuterClient_v4_9
 chmod +x install_linux.sh run_outerclient.sh
 ./install_linux.sh
 ./run_outerclient.sh
