@@ -29,7 +29,7 @@ from tkinter import filedialog, messagebox
 
 
 APP_NAME = "OuterClient"
-APP_VERSION = "5.4"
+APP_VERSION = "5.5"
 CONFIG_PATH = Path.home() / ".outerclient.json"
 REDIRECT_URI = "http://localhost:8765/callback"
 MICROSOFT_CLIENT_ID = "fb14d1c4-7d14-4a35-99a7-3f921f7a1e77"
@@ -351,6 +351,33 @@ TEXTS = {
         "v54_runtime": "Dołączona Java {major}",
         "v54_launch_version": "Wersja startowa: {version}",
         "v54_mods_visible": "Mody są odczytywane bezpośrednio z folderu profilu.",
+        "v55_java_manager_desc": "OuterClient pokazuje runtime Minecrafta i Javy znalezione w systemie. Możesz wybrać Javę osobno dla profilu.",
+        "v55_detected_javas": "Wykryte Javy",
+        "v55_bundled_runtime": "Runtime Minecrafta",
+        "v55_java_use": "Użyj",
+        "v55_java_active": "Wybrana",
+        "v55_java_auto_runtime": "Automatycznie używaj runtime Minecrafta",
+        "v55_java_choose_file": "Wybierz java.exe / java",
+        "v55_java_repair_runtime": "Pobierz / napraw runtime Minecrafta",
+        "v55_java_none": "Nie wykryto żadnej Javy systemowej.",
+        "v55_runtime_missing": "Runtime Minecrafta nie jest jeszcze pobrany.",
+        "v55_runtime_ready": "Runtime Minecrafta dla profilu {profile} jest gotowy.",
+        "v55_shortcut_icon": "Skrót używa ikony OuterClient.",
+        "v55_login_link": "Link logowania Microsoft",
+        "v55_open_login": "Otwórz link logowania",
+        "v55_copy_login": "Kopiuj link",
+        "v55_login_link_wait": "Kliknij „Dodaj konto Microsoft”. Link pojawi się tutaj i otworzy się też w przeglądarce.",
+        "v55_login_port_busy": "Port 8765 jest zajęty. Zamknij starszy OuterClient lub program korzystający z tego portu i spróbuj ponownie.",
+        "v55_mod_page": "Strona moda",
+        "v55_search_mod": "Szukaj moda",
+        "v55_fabric_api": "Fabric API",
+        "v55_fabric_api_ready": "Fabric API jest gotowe dla profilu {profile}.",
+        "v55_fabric_api_installing": "Instalowanie zgodnego Fabric API…",
+        "v55_incompatible_mods": "Niezgodne mody",
+        "v55_disabled_incompatible": "Przeniesiono {count} oczywiście niezgodnych modów do folderu mods-disabled.",
+        "v55_disabled_folder": "Niezgodne mody są przenoszone do mods-disabled, nigdy kasowane.",
+        "v55_local_metadata": "Dane odczytane bezpośrednio z pliku moda.",
+        "v55_profile_java": "Java dla profilu",
         "v5_change_profile": "Zmień profil",
         "v5_previous": "Poprzedni",
         "v5_next": "Następny",
@@ -679,6 +706,33 @@ TEXTS = {
         "v54_runtime": "Bundled Java {major}",
         "v54_launch_version": "Launch version: {version}",
         "v54_mods_visible": "Mods are read directly from the profile folder.",
+        "v55_java_manager_desc": "OuterClient shows the Minecraft runtime and Java installations found on the system. Java can be selected per profile.",
+        "v55_detected_javas": "Detected Java installations",
+        "v55_bundled_runtime": "Minecraft runtime",
+        "v55_java_use": "Use",
+        "v55_java_active": "Selected",
+        "v55_java_auto_runtime": "Automatically use the Minecraft runtime",
+        "v55_java_choose_file": "Choose java.exe / java",
+        "v55_java_repair_runtime": "Download / repair Minecraft runtime",
+        "v55_java_none": "No system Java installations were detected.",
+        "v55_runtime_missing": "The Minecraft runtime has not been downloaded yet.",
+        "v55_runtime_ready": "The Minecraft runtime for profile {profile} is ready.",
+        "v55_shortcut_icon": "The shortcut uses the OuterClient icon.",
+        "v55_login_link": "Microsoft sign-in link",
+        "v55_open_login": "Open sign-in link",
+        "v55_copy_login": "Copy link",
+        "v55_login_link_wait": "Click “Add Microsoft account”. The link will appear here and will also open in your browser.",
+        "v55_login_port_busy": "Port 8765 is in use. Close an older OuterClient or the program using that port and try again.",
+        "v55_mod_page": "Mod page",
+        "v55_search_mod": "Search mod",
+        "v55_fabric_api": "Fabric API",
+        "v55_fabric_api_ready": "Fabric API is ready for profile {profile}.",
+        "v55_fabric_api_installing": "Installing a compatible Fabric API…",
+        "v55_incompatible_mods": "Incompatible mods",
+        "v55_disabled_incompatible": "Moved {count} obviously incompatible mods to the mods-disabled folder.",
+        "v55_disabled_folder": "Incompatible mods are moved to mods-disabled and are never deleted.",
+        "v55_local_metadata": "Metadata read directly from the mod file.",
+        "v55_profile_java": "Profile Java",
         "v5_change_profile": "Change profile",
         "v5_previous": "Previous",
         "v5_next": "Next",
@@ -1069,7 +1123,7 @@ class OuterClient(ctk.CTk):
                 try:
                     import ctypes
                     ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(
-                        "OuterClient.Launcher.5.4"
+                        "OuterClient.Launcher.5.5"
                     )
                 except Exception:
                     pass
@@ -6919,6 +6973,33 @@ def _v5_process_events(self):
             elif kind=="java_detected":
                 if hasattr(self,"java_manager_label"):
                     name=self.cfg.get("selected"); required=self.required_java_major(self.cfg["profiles"][name].get("version")); found=[x for x in value if x["major"]==required]; self.java_manager_label.configure(text=f"{self.t('v5_java_required',major=required)} • {'✓' if found else '!'}")
+                if hasattr(self,"render_java_manager"):
+                    try: self.render_java_manager(value)
+                    except Exception: pass
+            elif kind=="java_runtime_ready":
+                profile_name=value
+                if hasattr(self,"render_java_manager"):
+                    try: self.render_java_manager(self.java_installations)
+                    except Exception: pass
+                self.set_status(self.t("v55_runtime_ready",profile=profile_name))
+            elif kind=="oauth_link_ready":
+                self.microsoft_oauth_url=value
+                if getattr(self,"active_page","")=="accounts":
+                    try: self.show_accounts_page()
+                    except Exception: pass
+            elif kind=="fabric_api_ready":
+                profile_name=value
+                self.set_status(self.t("v55_fabric_api_ready",profile=profile_name))
+                if getattr(self,"manage_profile_name",None)==profile_name:
+                    try: self.render_manage_file_list()
+                    except Exception: pass
+            elif kind=="fabric_incompatible_disabled":
+                profile_name,items=value
+                if items:
+                    self.set_status(self.t("v55_disabled_incompatible",count=len(items)))
+                    if getattr(self,"manage_profile_name",None)==profile_name:
+                        try: self.render_manage_file_list()
+                        except Exception: pass
             elif kind=="profile_metadata_done":
                 self.set_status(self.t("v5_scanning").replace("…"," ✓"));
                 if hasattr(self,"manage_profile_name") and self.manage_profile_name==value: self.render_manage_file_list()
@@ -15948,6 +16029,2832 @@ OuterClient.show_profile_manager = _v54_profile_manager
 
 def _v5_startup_tasks(self):
     return _v54_startup_tasks(self)
+
+
+
+# ============================================================
+# OuterClient 5.5 — Java manager / Fabric API / links / icons
+# ============================================================
+
+_V55_CREATE_PROFILE_BASE = OuterClient.create_profile_v53
+_V55_PREPARE_PROFILE_BASE = OuterClient.prepare_profile_for_launch
+_V55_PROFILE_ENTRIES_BASE = OuterClient.profile_manage_entries
+_V55_SYSTEM_TOOLS_BASE = OuterClient.show_system_tools_settings
+
+
+# ---------- version constraint helpers ----------
+
+def _v55_version_tuple(value):
+    parts = [
+        int(x)
+        for x in re.findall(
+            r"\d+",
+            str(value or ""),
+        )[:4]
+    ]
+    while len(parts) < 4:
+        parts.append(0)
+    return tuple(parts)
+
+
+def _v55_constraint_result(self, current, constraint):
+    """
+    Return True/False only when the constraint is understood.
+    Return None for unknown syntax so OuterClient never disables a mod
+    based on a guess.
+    """
+    if constraint is None:
+        return None
+
+    if isinstance(constraint, list):
+        results = [
+            self.fabric_constraint_result(
+                current,
+                item,
+            )
+            for item in constraint
+        ]
+        if any(result is True for result in results):
+            return True
+        if results and all(result is False for result in results):
+            return False
+        return None
+
+    text = str(constraint).strip()
+
+    if not text or text in {"*", ">=0"}:
+        return True
+
+    if "||" in text:
+        results = [
+            self.fabric_constraint_result(
+                current,
+                item.strip(),
+            )
+            for item in text.split("||")
+        ]
+        if any(result is True for result in results):
+            return True
+        if all(result is False for result in results):
+            return False
+        return None
+
+    # Wildcards such as 26.2.x or 1.16.*
+    wildcard = re.fullmatch(
+        r"(\d+)(?:\.(\d+))?(?:\.(x|X|\*))?",
+        text,
+    )
+    if wildcard and wildcard.group(3):
+        wanted = [
+            int(group)
+            for group in wildcard.groups()[:2]
+            if group is not None
+        ]
+        current_parts = list(
+            self.simple_version_tuple(
+                current
+            )
+        )
+        return current_parts[:len(wanted)] == wanted
+
+    # Exact numeric version.
+    if re.fullmatch(r"\d+(?:\.\d+){0,3}", text):
+        return (
+            self.simple_version_tuple(current)
+            == self.simple_version_tuple(text)
+        )
+
+    # ~1.16.5
+    if text.startswith("~") and re.fullmatch(
+        r"~\d+(?:\.\d+){1,3}",
+        text,
+    ):
+        base = self.simple_version_tuple(text[1:])
+        cur = self.simple_version_tuple(current)
+        upper = list(base)
+        upper[1] += 1
+        for index in range(2, len(upper)):
+            upper[index] = 0
+        return cur >= base and cur < tuple(upper)
+
+    # ^1.16.5
+    if text.startswith("^") and re.fullmatch(
+        r"\^\d+(?:\.\d+){1,3}",
+        text,
+    ):
+        base = self.simple_version_tuple(text[1:])
+        cur = self.simple_version_tuple(current)
+        upper = list(base)
+        if upper[0] > 0:
+            upper[0] += 1
+            upper[1:] = [0] * (len(upper) - 1)
+        else:
+            upper[1] += 1
+            upper[2:] = [0] * (len(upper) - 2)
+        return cur >= base and cur < tuple(upper)
+
+    # Comparator chains: >=1.20 <1.21.5
+    tokens = re.findall(
+        r"(>=|<=|>|<|=)?\s*(\d+(?:\.\d+){0,3})",
+        text,
+    )
+
+    if tokens:
+        # Reject syntax that contains meaningful leftovers.
+        stripped = re.sub(
+            r"(>=|<=|>|<|=)?\s*\d+(?:\.\d+){0,3}",
+            "",
+            text,
+        )
+        stripped = stripped.replace(",", " ").strip()
+        if stripped:
+            return None
+
+        cur = self.simple_version_tuple(current)
+
+        for operator, version in tokens:
+            wanted = self.simple_version_tuple(version)
+            operator = operator or "="
+
+            if operator == ">=" and not (cur >= wanted):
+                return False
+            if operator == "<=" and not (cur <= wanted):
+                return False
+            if operator == ">" and not (cur > wanted):
+                return False
+            if operator == "<" and not (cur < wanted):
+                return False
+            if operator == "=" and not (cur == wanted):
+                return False
+
+        return True
+
+    return None
+
+
+# ---------- local Fabric metadata ----------
+
+def _v55_read_fabric_meta(self, jar_path):
+    jar_path = Path(jar_path)
+
+    if not jar_path.is_file() or jar_path.suffix.lower() != ".jar":
+        return None
+
+    try:
+        with zipfile.ZipFile(jar_path, "r") as archive:
+            try:
+                raw = archive.read("fabric.mod.json")
+            except KeyError:
+                return None
+
+        data = json.loads(
+            raw.decode("utf-8", errors="replace")
+        )
+
+        if not isinstance(data, dict):
+            return None
+
+        contact = data.get("contact")
+        if not isinstance(contact, dict):
+            contact = {}
+
+        depends = data.get("depends")
+        if not isinstance(depends, dict):
+            depends = {}
+
+        return {
+            "id": str(data.get("id") or ""),
+            "name": str(
+                data.get("name")
+                or data.get("id")
+                or jar_path.stem
+            ),
+            "version": str(
+                data.get("version")
+                or ""
+            ),
+            "description": str(
+                data.get("description")
+                or ""
+            ),
+            "depends": depends,
+            "homepage": (
+                contact.get("homepage")
+                or contact.get("sources")
+                or contact.get("issues")
+                or ""
+            ),
+        }
+    except Exception:
+        return None
+
+
+def _v55_mod_url(self, entry):
+    meta = entry.get("meta") or {}
+
+    if meta.get("source") == "Modrinth":
+        slug = (
+            meta.get("slug")
+            or meta.get("project_id")
+        )
+        if slug:
+            return f"https://modrinth.com/mod/{slug}"
+
+    if meta.get("website_url"):
+        return meta["website_url"]
+
+    local = entry.get("local_meta") or {}
+    homepage = local.get("homepage")
+    if homepage:
+        return str(homepage)
+
+    query = requests.utils.quote(
+        entry.get("name")
+        or Path(entry.get("path", "")).stem
+    )
+    return (
+        "https://modrinth.com/mods"
+        f"?q={query}"
+    )
+
+
+def _v55_profile_entries(
+    self,
+    profile_name,
+    category,
+):
+    entries = _V55_PROFILE_ENTRIES_BASE(
+        self,
+        profile_name,
+        category,
+    )
+
+    if category != "mods":
+        return entries
+
+    for entry in entries:
+        path = Path(entry["path"])
+        local = self.read_fabric_mod_metadata(
+            path
+        )
+
+        if local:
+            entry["local_meta"] = local
+
+            meta = entry.get("meta") or {}
+
+            if not meta.get("title"):
+                entry["name"] = (
+                    local.get("name")
+                    or entry["name"]
+                )
+
+            details = []
+
+            if local.get("id"):
+                details.append(
+                    local["id"]
+                )
+            if local.get("version"):
+                details.append(
+                    local["version"]
+                )
+
+            if details and not meta.get(
+                "version_number"
+            ):
+                entry["detail"] = (
+                    self.t(
+                        "v55_local_metadata"
+                    )
+                    + " • "
+                    + " • ".join(details)
+                )
+
+        entry["url"] = self.mod_page_url(
+            entry
+        )
+
+    return entries
+
+
+# ---------- conservative Fabric compatibility repair ----------
+
+def _v55_disable_incompatible_fabric_mods(
+    self,
+    profile_name,
+):
+    profile = self.cfg["profiles"].get(
+        profile_name,
+        {},
+    )
+
+    if profile.get("loader") != "Fabric":
+        return []
+
+    instance = self.profile_instance_dir(
+        profile_name
+    )
+    mods = instance / "mods"
+
+    if not mods.exists():
+        return []
+
+    disabled_dir = instance / "mods-disabled"
+    moved = []
+
+    for jar in sorted(mods.glob("*.jar")):
+        local = self.read_fabric_mod_metadata(
+            jar
+        )
+
+        if not local:
+            continue
+
+        depends = local.get("depends") or {}
+        mc_constraint = depends.get(
+            "minecraft"
+        )
+
+        result = self.fabric_constraint_result(
+            profile.get("version"),
+            mc_constraint,
+        )
+
+        # Move only when the parser is certain the Minecraft version
+        # is incompatible. Unknown syntax is never touched.
+        if result is False:
+            disabled_dir.mkdir(
+                parents=True,
+                exist_ok=True,
+            )
+
+            target = disabled_dir / jar.name
+            counter = 1
+
+            while target.exists():
+                target = disabled_dir / (
+                    f"{jar.stem}-{counter}"
+                    f"{jar.suffix}"
+                )
+                counter += 1
+
+            shutil.move(
+                str(jar),
+                str(target),
+            )
+
+            moved.append({
+                "name": local.get("name")
+                or jar.name,
+                "file": jar.name,
+                "constraint": mc_constraint,
+                "target": str(target),
+            })
+
+    if moved:
+        self.events.put(
+            (
+                "fabric_incompatible_disabled",
+                (
+                    profile_name,
+                    moved,
+                ),
+            )
+        )
+        self.write_log(
+            "Disabled incompatible Fabric mods: "
+            + ", ".join(
+                item["file"]
+                for item in moved
+            )
+        )
+
+    return moved
+
+
+# ---------- Fabric API ----------
+
+def _v55_has_fabric_api(self, profile_name):
+    mods = (
+        self.profile_instance_dir(
+            profile_name
+        )
+        / "mods"
+    )
+
+    if not mods.exists():
+        return False
+
+    for jar in mods.glob("*.jar"):
+        local = self.read_fabric_mod_metadata(
+            jar
+        )
+
+        if local and local.get("id") in {
+            "fabric-api",
+            "fabric_api",
+        }:
+            return True
+
+        name = jar.name.casefold()
+        if name.startswith("fabric-api-"):
+            return True
+
+    return False
+
+
+def _v55_ensure_fabric_api(self, profile_name):
+    profile = self.cfg["profiles"].get(
+        profile_name,
+        {},
+    )
+
+    if profile.get("loader") != "Fabric":
+        return False
+
+    if self.has_fabric_api(
+        profile_name
+    ):
+        self.events.put(
+            (
+                "fabric_api_ready",
+                profile_name,
+            )
+        )
+        return True
+
+    try:
+        self.events.put(
+            (
+                "status",
+                self.t(
+                    "v55_fabric_api_installing"
+                ),
+            )
+        )
+
+        version = self.find_modrinth_version(
+            "fabric-api",
+            "Mody",
+            profile["version"],
+            "Fabric",
+        )
+
+        if not version:
+            self.write_log(
+                "No compatible Fabric API "
+                f"for Minecraft {profile['version']}"
+            )
+            return False
+
+        dest = (
+            self.profile_instance_dir(
+                profile_name
+            )
+            / "mods"
+        )
+        dest.mkdir(
+            parents=True,
+            exist_ok=True,
+        )
+
+        target = self.download_modrinth_version(
+            version,
+            dest,
+        )
+
+        self.record_installed_content(
+            profile_name,
+            target,
+            {
+                "source": "Modrinth",
+                "project_id":
+                    version.get("project_id")
+                    or "P7dR8mSH",
+                "version_id":
+                    version.get("id"),
+                "version_number":
+                    version.get(
+                        "version_number"
+                    ),
+                "title": "Fabric API",
+                "slug": "fabric-api",
+                "category": "Mody",
+            },
+        )
+
+        self.events.put(
+            (
+                "fabric_api_ready",
+                profile_name,
+            )
+        )
+        return True
+
+    except Exception as exc:
+        self.write_log(
+            "Fabric API auto-install failed: "
+            + str(exc)
+        )
+        return False
+
+
+def _v55_create_profile(
+    self,
+    name,
+    version,
+    loader,
+    icon_path=None,
+):
+    _V55_CREATE_PROFILE_BASE(
+        self,
+        name,
+        version,
+        loader,
+        icon_path,
+    )
+
+    if (
+        name in self.cfg["profiles"]
+        and self.cfg["profiles"][name]
+        .get("loader") == "Fabric"
+    ):
+        self.run_bg(
+            lambda:
+                self.ensure_fabric_api(
+                    name
+                )
+        )
+
+
+def _v55_prepare_profile(
+    self,
+    profile_name,
+):
+    profile = self.cfg["profiles"].get(
+        profile_name,
+        {},
+    )
+
+    if profile.get("loader") == "Fabric":
+        # Old Performance Pack leftovers such as an ImmediatelyFast build
+        # for Minecraft 26.x are moved aside instead of deleted.
+        self.disable_incompatible_fabric_mods(
+            profile_name
+        )
+
+        # Every Fabric profile gets a compatible Fabric API automatically.
+        self.ensure_fabric_api(
+            profile_name
+        )
+
+    return _V55_PREPARE_PROFILE_BASE(
+        self,
+        profile_name,
+    )
+
+
+# ---------- better Java Manager ----------
+
+def _v55_profile_manual_java(
+    self,
+    profile_name,
+):
+    profile = self.cfg["profiles"].get(
+        profile_name,
+        {},
+    )
+    path = profile.get(
+        "java_path"
+    )
+
+    if not path:
+        return None
+
+    candidate = Path(path)
+
+    if not candidate.exists():
+        return None
+
+    major = self.java_major(
+        candidate
+    )
+
+    if not major:
+        return None
+
+    return {
+        "path": str(candidate),
+        "major": major,
+        "manual": True,
+    }
+
+
+def _v55_set_profile_java(
+    self,
+    profile_name,
+    path,
+):
+    profile = self.cfg["profiles"].get(
+        profile_name
+    )
+
+    if not profile:
+        return
+
+    path = str(path)
+    major = self.java_major(
+        Path(path)
+    )
+
+    if not major:
+        messagebox.showerror(
+            "Java Manager",
+            f"Nie udało się odczytać wersji:\n{path}",
+        )
+        return
+
+    profile["java_path"] = path
+    self.cfg["auto_java"] = False
+    save_config(self.cfg)
+
+    if hasattr(
+        self,
+        "settings_auto_java",
+    ):
+        self.settings_auto_java.set(
+            False
+        )
+
+    self.render_java_manager(
+        self.java_installations
+    )
+
+
+def _v55_choose_java_file(
+    self,
+    profile_name,
+):
+    if sys.platform.startswith(
+        "win"
+    ):
+        patterns = [
+            ("Java", "java.exe"),
+            ("All files", "*.*"),
+        ]
+    else:
+        patterns = [
+            ("Java", "java"),
+            ("All files", "*"),
+        ]
+
+    path = filedialog.askopenfilename(
+        title=self.t(
+            "v55_java_choose_file"
+        ),
+        filetypes=patterns,
+    )
+
+    if path:
+        self.set_profile_java(
+            profile_name,
+            path,
+        )
+
+
+def _v55_use_auto_java(
+    self,
+    profile_name,
+):
+    self.cfg["auto_java"] = True
+    profile = self.cfg["profiles"].get(
+        profile_name,
+        {},
+    )
+    profile.pop(
+        "java_path",
+        None,
+    )
+    save_config(self.cfg)
+
+    if hasattr(
+        self,
+        "settings_auto_java",
+    ):
+        self.settings_auto_java.set(
+            True
+        )
+
+    self.render_java_manager(
+        self.java_installations
+    )
+
+
+def _v55_download_runtime_worker(
+    self,
+    profile_name,
+):
+    try:
+        profile = self.cfg["profiles"][
+            profile_name
+        ]
+        instance = self.profile_instance_dir(
+            profile_name
+        )
+        instance.mkdir(
+            parents=True,
+            exist_ok=True,
+        )
+
+        minecraft_launcher_lib.install.install_minecraft_version(
+            profile["version"],
+            str(instance),
+        )
+
+        self.events.put(
+            (
+                "java_runtime_ready",
+                profile_name,
+            )
+        )
+
+    except Exception as exc:
+        self.events.put(
+            (
+                "error",
+                f"Java runtime:\n{exc}",
+            )
+        )
+
+
+def _v55_render_java_manager(
+    self,
+    found=None,
+):
+    frame = getattr(
+        self,
+        "java_manager_list",
+        None,
+    )
+
+    if frame is None:
+        return
+
+    try:
+        if not frame.winfo_exists():
+            return
+    except Exception:
+        return
+
+    for child in frame.winfo_children():
+        child.destroy()
+
+    profile_name = self.cfg.get(
+        "selected"
+    )
+
+    profile = self.cfg["profiles"].get(
+        profile_name,
+        {},
+    )
+
+    required = self.required_java_major(
+        profile.get("version")
+    )
+
+    runtime = self.vanilla_runtime_for_profile(
+        profile.get("version"),
+        self.profile_instance_dir(
+            profile_name
+        ),
+    )
+
+    manual = self.profile_manual_java(
+        profile_name
+    )
+
+    # Minecraft runtime card.
+    runtime_card = ctk.CTkFrame(
+        frame,
+        fg_color=SURFACE_2,
+        corner_radius=11,
+    )
+    runtime_card.pack(
+        fill="x",
+        pady=(0, 7),
+    )
+    runtime_card.grid_columnconfigure(
+        1,
+        weight=1,
+    )
+
+    ctk.CTkLabel(
+        runtime_card,
+        text="☕",
+        width=42,
+        text_color=self.accent,
+        font=ctk.CTkFont(
+            size=19,
+            weight="bold",
+        ),
+    ).grid(
+        row=0,
+        column=0,
+        rowspan=2,
+        padx=(12, 4),
+        pady=10,
+    )
+
+    ctk.CTkLabel(
+        runtime_card,
+        text=self.t(
+            "v55_bundled_runtime"
+        ),
+        text_color=TEXT,
+        anchor="w",
+        font=ctk.CTkFont(
+            size=14,
+            weight="bold",
+        ),
+    ).grid(
+        row=0,
+        column=1,
+        sticky="sw",
+        pady=(10, 0),
+    )
+
+    runtime_detail = (
+        (
+            f"Java {runtime.get('major') or required}"
+            f" • {runtime.get('path')}"
+        )
+        if runtime
+        else self.t(
+            "v55_runtime_missing"
+        )
+    )
+
+    ctk.CTkLabel(
+        runtime_card,
+        text=runtime_detail,
+        text_color=MUTED,
+        anchor="w",
+        wraplength=720,
+    ).grid(
+        row=1,
+        column=1,
+        sticky="nw",
+        pady=(2, 10),
+    )
+
+    if runtime:
+        active = (
+            bool(
+                self.cfg.get(
+                    "auto_java",
+                    True,
+                )
+            )
+            and manual is None
+        )
+
+        ctk.CTkButton(
+            runtime_card,
+            text=(
+                self.t(
+                    "v55_java_active"
+                )
+                if active
+                else self.t(
+                    "v55_java_use"
+                )
+            ),
+            width=92,
+            height=34,
+            fg_color=(
+                self.accent
+                if active
+                else SURFACE_3
+            ),
+            hover_color=self.accent_hover,
+            command=lambda:
+                self.use_auto_java_for_profile(
+                    profile_name
+                ),
+        ).grid(
+            row=0,
+            column=2,
+            rowspan=2,
+            padx=12,
+        )
+
+    found = list(
+        found
+        if found is not None
+        else self.java_installations
+    )
+
+    if not found:
+        ctk.CTkLabel(
+            frame,
+            text=self.t(
+                "v55_java_none"
+            ),
+            text_color=MUTED,
+            anchor="w",
+        ).pack(
+            fill="x",
+            pady=8,
+        )
+
+    for item in found:
+        card = ctk.CTkFrame(
+            frame,
+            fg_color=SURFACE_2,
+            corner_radius=11,
+        )
+        card.pack(
+            fill="x",
+            pady=3,
+        )
+        card.grid_columnconfigure(
+            1,
+            weight=1,
+        )
+
+        ctk.CTkLabel(
+            card,
+            text=f"J{item['major']}",
+            width=48,
+            height=38,
+            corner_radius=10,
+            fg_color=SURFACE_3,
+            text_color=(
+                self.secondary
+                if item["major"]
+                == required
+                else TEXT
+            ),
+            font=ctk.CTkFont(
+                size=13,
+                weight="bold",
+            ),
+        ).grid(
+            row=0,
+            column=0,
+            rowspan=2,
+            padx=10,
+            pady=9,
+        )
+
+        ctk.CTkLabel(
+            card,
+            text=f"Java {item['major']}",
+            text_color=TEXT,
+            anchor="w",
+            font=ctk.CTkFont(
+                size=13,
+                weight="bold",
+            ),
+        ).grid(
+            row=0,
+            column=1,
+            sticky="sw",
+            pady=(9, 0),
+        )
+
+        ctk.CTkLabel(
+            card,
+            text=item["path"],
+            text_color=MUTED,
+            anchor="w",
+            wraplength=720,
+        ).grid(
+            row=1,
+            column=1,
+            sticky="nw",
+            pady=(1, 9),
+        )
+
+        active = (
+            manual is not None
+            and Path(
+                manual["path"]
+            ).resolve()
+            == Path(
+                item["path"]
+            ).resolve()
+        )
+
+        ctk.CTkButton(
+            card,
+            text=(
+                self.t(
+                    "v55_java_active"
+                )
+                if active
+                else self.t(
+                    "v55_java_use"
+                )
+            ),
+            width=92,
+            height=32,
+            fg_color=(
+                self.accent
+                if active
+                else SURFACE_3
+            ),
+            hover_color=self.accent_hover,
+            command=lambda p=item["path"]:
+                self.set_profile_java(
+                    profile_name,
+                    p,
+                ),
+        ).grid(
+            row=0,
+            column=2,
+            rowspan=2,
+            padx=10,
+        )
+
+
+def _v55_show_system_tools(self):
+    self.set_active_page(
+        "settings"
+    )
+    self.clear_content()
+
+    page = self.page()
+
+    self.page_header(
+        page,
+        self.t("nav_settings"),
+        self.t(
+            "v52_system_tools"
+        ),
+        self.t(
+            "v52_system_tools_subtitle"
+        ),
+    )
+
+    self.settings_tabs(
+        page,
+        "system",
+    )
+
+    profile_name = self.cfg.get(
+        "selected"
+    )
+    profile = self.cfg[
+        "profiles"
+    ].get(
+        profile_name,
+        {},
+    )
+
+    self.settings_auto_java = ctk.BooleanVar(
+        value=bool(
+            self.cfg.get(
+                "auto_java",
+                True,
+            )
+        )
+    )
+
+    self.settings_auto_updates = ctk.BooleanVar(
+        value=bool(
+            self.cfg.get(
+                "auto_check_updates",
+                True,
+            )
+        )
+    )
+
+    required = self.required_java_major(
+        profile.get("version")
+    )
+
+    java_card = self.card(
+        page,
+        14,
+    )
+    java_card.grid(
+        row=2,
+        column=0,
+        sticky="ew",
+        padx=36,
+        pady=(0, 12),
+    )
+    java_card.grid_columnconfigure(
+        0,
+        weight=1,
+    )
+
+    ctk.CTkLabel(
+        java_card,
+        text="Java Manager",
+        text_color=TEXT,
+        font=ctk.CTkFont(
+            size=19,
+            weight="bold",
+        ),
+    ).grid(
+        row=0,
+        column=0,
+        sticky="w",
+        padx=20,
+        pady=(16, 2),
+    )
+
+    self.java_manager_label = ctk.CTkLabel(
+        java_card,
+        text=(
+            f"{self.t('v55_profile_java')}: "
+            f"{profile_name} • "
+            f"{self.t('v5_java_required',major=required)}"
+        ),
+        text_color=MUTED,
+        anchor="w",
+    )
+    self.java_manager_label.grid(
+        row=1,
+        column=0,
+        sticky="w",
+        padx=20,
+        pady=(0, 3),
+    )
+
+    ctk.CTkLabel(
+        java_card,
+        text=self.t(
+            "v55_java_manager_desc"
+        ),
+        text_color=MUTED,
+        anchor="w",
+        justify="left",
+        wraplength=850,
+    ).grid(
+        row=2,
+        column=0,
+        sticky="w",
+        padx=20,
+        pady=(0, 12),
+    )
+
+    controls = ctk.CTkFrame(
+        java_card,
+        fg_color="transparent",
+    )
+    controls.grid(
+        row=3,
+        column=0,
+        sticky="ew",
+        padx=20,
+        pady=(0, 12),
+    )
+
+    ctk.CTkSwitch(
+        controls,
+        text=self.t(
+            "v55_java_auto_runtime"
+        ),
+        variable=self.settings_auto_java,
+        progress_color=self.accent,
+        command=lambda:
+            (
+                self.use_auto_java_for_profile(
+                    profile_name
+                )
+                if self.settings_auto_java.get()
+                else None
+            ),
+    ).pack(side="left")
+
+    ctk.CTkButton(
+        controls,
+        text=self.t(
+            "v5_java_scan"
+        ),
+        fg_color=SURFACE_3,
+        hover_color=self.accent,
+        command=lambda:
+            self.run_bg(
+                self.detect_java_installations
+            ),
+    ).pack(
+        side="left",
+        padx=8,
+    )
+
+    ctk.CTkButton(
+        controls,
+        text=self.t(
+            "v55_java_choose_file"
+        ),
+        fg_color=SURFACE_3,
+        hover_color=self.accent,
+        command=lambda:
+            self.choose_profile_java_file(
+                profile_name
+            ),
+    ).pack(side="left")
+
+    ctk.CTkButton(
+        controls,
+        text=self.t(
+            "v55_java_repair_runtime"
+        ),
+        fg_color=SURFACE_3,
+        hover_color=self.accent,
+        command=lambda:
+            self.run_bg(
+                lambda:
+                    self.download_profile_runtime_worker(
+                        profile_name
+                    )
+            ),
+    ).pack(
+        side="left",
+        padx=8,
+    )
+
+    self.java_manager_list = ctk.CTkFrame(
+        java_card,
+        fg_color="transparent",
+    )
+    self.java_manager_list.grid(
+        row=4,
+        column=0,
+        sticky="ew",
+        padx=20,
+        pady=(0, 16),
+    )
+
+    self.render_java_manager(
+        self.java_installations
+    )
+
+    # Launcher updates.
+    update_card = self.card(
+        page,
+        14,
+    )
+    update_card.grid(
+        row=3,
+        column=0,
+        sticky="ew",
+        padx=36,
+        pady=(0, 12),
+    )
+
+    ctk.CTkLabel(
+        update_card,
+        text=self.t(
+            "v5_launcher_updates"
+        ),
+        text_color=TEXT,
+        font=ctk.CTkFont(
+            size=19,
+            weight="bold",
+        ),
+    ).pack(
+        anchor="w",
+        padx=20,
+        pady=(16, 8),
+    )
+
+    update_actions = ctk.CTkFrame(
+        update_card,
+        fg_color="transparent",
+    )
+    update_actions.pack(
+        fill="x",
+        padx=20,
+        pady=(0, 16),
+    )
+
+    ctk.CTkSwitch(
+        update_actions,
+        text=self.t(
+            "v5_auto_updates"
+        ),
+        variable=self.settings_auto_updates,
+        progress_color=self.accent,
+        command=self.save_settings,
+    ).pack(side="left")
+
+    ctk.CTkButton(
+        update_actions,
+        text=self.t(
+            "v5_check_launcher"
+        ),
+        fg_color=SURFACE_3,
+        hover_color=self.accent,
+        command=lambda:
+            self.run_bg(
+                lambda:
+                    self.check_launcher_update(
+                        True
+                    )
+            ),
+    ).pack(
+        side="left",
+        padx=8,
+    )
+
+    # Shortcut.
+    shortcut = self.card(
+        page,
+        14,
+    )
+    shortcut.grid(
+        row=4,
+        column=0,
+        sticky="ew",
+        padx=36,
+        pady=(0, 18),
+    )
+
+    ctk.CTkLabel(
+        shortcut,
+        text=self.t(
+            "v54_shortcut"
+        ),
+        text_color=TEXT,
+        font=ctk.CTkFont(
+            size=19,
+            weight="bold",
+        ),
+    ).pack(
+        anchor="w",
+        padx=20,
+        pady=(16, 3),
+    )
+
+    ctk.CTkLabel(
+        shortcut,
+        text=(
+            self.t(
+                "v54_shortcut_desc"
+            )
+            + "\n"
+            + self.t(
+                "v55_shortcut_icon"
+            )
+        ),
+        text_color=MUTED,
+        anchor="w",
+        justify="left",
+        wraplength=850,
+    ).pack(
+        anchor="w",
+        padx=20,
+        pady=(0, 12),
+    )
+
+    shortcut_buttons = ctk.CTkFrame(
+        shortcut,
+        fg_color="transparent",
+    )
+    shortcut_buttons.pack(
+        fill="x",
+        padx=20,
+        pady=(0, 16),
+    )
+
+    ctk.CTkButton(
+        shortcut_buttons,
+        text=self.t(
+            "v54_create_shortcut"
+        ),
+        fg_color=self.accent,
+        hover_color=self.accent_hover,
+        command=self.create_desktop_shortcut,
+    ).pack(side="left")
+
+    ctk.CTkButton(
+        shortcut_buttons,
+        text=self.t(
+            "v54_remove_shortcut"
+        ),
+        fg_color=SURFACE_3,
+        hover_color="#2B3749",
+        command=self.remove_desktop_shortcut,
+    ).pack(
+        side="left",
+        padx=8,
+    )
+
+
+# ---------- shortcut icon ----------
+
+def _v55_copy_shortcut_assets(self):
+    root = self.managed_install_dir()
+    root.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+
+    png = root / "outerclient-logo.png"
+    ico = root / "outerclient.ico"
+
+    try:
+        shutil.copy2(
+            asset_path(
+                "assets",
+                "outerclient-logo.png",
+            ),
+            png,
+        )
+    except Exception:
+        pass
+
+    try:
+        shutil.copy2(
+            asset_path(
+                "assets",
+                "outerclient.ico",
+            ),
+            ico,
+        )
+    except Exception:
+        pass
+
+    return {
+        "png": png,
+        "ico": ico,
+    }
+
+
+def _v55_write_shortcut(self):
+    root = self.managed_install_dir()
+    root.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+
+    target = self.managed_executable()
+    current = self.current_outerclient_package()
+
+    if current is not None:
+        try:
+            same = (
+                current.resolve()
+                == target.resolve()
+            )
+        except Exception:
+            same = False
+
+        if not same:
+            temp = target.with_suffix(
+                target.suffix + ".new"
+            )
+            shutil.copy2(
+                current,
+                temp,
+            )
+
+            if not sys.platform.startswith(
+                "win"
+            ):
+                os.chmod(
+                    temp,
+                    0o755,
+                )
+
+            os.replace(
+                temp,
+                target,
+            )
+
+    if not target.exists():
+        raise RuntimeError(
+            "Uruchom tę funkcję z wersji AppImage lub EXE."
+        )
+
+    icons = self.copy_shortcut_assets_v55()
+
+    if sys.platform.startswith("win"):
+        desktop = Path(
+            os.environ.get(
+                "USERPROFILE",
+                str(Path.home()),
+            )
+        ) / "Desktop"
+
+        desktop.mkdir(
+            parents=True,
+            exist_ok=True,
+        )
+
+        shortcut = desktop / "OuterClient.lnk"
+
+        escaped_target = str(
+            target
+        ).replace(
+            "'",
+            "''",
+        )
+        escaped_shortcut = str(
+            shortcut
+        ).replace(
+            "'",
+            "''",
+        )
+        escaped_root = str(
+            root
+        ).replace(
+            "'",
+            "''",
+        )
+        escaped_icon = str(
+            icons["ico"]
+        ).replace(
+            "'",
+            "''",
+        )
+
+        command = (
+            "$ws=New-Object -ComObject WScript.Shell;"
+            f"$s=$ws.CreateShortcut('{escaped_shortcut}');"
+            f"$s.TargetPath='{escaped_target}';"
+            f"$s.WorkingDirectory='{escaped_root}';"
+            f"$s.IconLocation='{escaped_icon},0';"
+            "$s.Save();"
+        )
+
+        subprocess.run(
+            [
+                "powershell",
+                "-NoProfile",
+                "-ExecutionPolicy",
+                "Bypass",
+                "-Command",
+                command,
+            ],
+            check=True,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+
+        # Ask Explorer to refresh shortcut/icon caches.
+        try:
+            subprocess.run(
+                ["ie4uinit.exe", "-show"],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                timeout=5,
+            )
+        except Exception:
+            pass
+
+    else:
+        desktop = (
+            Path.home()
+            / "Desktop"
+        )
+        desktop.mkdir(
+            parents=True,
+            exist_ok=True,
+        )
+
+        desktop_file = (
+            desktop
+            / "OuterClient.desktop"
+        )
+        application_file = (
+            Path.home()
+            / ".local"
+            / "share"
+            / "applications"
+            / "outerclient.desktop"
+        )
+
+        application_file.parent.mkdir(
+            parents=True,
+            exist_ok=True,
+        )
+
+        content = f"""[Desktop Entry]
+Type=Application
+Name=OuterClient
+Comment=Minecraft launcher
+Exec={target}
+Icon={icons["png"]}
+Categories=Game;
+Terminal=false
+StartupWMClass=OuterClient
+"""
+
+        desktop_file.write_text(
+            content,
+            encoding="utf-8",
+        )
+        application_file.write_text(
+            content,
+            encoding="utf-8",
+        )
+
+        os.chmod(
+            desktop_file,
+            0o755,
+        )
+        os.chmod(
+            target,
+            0o755,
+        )
+
+    self.cfg[
+        "desktop_shortcut"
+    ] = True
+    self.cfg[
+        "managed_version"
+    ] = APP_VERSION
+
+    save_config(
+        self.cfg
+    )
+
+    return True
+
+
+# ---------- Microsoft login with persistent link ----------
+
+def _v55_show_accounts_page(self):
+    self.active_page = "accounts"
+    self.clear_content()
+    page = self.page()
+
+    top = ctk.CTkFrame(
+        page,
+        fg_color="transparent",
+    )
+    top.grid(
+        row=0,
+        column=0,
+        sticky="ew",
+        padx=36,
+        pady=(28, 14),
+    )
+    top.grid_columnconfigure(
+        1,
+        weight=1,
+    )
+
+    ctk.CTkButton(
+        top,
+        text=self.t("v51_back"),
+        width=100,
+        height=36,
+        fg_color=SURFACE_3,
+        hover_color="#2B3749",
+        command=self.show_home,
+    ).grid(
+        row=0,
+        column=0,
+        sticky="w",
+        padx=(0, 14),
+    )
+
+    title = ctk.CTkFrame(
+        top,
+        fg_color="transparent",
+    )
+    title.grid(
+        row=0,
+        column=1,
+        sticky="w",
+    )
+
+    ctk.CTkLabel(
+        title,
+        text=self.t(
+            "v51_accounts_title"
+        ),
+        text_color=TEXT,
+        font=ctk.CTkFont(
+            size=29,
+            weight="bold",
+        ),
+    ).pack(anchor="w")
+
+    ctk.CTkLabel(
+        title,
+        text=self.t(
+            "v51_accounts_subtitle"
+        ),
+        text_color=MUTED,
+    ).pack(anchor="w")
+
+    actions = ctk.CTkFrame(
+        page,
+        fg_color="transparent",
+    )
+    actions.grid(
+        row=1,
+        column=0,
+        sticky="ew",
+        padx=36,
+        pady=(0, 10),
+    )
+
+    ctk.CTkButton(
+        actions,
+        text=self.t(
+            "add_microsoft_account"
+        ),
+        height=42,
+        fg_color=self.accent,
+        hover_color=self.accent_hover,
+        command=self.login,
+    ).pack(side="left")
+
+    ctk.CTkButton(
+        actions,
+        text=self.t("use_offline"),
+        height=42,
+        fg_color=SURFACE_3,
+        hover_color="#2B3749",
+        command=self.use_offline_account,
+    ).pack(
+        side="left",
+        padx=8,
+    )
+
+    # Persistent OAuth URL card — no extra OuterClient window.
+    link_card = self.card(
+        page,
+        14,
+    )
+    link_card.grid(
+        row=2,
+        column=0,
+        sticky="ew",
+        padx=36,
+        pady=(0, 10),
+    )
+    link_card.grid_columnconfigure(
+        0,
+        weight=1,
+    )
+
+    ctk.CTkLabel(
+        link_card,
+        text=self.t(
+            "v55_login_link"
+        ),
+        text_color=TEXT,
+        font=ctk.CTkFont(
+            size=15,
+            weight="bold",
+        ),
+        anchor="w",
+    ).grid(
+        row=0,
+        column=0,
+        sticky="w",
+        padx=16,
+        pady=(13, 5),
+    )
+
+    url = getattr(
+        self,
+        "microsoft_oauth_url",
+        "",
+    )
+
+    if url:
+        url_box = ctk.CTkTextbox(
+            link_card,
+            height=74,
+            fg_color=SURFACE_2,
+            border_width=1,
+            border_color=BORDER,
+            text_color=MUTED,
+            wrap="char",
+        )
+        url_box.grid(
+            row=1,
+            column=0,
+            sticky="ew",
+            padx=16,
+        )
+        url_box.insert(
+            "1.0",
+            url,
+        )
+        url_box.configure(
+            state="disabled"
+        )
+
+        link_actions = ctk.CTkFrame(
+            link_card,
+            fg_color="transparent",
+        )
+        link_actions.grid(
+            row=2,
+            column=0,
+            sticky="w",
+            padx=16,
+            pady=12,
+        )
+
+        ctk.CTkButton(
+            link_actions,
+            text=self.t(
+                "v55_open_login"
+            ),
+            height=34,
+            fg_color=self.accent,
+            hover_color=self.accent_hover,
+            command=lambda:
+                self.open_external_url(
+                    url
+                ),
+        ).pack(side="left")
+
+        ctk.CTkButton(
+            link_actions,
+            text=self.t(
+                "v55_copy_login"
+            ),
+            height=34,
+            fg_color=SURFACE_3,
+            hover_color="#2B3749",
+            command=lambda:
+                self.copy_login_url(
+                    url
+                ),
+        ).pack(
+            side="left",
+            padx=8,
+        )
+    else:
+        ctk.CTkLabel(
+            link_card,
+            text=self.t(
+                "v55_login_link_wait"
+            ),
+            text_color=MUTED,
+            anchor="w",
+            justify="left",
+            wraplength=820,
+        ).grid(
+            row=1,
+            column=0,
+            sticky="w",
+            padx=16,
+            pady=(0, 14),
+        )
+
+    accounts = self.cfg.get(
+        "microsoft_accounts",
+        [],
+    )
+    active_key = self.cfg.get(
+        "selected_microsoft_account"
+    )
+
+    if not accounts:
+        empty = self.card(
+            page,
+            14,
+        )
+        empty.grid(
+            row=3,
+            column=0,
+            sticky="ew",
+            padx=36,
+            pady=6,
+        )
+        ctk.CTkLabel(
+            empty,
+            text=self.t(
+                "no_saved_accounts"
+            ),
+            text_color=MUTED,
+        ).pack(
+            anchor="w",
+            padx=20,
+            pady=22,
+        )
+        return
+
+    for row, account in enumerate(
+        accounts,
+        start=3,
+    ):
+        key = self.account_key(
+            account
+        )
+        active = (
+            self.cfg.get(
+                "account_mode"
+            )
+            == "Microsoft"
+            and key == active_key
+        )
+
+        card = self.card(
+            page,
+            14,
+        )
+        card.grid(
+            row=row,
+            column=0,
+            sticky="ew",
+            padx=36,
+            pady=6,
+        )
+        card.grid_columnconfigure(
+            1,
+            weight=1,
+        )
+
+        ctk.CTkLabel(
+            card,
+            text=account.get(
+                "name",
+                "M",
+            )[:1].upper(),
+            width=54,
+            height=54,
+            corner_radius=14,
+            fg_color=(
+                self.accent
+                if active
+                else SURFACE_3
+            ),
+            text_color="white",
+            font=ctk.CTkFont(
+                size=19,
+                weight="bold",
+            ),
+        ).grid(
+            row=0,
+            column=0,
+            rowspan=2,
+            padx=16,
+            pady=14,
+        )
+
+        ctk.CTkLabel(
+            card,
+            text=account.get(
+                "name",
+                "Microsoft",
+            ),
+            text_color=TEXT,
+            anchor="w",
+            font=ctk.CTkFont(
+                size=16,
+                weight="bold",
+            ),
+        ).grid(
+            row=0,
+            column=1,
+            sticky="sw",
+            pady=(13, 0),
+        )
+
+        ctk.CTkLabel(
+            card,
+            text=(
+                self.t(
+                    "active_account"
+                )
+                if active
+                else account.get(
+                    "id",
+                    "",
+                )
+            ),
+            text_color=(
+                self.secondary
+                if active
+                else MUTED
+            ),
+            anchor="w",
+        ).grid(
+            row=1,
+            column=1,
+            sticky="nw",
+            pady=(2, 13),
+        )
+
+        if active:
+            ctk.CTkButton(
+                card,
+                text=self.t("logout"),
+                width=92,
+                fg_color="#3B2028",
+                hover_color="#512933",
+                text_color="#FFB7C0",
+                command=lambda k=key:
+                    self.remove_microsoft_account(
+                        k
+                    ),
+            ).grid(
+                row=0,
+                column=2,
+                rowspan=2,
+                padx=14,
+            )
+        else:
+            ctk.CTkButton(
+                card,
+                text=self.t(
+                    "use_account"
+                ),
+                width=82,
+                fg_color=self.accent,
+                hover_color=self.accent_hover,
+                command=lambda k=key:
+                    self.switch_microsoft_account(
+                        k
+                    ),
+            ).grid(
+                row=0,
+                column=2,
+                rowspan=2,
+                padx=(8, 5),
+            )
+
+            ctk.CTkButton(
+                card,
+                text=self.t(
+                    "remove_account"
+                ),
+                width=82,
+                fg_color="#3B2028",
+                hover_color="#512933",
+                text_color="#FFB7C0",
+                command=lambda k=key:
+                    self.remove_microsoft_account(
+                        k
+                    ),
+            ).grid(
+                row=0,
+                column=3,
+                rowspan=2,
+                padx=(0, 14),
+            )
+
+
+def _v55_login_worker(
+    self,
+    client_id,
+):
+    server = None
+
+    try:
+        CallbackHandler.callback_url = None
+
+        try:
+            server = ReusableHTTPServer(
+                (
+                    "127.0.0.1",
+                    8765,
+                ),
+                CallbackHandler,
+            )
+        except OSError as exc:
+            raise RuntimeError(
+                self.t(
+                    "v55_login_port_busy"
+                )
+            ) from exc
+
+        server.timeout = 1
+        redirect_uri = (
+            "http://localhost:"
+            "8765/callback"
+        )
+
+        url, state, verifier = (
+            minecraft_launcher_lib.microsoft_account
+            .get_secure_login_data(
+                client_id,
+                redirect_uri,
+            )
+        )
+
+        if "prompt=" not in url:
+            separator = (
+                "&"
+                if "?" in url
+                else "?"
+            )
+            url = (
+                f"{url}{separator}"
+                "prompt=select_account"
+            )
+
+        self.events.put(
+            (
+                "oauth_link_ready",
+                url,
+            )
+        )
+        self.events.put(
+            (
+                "open_url",
+                url,
+            )
+        )
+        self.events.put(
+            (
+                "status",
+                self.t(
+                    "v54_login_wait"
+                ),
+            )
+        )
+
+        deadline = (
+            time.time() + 600
+        )
+
+        while (
+            time.time() < deadline
+            and not CallbackHandler.callback_url
+        ):
+            server.handle_request()
+
+        if not CallbackHandler.callback_url:
+            raise TimeoutError(
+                "Microsoft login timed out."
+            )
+
+        code = (
+            minecraft_launcher_lib.microsoft_account
+            .parse_auth_code_url(
+                CallbackHandler.callback_url,
+                state,
+            )
+        )
+
+        auth = (
+            minecraft_launcher_lib.microsoft_account
+            .complete_login(
+                client_id,
+                None,
+                redirect_uri,
+                code,
+                verifier,
+            )
+        )
+
+        auth[
+            "_outerclient_redirect_uri"
+        ] = redirect_uri
+
+        self.events.put(
+            ("account", auth)
+        )
+
+    except Exception as exc:
+        self.events.put(
+            (
+                "error",
+                (
+                    "Microsoft login:\n"
+                    f"OuterClient {APP_VERSION}\n"
+                    "Callback: "
+                    "http://localhost:8765/callback\n"
+                    f"{exc}"
+                ),
+            )
+        )
+
+    finally:
+        self.microsoft_login_in_progress = False
+
+        if server:
+            try:
+                server.server_close()
+            except Exception:
+                pass
+
+
+# ---------- mod manager with links ----------
+
+def _v55_render_manage(self):
+    if not hasattr(
+        self,
+        "manage_list",
+    ):
+        return
+
+    for child in self.manage_list.winfo_children():
+        child.destroy()
+
+    entries = self.profile_manage_entries(
+        self.manage_profile_name,
+        self.manage_category,
+    )
+
+    if not entries:
+        ctk.CTkLabel(
+            self.manage_list,
+            text=self.t(
+                "manage_empty"
+            ),
+            text_color=MUTED,
+        ).grid(
+            row=0,
+            column=0,
+            sticky="w",
+            padx=14,
+            pady=18,
+        )
+        return
+
+    for row, entry in enumerate(
+        entries
+    ):
+        card = self.card(
+            self.manage_list,
+            12,
+        )
+        card.grid(
+            row=row,
+            column=0,
+            sticky="ew",
+            pady=5,
+        )
+        card.grid_columnconfigure(
+            1,
+            weight=1,
+        )
+
+        meta = entry.get(
+            "meta",
+            {},
+        )
+
+        icon = ctk.CTkLabel(
+            card,
+            text="◇",
+            width=48,
+            height=48,
+            corner_radius=10,
+            fg_color=SURFACE_2,
+            text_color=MUTED,
+            font=ctk.CTkFont(
+                size=18,
+                weight="bold",
+            ),
+        )
+        icon.grid(
+            row=0,
+            column=0,
+            rowspan=2,
+            padx=(13, 10),
+            pady=10,
+        )
+
+        if meta.get("icon_url"):
+            self.run_bg(
+                lambda u=meta.get(
+                    "icon_url"
+                ), w=icon:
+                    self.fetch_project_icon(
+                        u,
+                        w,
+                    )
+            )
+
+        ctk.CTkLabel(
+            card,
+            text=entry["name"],
+            text_color=TEXT,
+            anchor="w",
+            font=ctk.CTkFont(
+                size=14,
+                weight="bold",
+            ),
+        ).grid(
+            row=0,
+            column=1,
+            sticky="sw",
+            pady=(10, 0),
+        )
+
+        detail = entry[
+            "detail"
+        ]
+
+        if meta.get("author"):
+            detail = (
+                f"{meta['author']}"
+                f" • {detail}"
+            )
+
+        ctk.CTkLabel(
+            card,
+            text=detail,
+            text_color=MUTED,
+            anchor="w",
+            font=ctk.CTkFont(
+                size=10,
+            ),
+        ).grid(
+            row=1,
+            column=1,
+            sticky="nw",
+            pady=(2, 10),
+        )
+
+        update = self.profile_update_cache.get(
+            (
+                self.manage_profile_name,
+                entry.get("rel"),
+            )
+        )
+
+        column = 2
+
+        if update:
+            ctk.CTkButton(
+                card,
+                text=self.t(
+                    "v5_update"
+                ),
+                width=82,
+                height=32,
+                fg_color=self.accent,
+                hover_color=self.accent_hover,
+                command=lambda e=entry:
+                    self.update_managed_content(
+                        self.manage_profile_name,
+                        e,
+                    ),
+            ).grid(
+                row=0,
+                column=column,
+                rowspan=2,
+                padx=(5, 5),
+            )
+            column += 1
+
+        if self.manage_category == "mods":
+            url = entry.get(
+                "url"
+            )
+
+            if url:
+                ctk.CTkButton(
+                    card,
+                    text=self.t(
+                        "v55_mod_page"
+                    ),
+                    width=96,
+                    height=32,
+                    fg_color=SURFACE_3,
+                    hover_color=self.accent,
+                    command=lambda u=url:
+                        self.open_external_url(
+                            u
+                        ),
+                ).grid(
+                    row=0,
+                    column=column,
+                    rowspan=2,
+                    padx=(5, 5),
+                )
+                column += 1
+
+        ctk.CTkButton(
+            card,
+            text=self.t(
+                "manage_delete"
+            ),
+            width=80,
+            height=32,
+            fg_color="#3B2028",
+            hover_color="#512933",
+            text_color="#FFB7C0",
+            command=lambda e=entry:
+                self.delete_managed_content(
+                    e
+                ),
+        ).grid(
+            row=0,
+            column=column,
+            rowspan=2,
+            padx=(5, 13),
+        )
+
+
+# ---------- profile icon fallback for every profile ----------
+
+def _v55_ensure_all_profile_icons(self):
+    for profile_name in list(
+        self.cfg.get(
+            "profiles",
+            {},
+        )
+    ):
+        try:
+            self.ensure_default_profile_icon(
+                profile_name
+            )
+        except Exception:
+            pass
+
+
+# ---------- launch with manual Java support ----------
+
+def _v55_launch_installed(
+    self,
+    launch_version,
+    instance,
+    profile_name,
+    server_address=None,
+    runtime=None,
+):
+    mode = self.cfg.get(
+        "account_mode",
+        "Offline",
+    )
+    ram = self.profile_ram(
+        profile_name
+    )
+
+    if mode == "Microsoft":
+        if not self.auth:
+            raise RuntimeError(
+                self.t(
+                    "microsoft_not_authenticated"
+                )
+            )
+
+        auth = self.refresh_active_microsoft_account()
+
+        options = {
+            "username":
+                auth.get(
+                    "name",
+                    "Player",
+                ),
+            "uuid":
+                auth.get("id")
+                or auth.get(
+                    "uuid",
+                    "",
+                ),
+            "token":
+                auth.get(
+                    "access_token",
+                    "",
+                ),
+        }
+    else:
+        name = (
+            self.cfg.get(
+                "offline_name",
+                "Player",
+            ).strip()
+            or "Player"
+        )
+
+        options = {
+            "username": name,
+            "uuid":
+                java_offline_uuid(
+                    name
+                ),
+            "token": "0",
+        }
+
+    options.update({
+        "jvmArguments": [
+            f"-Xmx{ram}M",
+            "-Xms1024M",
+        ],
+        "gameDirectory":
+            str(instance),
+        "launcherName":
+            APP_NAME,
+        "launcherVersion":
+            APP_VERSION,
+    })
+
+    manual = self.profile_manual_java(
+        profile_name
+    )
+
+    if (
+        not self.cfg.get(
+            "auto_java",
+            True,
+        )
+        and manual
+    ):
+        options[
+            "executablePath"
+        ] = manual["path"]
+        options[
+            "defaultExecutablePath"
+        ] = manual["path"]
+    elif runtime and runtime.get(
+        "path"
+    ):
+        options[
+            "defaultExecutablePath"
+        ] = runtime["path"]
+    else:
+        best = self.best_java_for_profile(
+            profile_name
+        )
+        if best:
+            options[
+                "defaultExecutablePath"
+            ] = best["path"]
+
+    if server_address:
+        address = server_address.strip()
+        host = address
+        port = None
+
+        if (
+            ":"
+            in address
+            and not address.startswith(
+                "["
+            )
+        ):
+            host, maybe_port = (
+                address.rsplit(
+                    ":",
+                    1,
+                )
+            )
+
+            if maybe_port.isdigit():
+                port = maybe_port
+
+        options["server"] = host
+
+        if port:
+            options["port"] = port
+
+    command = (
+        minecraft_launcher_lib.command
+        .get_minecraft_command(
+            launch_version,
+            str(instance),
+            options,
+        )
+    )
+
+    if not command:
+        raise RuntimeError(
+            "Minecraft command is empty."
+        )
+
+    command = [
+        str(item)
+        for item in command
+    ]
+
+    self.write_log(
+        self.t(
+            "v54_launch_version",
+            version=launch_version,
+        )
+    )
+
+    if manual and not self.cfg.get(
+        "auto_java",
+        True,
+    ):
+        self.write_log(
+            "Manual profile Java: "
+            + manual["path"]
+        )
+    elif runtime:
+        self.write_log(
+            self.t(
+                "v54_runtime",
+                major=runtime.get(
+                    "major",
+                    "?",
+                ),
+            )
+            + " • "
+            + runtime.get(
+                "path",
+                "",
+            )
+        )
+
+    self.write_log(
+        "Command: "
+        + (
+            subprocess.list2cmdline(
+                command
+            )
+            if sys.platform.startswith(
+                "win"
+            )
+            else " ".join(
+                command
+            )
+        )
+    )
+
+    log_path = (
+        self.logs_dir()
+        / "latest-minecraft.log"
+    )
+
+    log_file = log_path.open(
+        "w",
+        encoding="utf-8",
+        errors="ignore",
+    )
+
+    self.minecraft_log_handle = (
+        log_file
+    )
+
+    env = os.environ.copy()
+
+    try:
+        java_command = Path(
+            command[0]
+        )
+
+        if java_command.exists():
+            env["JAVA_HOME"] = str(
+                java_command.parent.parent
+            )
+    except Exception:
+        pass
+
+    creationflags = 0
+
+    if sys.platform.startswith(
+        "win"
+    ):
+        creationflags = getattr(
+            subprocess,
+            "CREATE_NEW_PROCESS_GROUP",
+            0,
+        )
+
+    process = subprocess.Popen(
+        command,
+        cwd=str(instance),
+        stdout=log_file,
+        stderr=subprocess.STDOUT,
+        env=env,
+        shell=False,
+        creationflags=creationflags,
+    )
+
+    self.minecraft_process = process
+
+    time.sleep(2.5)
+    code = process.poll()
+
+    if code is not None:
+        try:
+            log_file.flush()
+        except Exception:
+            pass
+
+        try:
+            tail = log_path.read_text(
+                encoding="utf-8",
+                errors="ignore",
+            )[-9000:]
+        except Exception:
+            tail = f"Exit code: {code}"
+
+        raise RuntimeError(
+            self.t(
+                "v53_launch_failed",
+                code=code,
+                log=tail,
+            )
+        )
+
+    self.start_discord_presence(
+        profile_name
+    )
+
+    self.run_bg(
+        lambda:
+            self.monitor_minecraft_process(
+                process,
+                profile_name,
+                log_path,
+            )
+    )
+
+    self.events.put(
+        (
+            "status",
+            self.t(
+                "minecraft_launched"
+            ),
+        )
+    )
+
+
+# ---------- startup ----------
+
+def _v55_startup_tasks(self):
+    self.cfg.setdefault(
+        "desktop_shortcut",
+        False,
+    )
+    self.cfg.setdefault(
+        "managed_version",
+        "0",
+    )
+
+    self.ensure_all_profile_icons()
+
+    if self.cfg.get(
+        "desktop_shortcut",
+        False,
+    ):
+        self.run_bg(
+            self.sync_managed_shortcut
+        )
+
+    if self.cfg.get(
+        "auto_check_updates",
+        True,
+    ):
+        self.run_bg(
+            lambda:
+                self.check_launcher_update(
+                    False
+                )
+        )
+
+    self.run_bg(
+        self.detect_java_installations
+    )
+
+    # Existing Fabric profiles are repaired lazily in the background.
+    for profile_name, profile in list(
+        self.cfg.get(
+            "profiles",
+            {},
+        ).items()
+    ):
+        if profile.get("loader") == "Fabric":
+            self.run_bg(
+                lambda n=profile_name:
+                    self.ensure_fabric_api(
+                        n
+                    )
+            )
+
+
+# Bind v5.5.
+OuterClient.simple_version_tuple = _v55_version_tuple
+OuterClient.fabric_constraint_result = _v55_constraint_result
+OuterClient.read_fabric_mod_metadata = _v55_read_fabric_meta
+OuterClient.mod_page_url = _v55_mod_url
+OuterClient.profile_manage_entries = _v55_profile_entries
+OuterClient.disable_incompatible_fabric_mods = _v55_disable_incompatible_fabric_mods
+
+OuterClient.has_fabric_api = _v55_has_fabric_api
+OuterClient.ensure_fabric_api = _v55_ensure_fabric_api
+OuterClient.create_profile_v53 = _v55_create_profile
+OuterClient.prepare_profile_for_launch = _v55_prepare_profile
+
+OuterClient.profile_manual_java = _v55_profile_manual_java
+OuterClient.set_profile_java = _v55_set_profile_java
+OuterClient.choose_profile_java_file = _v55_choose_java_file
+OuterClient.use_auto_java_for_profile = _v55_use_auto_java
+OuterClient.download_profile_runtime_worker = _v55_download_runtime_worker
+OuterClient.render_java_manager = _v55_render_java_manager
+OuterClient.show_system_tools_settings = _v55_show_system_tools
+
+OuterClient.copy_shortcut_assets_v55 = _v55_copy_shortcut_assets
+OuterClient.write_outerclient_shortcut = _v55_write_shortcut
+
+OuterClient.show_accounts_page = _v55_show_accounts_page
+OuterClient.account_action = _v55_show_accounts_page
+OuterClient.open_account_manager = _v55_show_accounts_page
+OuterClient.login_worker = _v55_login_worker
+
+OuterClient.render_manage_file_list = _v55_render_manage
+
+OuterClient.ensure_all_profile_icons = _v55_ensure_all_profile_icons
+OuterClient.launch_installed_v54 = _v55_launch_installed
+
+def _v5_startup_tasks(self):
+    return _v55_startup_tasks(self)
 
 
 

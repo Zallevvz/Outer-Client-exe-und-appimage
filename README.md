@@ -1,42 +1,99 @@
-# OuterClient v5.4
+# OuterClient v5.5
 
-## Minecraft launch
-Launch flow rebuilt around minecraft-launcher-lib repair/install behavior.
+## Fix from the Fabric error screenshot
 
-Before launch:
-- base Minecraft is verified/repaired,
-- the Minecraft-provided Java runtime is installed with the game,
-- the mod loader is found or installed,
-- the local modded version is repaired where possible,
-- the command uses the runtime declared by Minecraft instead of forcibly replacing it with a system Java.
+The screenshot showed:
+- profile: Minecraft 1.16.5 + Fabric
+- Java 8
+- ImmediatelyFast build intended for Minecraft 26.2.x + Java 25
 
-## Microsoft
-OAuth opens in the normal system browser from the Tk main thread.
-Account management remains inside the main OuterClient window.
+Java 8 is correct for Minecraft 1.16.5.
+The installed ImmediatelyFast file was the incompatible component.
 
-## Desktop shortcut + updates
-Settings → System tools:
-- Add / update desktop shortcut
-- Remove shortcut
+v5.5 reads `fabric.mod.json` directly from local JAR files.
+Before launching a Fabric profile, obviously incompatible Minecraft-version mods
+are moved to:
 
-Managed target:
-- Windows: `%LOCALAPPDATA%\OuterClient\OuterClient.exe`
-- Linux: `~/.local/share/OuterClient/OuterClient.AppImage`
+`<profile>/mods-disabled/`
 
-The shortcut points to this stable target. When OuterClient installs a newer release,
-the target is replaced and the shortcut automatically starts the newest version.
+They are never deleted.
 
-## Profile icon
-If no custom icon is selected, the OuterClient logo is saved as the profile icon.
+Unknown/complex dependency syntax is left untouched rather than guessed.
 
-## Mods / Modrinth
-- Manage Profile reads mods directly from disk before online metadata lookup finishes.
-- Search cards include an in-launcher Details page.
-- Install + version arrow remains available.
+## Fabric API
+
+Every Fabric profile now automatically gets a Fabric API version filtered by:
+- the profile Minecraft version
+- Fabric loader
+
+This happens:
+- after creating a Fabric profile
+- at startup for existing Fabric profiles
+- before launching a Fabric profile
+
+Existing Fabric API is not downloaded again.
+
+## Java Manager
+
+Settings → System tools now shows:
+- Minecraft bundled runtime
+- every detected system Java
+- Java major version
+- full executable path
+- per-profile selected Java
+
+Controls:
+- automatic Minecraft runtime
+- scan Java
+- choose java.exe/java manually
+- download/repair the Minecraft runtime
+- select a specific Java for the active profile
+
+When automatic mode is on, OuterClient prefers Minecraft's own runtime.
+When it is off, the profile-specific Java path is passed explicitly.
+
+## Microsoft login
+
+Microsoft login uses the registered callback:
+
+`http://localhost:8765/callback`
+
+The OAuth URL:
+- opens in the normal system browser
+- stays visible inside the Microsoft Accounts page
+- can be opened again
+- can be copied manually
+
+No separate OuterClient login window is used.
+
+## Mod links / local mod information
+
+Manage Profile reads `fabric.mod.json` locally, so mod name/version can appear
+even before Modrinth metadata lookup succeeds.
+
+Each mod gets a `Mod page` button:
+- Modrinth project page when known
+- Fabric metadata homepage/sources when available
+- Modrinth search fallback otherwise
+
+## Desktop shortcut icon
+
+Windows shortcut now explicitly uses the packaged `outerclient.ico`.
+Linux shortcut uses `outerclient-logo.png`.
+
+The shortcut still points to OuterClient's stable managed location, so updates
+replace the target without requiring a new shortcut.
+
+## Profile icons
+
+All existing profiles without a custom icon are filled with the OuterClient logo.
+New profiles keep the same behavior.
 
 ## Build
-Actions → Build and Release OuterClient 5.4
 
-Assets:
-- OuterClient-v5.4-x86_64.AppImage
-- OuterClient-v5.4.exe
+GitHub Actions:
+`Build and Release OuterClient 5.5`
+
+Expected files:
+- `OuterClient-v5.5-x86_64.AppImage`
+- `OuterClient-v5.5.exe`
