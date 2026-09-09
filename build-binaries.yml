@@ -1,0 +1,230 @@
+name: Build and Release OuterClient 4.9.2
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  OC_VERSION: "4.9.2"
+
+jobs:
+  verify-source:
+    name: Verify OuterClient 4.9.2
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Verify version in source
+        shell: bash
+        run: |
+          set -eux
+
+          grep -F 'APP_VERSION = "4.9.2"' outerclient.py
+
+          echo "Source version:"
+          grep -n 'APP_VERSION =' outerclient.py
+
+  linux-appimage:
+    name: Linux AppImage 4.9.2
+    needs: verify-source
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Verify source again
+        shell: bash
+        run: |
+          grep -F 'APP_VERSION = "4.9.2"' outerclient.py
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: "pip"
+
+      - name: Install dependencies
+        shell: bash
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libfuse2
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+          python -m pip install pyinstaller
+
+      - name: Clean old files
+        shell: bash
+        run: |
+          rm -rf build dist AppDir
+          rm -f ./*.spec
+          rm -f ./OuterClient-*.AppImage
+
+      - name: Build PyInstaller bundle
+        shell: bash
+        run: |
+          pyinstaller \
+            --noconfirm \
+            --clean \
+            --onedir \
+            --windowed \
+            --name OuterClient \
+            --add-data "assets:assets" \
+            --collect-all customtkinter \
+            --collect-all minecraft_launcher_lib \
+            outerclient.py
+
+      - name: Create AppDir
+        shell: bash
+        run: |
+          set -eux
+
+          mkdir -p AppDir/usr/bin/OuterClient
+          cp -a dist/OuterClient/. AppDir/usr/bin/OuterClient/
+
+          cp assets/outerclient-logo.png AppDir/outerclient.png
+
+          cat > AppDir/OuterClient.desktop <<'EOF'
+          [Desktop Entry]
+          Type=Application
+          Name=OuterClient 4.9.2
+          Comment=OuterClient Minecraft Launcher
+          Exec=OuterClient
+          Icon=outerclient
+          Categories=Game;
+          Terminal=false
+          StartupWMClass=OuterClient
+          X-AppImage-Version=4.9.2
+          EOF
+
+          cat > AppDir/AppRun <<'EOF'
+          #!/bin/sh
+          HERE="$(dirname "$(readlink -f "$0")")"
+          exec "$HERE/usr/bin/OuterClient/OuterClient" "$@"
+          EOF
+
+          chmod +x AppDir/AppRun
+          chmod +x AppDir/usr/bin/OuterClient/OuterClient
+
+      - name: Download appimagetool
+        shell: bash
+        run: |
+          curl -L \
+            https://github.com/AppImage/appimagetool/releases/download/1.9.1/appimagetool-x86_64.AppImage \
+            -o appimagetool.AppImage
+
+          chmod +x appimagetool.AppImage
+
+      - name: Build OuterClient 4.9.2 AppImage
+        shell: bash
+        env:
+          ARCH: x86_64
+          VERSION: "4.9.2"
+          APPIMAGE_EXTRACT_AND_RUN: "1"
+        run: |
+          ./appimagetool.AppImage \
+            AppDir \
+            OuterClient-v4.9.2-x86_64.AppImage
+
+          chmod +x OuterClient-v4.9.2-x86_64.AppImage
+
+          test -f OuterClient-v4.9.2-x86_64.AppImage
+
+      - name: Upload AppImage 4.9.2
+        uses: actions/upload-artifact@v4
+        with:
+          name: OuterClient-v4.9.2-AppImage
+          path: OuterClient-v4.9.2-x86_64.AppImage
+          if-no-files-found: error
+
+  windows-exe:
+    name: Windows EXE 4.9.2
+    needs: verify-source
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Verify source again
+        shell: pwsh
+        run: |
+          $source = Get-Content outerclient.py -Raw
+
+          if ($source -notmatch 'APP_VERSION = "4\.9\.2"') {
+            throw "outerclient.py is not version 4.9.2"
+          }
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: "pip"
+
+      - name: Install dependencies
+        shell: pwsh
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+          python -m pip install pyinstaller
+
+      - name: Clean old files
+        shell: pwsh
+        run: |
+          Remove-Item -Recurse -Force build, dist -ErrorAction SilentlyContinue
+          Remove-Item -Force *.spec -ErrorAction SilentlyContinue
+
+      - name: Build OuterClient 4.9.2 EXE
+        shell: pwsh
+        run: |
+          pyinstaller `
+            --noconfirm `
+            --clean `
+            --onefile `
+            --windowed `
+            --name "OuterClient-v4.9.2" `
+            --icon assets/outerclient.ico `
+            --add-data "assets;assets" `
+            --collect-all customtkinter `
+            --collect-all minecraft_launcher_lib `
+            outerclient.py
+
+          if (-not (Test-Path "dist\OuterClient-v4.9.2.exe")) {
+            throw "OuterClient-v4.9.2.exe was not created"
+          }
+
+      - name: Upload Windows EXE 4.9.2
+        uses: actions/upload-artifact@v4
+        with:
+          name: OuterClient-v4.9.2-Windows
+          path: dist/OuterClient-v4.9.2.exe
+          if-no-files-found: error
+
+  release:
+    name: Make 4.9.2 Latest
+    needs:
+      - linux-appimage
+      - windows-exe
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release
+          merge-multiple: true
+
+      - name: Publish OuterClient 4.9.2
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v4.9.2
+          name: OuterClient v4.9.2
+          make_latest: true
+          generate_release_notes: true
+          files: |
+            release/OuterClient-v4.9.2-x86_64.AppImage
+            release/OuterClient-v4.9.2.exe
