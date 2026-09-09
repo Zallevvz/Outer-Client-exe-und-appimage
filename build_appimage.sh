@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-VERSION="4.9"
+VERSION="4.9.2"
 
 python3 -m venv .build-venv
 source .build-venv/bin/activate
@@ -11,6 +11,7 @@ python -m pip install -r requirements.txt
 python -m pip install pyinstaller
 
 rm -rf build dist AppDir
+rm -f ./*.spec OuterClient-*.AppImage
 
 pyinstaller \
   --noconfirm \
@@ -30,13 +31,14 @@ cp assets/outerclient-logo.png AppDir/outerclient.png
 cat > AppDir/OuterClient.desktop <<'EOF'
 [Desktop Entry]
 Type=Application
-Name=OuterClient
-Comment=Minecraft launcher
+Name=OuterClient 4.9.2
+Comment=OuterClient Minecraft Launcher
 Exec=OuterClient
 Icon=outerclient
 Categories=Game;
 Terminal=false
 StartupWMClass=OuterClient
+X-AppImage-Version=4.9.2
 EOF
 
 cat > AppDir/AppRun <<'EOF'
@@ -61,5 +63,4 @@ ARCH=x86_64 VERSION="$VERSION" APPIMAGE_EXTRACT_AND_RUN=1 \
   "OuterClient-v${VERSION}-x86_64.AppImage"
 
 chmod +x "OuterClient-v${VERSION}-x86_64.AppImage"
-
 echo "Gotowe: OuterClient-v${VERSION}-x86_64.AppImage"

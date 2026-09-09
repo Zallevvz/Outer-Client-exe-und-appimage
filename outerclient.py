@@ -26,7 +26,7 @@ from tkinter import filedialog, messagebox
 
 
 APP_NAME = "OuterClient"
-APP_VERSION = "4.9"
+APP_VERSION = "4.9.2"
 CONFIG_PATH = Path.home() / ".outerclient.json"
 REDIRECT_URI = "http://localhost:8765/callback"
 MICROSOFT_CLIENT_ID = "fb14d1c4-7d14-4a35-99a7-3f921f7a1e77"
@@ -251,7 +251,7 @@ TEXTS = {
         "source": "ŹRÓDŁO",
         "curseforge": "CurseForge",
         "curseforge_key_missing": "Dodaj CurseForge API Key w Ustawienia → Opcje zaawansowane.",
-        "curseforge_mods_only": "CurseForge w v4.8 obsługuje na razie mody.",
+        "curseforge_mods_only": "CurseForge obsługuje obecnie mody.",
         "curseforge_distribution_blocked": "Ten projekt nie pozwala na dystrybucję przez zewnętrzny launcher.",
         "curseforge_unavailable": "Ten projekt nie jest obecnie dostępny.",
         "curseforge_no_file": "Nie znaleziono zgodnego pliku CurseForge dla tego profilu.",
@@ -275,6 +275,8 @@ TEXTS = {
         "microsoft_app_ready": "Microsoft Application jest już skonfigurowane w OuterClient — nie musisz wpisywać Client ID.",
         "refreshing_account": "Odświeżanie sesji Microsoft…",
         "refresh_failed": "Sesja Microsoft wygasła. Zaloguj to konto ponownie.",
+        "login_already_running": "Logowanie Microsoft jest już uruchomione.",
+        "login_callback_ready": "Microsoft callback gotowy: localhost:{port}",
     },
     "en": {
         "nav_play": "Play",
@@ -447,7 +449,7 @@ TEXTS = {
         "source": "SOURCE",
         "curseforge": "CurseForge",
         "curseforge_key_missing": "Add a CurseForge API Key in Settings → Advanced options.",
-        "curseforge_mods_only": "CurseForge in v4.8 currently supports mods only.",
+        "curseforge_mods_only": "CurseForge currently supports mods only.",
         "curseforge_distribution_blocked": "This project does not allow distribution through a third-party launcher.",
         "curseforge_unavailable": "This project is currently unavailable.",
         "curseforge_no_file": "No compatible CurseForge file was found for this profile.",
@@ -471,6 +473,8 @@ TEXTS = {
         "microsoft_app_ready": "Microsoft Application is already configured in OuterClient — you do not need to enter a Client ID.",
         "refreshing_account": "Refreshing Microsoft session…",
         "refresh_failed": "The Microsoft session expired. Sign in to this account again.",
+        "login_already_running": "Microsoft sign-in is already running.",
+        "login_callback_ready": "Microsoft callback ready: localhost:{port}",
     },
 }
 
@@ -746,6 +750,7 @@ class OuterClient(ctk.CTk):
         self.cfg = load_config()
         self.auth = active_microsoft_account_from_config(self.cfg)
         self.account_manager = None
+        self.microsoft_login_in_progress = False
         self.events = queue.Queue()
         self.version_cache = []
         self.modrinth_category = "Mody"
@@ -794,7 +799,7 @@ class OuterClient(ctk.CTk):
                 try:
                     import ctypes
                     ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(
-                        "OuterClient.Launcher.4.9"
+                        "OuterClient.Launcher.4.9.2"
                     )
                 except Exception:
                     pass
@@ -4873,38 +4878,135 @@ class OuterClient(ctk.CTk):
                 ).grid(row=0, column=3, rowspan=2, padx=(0, 14))
 
     def login(self):
-        self.run_bg(lambda: self.login_worker(MICROSOFT_CLIENT_ID))
+        if self.microsoft_login_in_progress:
+            self.set_status(
+                self.t("login_already_running")
+            )
+            return
+
+        self.microsoft_login_in_progress = True
+        self.run_bg(
+            lambda: self.login_worker(
+                MICROSOFT_CLIENT_ID
+            )
+        )
 
     def login_worker(self, client_id):
         server = None
+        callback_port = None
+
         try:
-            url, state, verifier = minecraft_launcher_lib.microsoft_account.get_secure_login_data(
-                client_id, REDIRECT_URI
-            )
-            if "prompt=" not in url:
-                url = f"{url}{'&' if '?' in url else '?'}prompt=select_account"
             CallbackHandler.callback_url = None
-            server = HTTPServer(("localhost", 8765), CallbackHandler)
+
+            # Bind directly to IPv4 loopback. Passing port 0 asks the
+            # operating system for a currently unused ephemeral port.
+            server = HTTPServer(
+                ("127.0.0.1", 0),
+                CallbackHandler,
+            )
             server.timeout = 1
+
+            callback_port = int(
+                server.server_address[1]
+            )
+
+            # Keep localhost in the OAuth URI because the approved
+            # Microsoft application uses a localhost redirect.
+            redirect_uri = (
+                f"http://localhost:"
+                f"{callback_port}/callback"
+            )
+
+            url, state, verifier = (
+                minecraft_launcher_lib.microsoft_account.get_secure_login_data(
+                    client_id,
+                    redirect_uri,
+                )
+            )
+
+            if "prompt=" not in url:
+                separator = "&" if "?" in url else "?"
+                url = (
+                    f"{url}{separator}"
+                    "prompt=select_account"
+                )
+
+            self.events.put(
+                (
+                    "status",
+                    self.t(
+                        "login_callback_ready",
+                        port=callback_port,
+                    ),
+                )
+            )
+
             webbrowser.open(url)
-            self.events.put(("status", self.t("browser_login")))
+
             deadline = time.time() + 180
-            while time.time() < deadline and not CallbackHandler.callback_url:
+
+            while (
+                time.time() < deadline
+                and not CallbackHandler.callback_url
+            ):
                 server.handle_request()
+
             if not CallbackHandler.callback_url:
-                raise TimeoutError("Microsoft login timed out.")
-            code = minecraft_launcher_lib.microsoft_account.parse_auth_code_url(
-                CallbackHandler.callback_url, state
+                raise TimeoutError(
+                    "Microsoft login timed out."
+                )
+
+            code = (
+                minecraft_launcher_lib.microsoft_account.parse_auth_code_url(
+                    CallbackHandler.callback_url,
+                    state,
+                )
             )
-            auth = minecraft_launcher_lib.microsoft_account.complete_login(
-                client_id, None, REDIRECT_URI, code, verifier
+
+            auth = (
+                minecraft_launcher_lib.microsoft_account.complete_login(
+                    client_id,
+                    None,
+                    redirect_uri,
+                    code,
+                    verifier,
+                )
             )
-            self.events.put(("account", auth))
+
+            auth["_outerclient_redirect_uri"] = (
+                redirect_uri
+            )
+
+            self.events.put(
+                ("account", auth)
+            )
+
         except Exception as exc:
-            self.events.put(("error", f"Microsoft login:\n{exc}"))
+            port_text = (
+                str(callback_port)
+                if callback_port is not None
+                else "not-bound"
+            )
+            self.events.put(
+                (
+                    "error",
+                    (
+                        "Microsoft login:\n"
+                        f"OuterClient {APP_VERSION}\n"
+                        f"Callback port: {port_text}\n"
+                        f"{exc}"
+                    ),
+                )
+            )
+
         finally:
+            self.microsoft_login_in_progress = False
+
             if server:
-                server.server_close()
+                try:
+                    server.server_close()
+                except Exception:
+                    pass
 
     def refresh_active_microsoft_account(self):
         if not self.auth:
@@ -4913,9 +5015,20 @@ class OuterClient(ctk.CTk):
         if not refresh_token:
             return self.auth
         self.events.put(("status", self.t("refreshing_account")))
+        redirect_uri = self.auth.get(
+            "_outerclient_redirect_uri",
+            REDIRECT_URI,
+        )
+
         try:
             refreshed = minecraft_launcher_lib.microsoft_account.complete_refresh(
-                MICROSOFT_CLIENT_ID, None, REDIRECT_URI, refresh_token
+                MICROSOFT_CLIENT_ID,
+                None,
+                redirect_uri,
+                refresh_token,
+            )
+            refreshed["_outerclient_redirect_uri"] = (
+                redirect_uri
             )
         except Exception as exc:
             raise RuntimeError(self.t("refresh_failed")) from exc

@@ -1,6 +1,6 @@
 $ErrorActionPreference = "Stop"
 
-$Version = "4.9"
+$Version = "4.9.2"
 
 py -3.13 -m venv .build-venv
 & .\.build-venv\Scripts\Activate.ps1
@@ -10,6 +10,7 @@ python -m pip install -r requirements.txt
 python -m pip install pyinstaller
 
 Remove-Item -Recurse -Force build, dist -ErrorAction SilentlyContinue
+Remove-Item -Force *.spec -ErrorAction SilentlyContinue
 
 pyinstaller `
   --noconfirm `

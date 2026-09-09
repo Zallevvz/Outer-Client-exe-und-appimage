@@ -1,41 +1,30 @@
-# OuterClient v4.9
+# OuterClient v4.9.2
 
-## Microsoft Application jest wbudowane
-OuterClient używa teraz zatwierdzonego Application (client) ID automatycznie.
-Nie ma już pola Client ID do ręcznego wpisywania.
+## Microsoft login
 
-## Wiele kont Microsoft
-Kliknij panel konta w lewym dolnym rogu, aby otworzyć manager kont.
+Ta wersja nie używa stałego portu callback.
 
-Możesz:
-- dodać kolejne konto Microsoft,
-- zapisać kilka kont,
-- przełączyć konto jednym kliknięciem,
-- wylogować aktywne konto,
-- usunąć zapisane nieaktywne konto,
-- przełączyć się na Offline bez usuwania pozostałych kont.
+OuterClient binduje lokalny serwer do `127.0.0.1` z portem `0`,
+więc system operacyjny wybiera wolny port automatycznie.
 
-Podczas dodawania nowego konta Microsoft launcher wymusza ekran wyboru konta,
-co ułatwia dodanie drugiego lub trzeciego konta.
+W razie błędu okno pokaże:
+- `OuterClient 4.9.2`
+- numer portu callback
 
-## Migracja ze starszych wersji
-Jeżeli `~/.outerclient.json` zawiera stare pojedyncze pole `account`,
-v4.9 automatycznie przenosi je do nowej listy kont.
-Profile i pozostałe ustawienia nie wymagają usuwania.
+Jeżeli okno programu nie pokazuje `4.9.2`, uruchomiony jest inny plik.
 
-## Odświeżanie sesji
-Przed uruchomieniem Minecrafta OuterClient próbuje odświeżyć aktywną sesję
-Microsoft przy użyciu zapisanego refresh tokenu.
+## GitHub
 
-## Ustawienia zaawansowane
-Microsoft Client ID został usunięty z ustawień, ponieważ jest wbudowany.
-CurseForge API Key nadal znajduje się w `Settings → Advanced options`.
+Workflow `.github/workflows/build.yml` buduje wyłącznie v4.9.2.
 
-## Arch Linux
+Po **Run workflow** automatycznie tworzy Release:
+`OuterClient v4.9.2`
 
-```bash
-cd OuterClient_v4_9
-chmod +x install_linux.sh run_outerclient.sh
-./install_linux.sh
-./run_outerclient.sh
-```
+i ustawia go jako **Latest**.
+
+Pliki do pobrania:
+- `OuterClient-v4.9.2-x86_64.AppImage`
+- `OuterClient-v4.9.2.exe`
+
+Przed uruchomieniem workflow zastąp w repozytorium stare pliki zawartością tej paczki,
+szczególnie `outerclient.py` oraz `.github/workflows/build.yml`.
