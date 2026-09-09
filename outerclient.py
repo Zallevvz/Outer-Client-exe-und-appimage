@@ -29,7 +29,7 @@ from tkinter import filedialog, messagebox
 
 
 APP_NAME = "OuterClient"
-APP_VERSION = "5.2"
+APP_VERSION = "5.3"
 CONFIG_PATH = Path.home() / ".outerclient.json"
 REDIRECT_URI = "http://localhost:8765/callback"
 MICROSOFT_CLIENT_ID = "fb14d1c4-7d14-4a35-99a7-3f921f7a1e77"
@@ -322,6 +322,15 @@ TEXTS = {
         "v52_already_running": "Minecraft jest już uruchomiony.",
         "v52_profile_ready_fast": "Profil gotowy — uruchamianie bez ponownej instalacji.",
         "v52_mods_auto": "Mody odświeżają się automatycznie.",
+        "v53_game_loading": "Uruchamianie Minecrafta…",
+        "v53_game_installing": "Przygotowywanie plików Minecrafta…",
+        "v53_game_starting": "Startowanie Javy…",
+        "v53_game_runtime": "Minecraft",
+        "v53_java_missing": "Minecraft {version} wymaga Java {major}. Zainstaluj Java {major} lub wybierz ją w Ustawienia → Narzędzia systemowe.",
+        "v53_java_using": "Java {major} • {path}",
+        "v53_launch_failed": "Minecraft nie uruchomił się. Kod: {code}\n\nOstatnie linie logu:\n{log}",
+        "v53_game_dir": "KATALOG INSTANCJI",
+        "v53_settings_saved": "Ustawienia zapisane.",
         "v5_change_profile": "Zmień profil",
         "v5_previous": "Poprzedni",
         "v5_next": "Następny",
@@ -621,6 +630,15 @@ TEXTS = {
         "v52_already_running": "Minecraft is already running.",
         "v52_profile_ready_fast": "Profile ready — launching without reinstalling.",
         "v52_mods_auto": "Mods refresh automatically.",
+        "v53_game_loading": "Launching Minecraft…",
+        "v53_game_installing": "Preparing Minecraft files…",
+        "v53_game_starting": "Starting Java…",
+        "v53_game_runtime": "Minecraft",
+        "v53_java_missing": "Minecraft {version} requires Java {major}. Install Java {major} or select it in Settings → System tools.",
+        "v53_java_using": "Java {major} • {path}",
+        "v53_launch_failed": "Minecraft failed to start. Exit code: {code}\n\nLast log lines:\n{log}",
+        "v53_game_dir": "INSTANCE DIRECTORY",
+        "v53_settings_saved": "Settings saved.",
         "v5_change_profile": "Change profile",
         "v5_previous": "Previous",
         "v5_next": "Next",
@@ -1011,7 +1029,7 @@ class OuterClient(ctk.CTk):
                 try:
                     import ctypes
                     ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(
-                        "OuterClient.Launcher.5.2"
+                        "OuterClient.Launcher.5.3"
                     )
                 except Exception:
                     pass
@@ -4257,6 +4275,16 @@ class OuterClient(ctk.CTk):
                     )
                 )
 
+                loader_version = None
+                if loader == "Fabric":
+                    loader_version = dependencies.get("fabric-loader")
+                elif loader == "Quilt":
+                    loader_version = dependencies.get("quilt-loader")
+                elif loader == "NeoForge":
+                    loader_version = dependencies.get("neoforge")
+                elif loader == "Forge":
+                    loader_version = dependencies.get("forge")
+
                 profile_name = self.unique_profile_name(
                     job["title"]
                 )
@@ -4366,6 +4394,9 @@ class OuterClient(ctk.CTk):
                 self.cfg["profiles"][profile_name] = {
                     "version": mc_version,
                     "loader": loader,
+                    "loader_version": loader_version,
+                    "preset": "Balanced",
+                    "ram": 0,
                 }
                 self.cfg["selected"] = profile_name
                 save_config(self.cfg)
@@ -11694,6 +11725,2919 @@ OuterClient.profile_content_signature = _v52_manager_signature
 OuterClient.auto_refresh_profile_manager = _v52_auto_refresh_manager
 
 OuterClient.install_modpack_job = _v52_install_modpack_job
+
+
+
+# ============================================================
+# OuterClient 5.3 — compact UI / Java 25 / launch indicator
+# ============================================================
+
+_V53_SET_STATUS_BASE = OuterClient.set_status
+_V53_INSTALL_MODPACK_BASE = OuterClient.install_modpack_job
+
+
+def _v53_build_download_bar(self):
+    self.download_bar = ctk.CTkFrame(
+        self,
+        height=64,
+        fg_color="#0B1017",
+        corner_radius=0,
+        border_width=1,
+        border_color=BORDER,
+    )
+    self.download_bar.grid(
+        row=1,
+        column=0,
+        columnspan=2,
+        sticky="ew",
+    )
+    self.download_bar.grid_columnconfigure(
+        1,
+        weight=1,
+    )
+
+    if not self.download_worker_running:
+        self.download_text_var.set(
+            self.t("no_downloads")
+        )
+        self.download_queue_var.set(
+            self.t("queue", count=0)
+        )
+
+    self.download_icon_label = ctk.CTkLabel(
+        self.download_bar,
+        text="↓",
+        width=34,
+        text_color=self.secondary,
+        font=ctk.CTkFont(
+            size=18,
+            weight="bold",
+        ),
+    )
+    self.download_icon_label.grid(
+        row=0,
+        column=0,
+        rowspan=2,
+        padx=(17, 7),
+        pady=9,
+    )
+
+    ctk.CTkLabel(
+        self.download_bar,
+        textvariable=self.download_text_var,
+        anchor="w",
+        text_color=TEXT,
+        font=ctk.CTkFont(
+            size=12,
+            weight="bold",
+        ),
+    ).grid(
+        row=0,
+        column=1,
+        sticky="ew",
+        pady=(9, 0),
+    )
+
+    self.download_progress = ctk.CTkProgressBar(
+        self.download_bar,
+        variable=self.download_progress_var,
+        height=8,
+        corner_radius=6,
+        progress_color=self.accent,
+        fg_color=SURFACE_3,
+        mode="determinate",
+    )
+    self.download_progress.grid(
+        row=1,
+        column=1,
+        sticky="ew",
+        pady=(4, 10),
+    )
+
+    self.download_queue_label = ctk.CTkLabel(
+        self.download_bar,
+        textvariable=self.download_queue_var,
+        text_color=MUTED,
+        width=220,
+        anchor="e",
+    )
+    self.download_queue_label.grid(
+        row=0,
+        column=2,
+        rowspan=2,
+        padx=(18, 20),
+        pady=9,
+    )
+
+    self._v53_game_loading_active = False
+
+
+def _v53_game_loading(self, active, text=None):
+    progress = getattr(
+        self,
+        "download_progress",
+        None,
+    )
+
+    if progress is None:
+        return
+
+    if active:
+        self._v53_game_loading_active = True
+
+        try:
+            progress.stop()
+        except Exception:
+            pass
+
+        progress.configure(
+            mode="indeterminate"
+        )
+        progress.start()
+
+        self.download_text_var.set(
+            text or self.t(
+                "v53_game_loading"
+            )
+        )
+        self.download_queue_var.set(
+            self.t("v53_game_runtime")
+        )
+
+        icon = getattr(
+            self,
+            "download_icon_label",
+            None,
+        )
+        if icon is not None:
+            icon.configure(
+                text="◌",
+                text_color=self.accent_hover,
+            )
+        return
+
+    if not getattr(
+        self,
+        "_v53_game_loading_active",
+        False,
+    ):
+        return
+
+    self._v53_game_loading_active = False
+
+    try:
+        progress.stop()
+    except Exception:
+        pass
+
+    progress.configure(
+        mode="determinate"
+    )
+    self.download_progress_var.set(0.0)
+
+    if not self.download_worker_running:
+        self.download_text_var.set(
+            self.t("no_downloads")
+        )
+        self.download_queue_var.set(
+            self.t("queue", count=0)
+        )
+
+    icon = getattr(
+        self,
+        "download_icon_label",
+        None,
+    )
+    if icon is not None:
+        icon.configure(
+            text="↓",
+            text_color=self.secondary,
+        )
+
+
+def _v53_set_status(self, text):
+    _V53_SET_STATUS_BASE(
+        self,
+        text,
+    )
+
+    loading_texts = {
+        self.t("v53_game_loading"),
+        self.t("v53_game_installing"),
+        self.t("v53_game_starting"),
+        self.t("v52_launching"),
+    }
+
+    finished_texts = {
+        self.t("minecraft_launched"),
+        self.t("ready"),
+        self.t("generic_error"),
+        self.t("v52_game_stopped"),
+    }
+
+    if text in loading_texts:
+        self.set_game_loading(
+            True,
+            text,
+        )
+    elif text in finished_texts:
+        self.set_game_loading(
+            False
+        )
+
+
+def _v53_required_java(self, mc_version):
+    text = str(
+        mc_version or ""
+    ).strip()
+
+    nums = [
+        int(x)
+        for x in re.findall(
+            r"\d+",
+            text,
+        )[:3]
+    ]
+
+    if not nums:
+        return 21
+
+    # New calendar-style Minecraft numbering.
+    # Minecraft 26.1+ requires Java 25.
+    if nums[0] >= 26:
+        return 25
+
+    while len(nums) < 3:
+        nums.append(0)
+
+    version = tuple(
+        nums[:3]
+    )
+
+    if version >= (1, 20, 5):
+        return 21
+
+    if version >= (1, 18, 0):
+        return 17
+
+    return 8
+
+
+def _v53_detect_java(self):
+    candidates = []
+
+    def add(value):
+        if not value:
+            return
+        try:
+            candidates.append(
+                Path(value)
+            )
+        except Exception:
+            pass
+
+    add(self.cfg.get("java"))
+    add(shutil.which("java"))
+
+    java_home = os.environ.get(
+        "JAVA_HOME"
+    )
+    if java_home:
+        add(
+            Path(java_home)
+            / "bin"
+            / (
+                "java.exe"
+                if sys.platform.startswith("win")
+                else "java"
+            )
+        )
+
+    if sys.platform.startswith("win"):
+        try:
+            output = subprocess.run(
+                ["where", "java"],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.DEVNULL,
+                text=True,
+                timeout=5,
+            ).stdout
+
+            for line in output.splitlines():
+                add(line.strip())
+        except Exception:
+            pass
+
+        roots = [
+            Path(
+                os.environ.get(
+                    "ProgramFiles",
+                    r"C:\Program Files",
+                )
+            ),
+            Path(
+                os.environ.get(
+                    "ProgramFiles(x86)",
+                    r"C:\Program Files (x86)",
+                )
+            ),
+            Path(
+                os.environ.get(
+                    "LOCALAPPDATA",
+                    str(Path.home() / "AppData/Local"),
+                )
+            ),
+        ]
+
+        patterns = [
+            "Java/*/bin/java.exe",
+            "Eclipse Adoptium/*/bin/java.exe",
+            "Microsoft/*/bin/java.exe",
+            "Microsoft/jdk-*/bin/java.exe",
+            "BellSoft/*/bin/java.exe",
+            "Zulu/*/bin/java.exe",
+            "Programs/Eclipse Adoptium/*/bin/java.exe",
+            "Programs/Java/*/bin/java.exe",
+        ]
+
+        for root in roots:
+            if not root.exists():
+                continue
+
+            for pattern in patterns:
+                try:
+                    candidates.extend(
+                        root.glob(pattern)
+                    )
+                except Exception:
+                    pass
+
+    elif sys.platform == "darwin":
+        for root in (
+            Path(
+                "/Library/Java/JavaVirtualMachines"
+            ),
+            Path.home()
+            / "Library/Java/JavaVirtualMachines",
+        ):
+            if root.exists():
+                candidates.extend(
+                    root.glob(
+                        "*/Contents/Home/bin/java"
+                    )
+                )
+    else:
+        for root in (
+            Path("/usr/lib/jvm"),
+            Path("/usr/java"),
+            Path.home() / ".jdks",
+        ):
+            if root.exists():
+                candidates.extend(
+                    root.glob(
+                        "*/bin/java"
+                    )
+                )
+
+    found = []
+    seen = set()
+
+    for path in candidates:
+        try:
+            path = Path(path)
+
+            if not path.exists():
+                continue
+
+            key = str(
+                path.resolve()
+            )
+
+            if key in seen:
+                continue
+
+            seen.add(key)
+
+            major = self.java_major(
+                path
+            )
+
+            if major:
+                found.append({
+                    "path": key,
+                    "major": major,
+                })
+        except Exception:
+            pass
+
+    found.sort(
+        key=lambda item:
+            (
+                item["major"],
+                item["path"],
+            )
+    )
+
+    self.java_installations = found
+    self.events.put(
+        ("java_detected", found)
+    )
+
+    return found
+
+
+def _v53_resolve_java(self, profile_name):
+    profile = self.cfg["profiles"].get(
+        profile_name,
+        {},
+    )
+
+    required = self.required_java_major(
+        profile.get("version")
+    )
+
+    found = (
+        self.java_installations
+        or self.detect_java_installations()
+    )
+
+    exact = [
+        item
+        for item in found
+        if item["major"] == required
+    ]
+
+    compatible = [
+        item
+        for item in found
+        if item["major"] >= required
+    ]
+
+    chosen = (
+        exact[-1]
+        if exact
+        else (
+            compatible[0]
+            if compatible
+            else None
+        )
+    )
+
+    if chosen is None:
+        raise RuntimeError(
+            self.t(
+                "v53_java_missing",
+                version=profile.get(
+                    "version",
+                    "?",
+                ),
+                major=required,
+            )
+        )
+
+    self.cfg["java"] = chosen[
+        "path"
+    ]
+    save_config(self.cfg)
+
+    return chosen
+
+
+def _v53_install_loader(
+    self,
+    version,
+    loader,
+    instance,
+):
+    profile_name = None
+    loader_version = None
+
+    try:
+        wanted = Path(
+            instance
+        ).resolve()
+
+        for name, profile in (
+            self.cfg["profiles"].items()
+        ):
+            try:
+                if (
+                    self.profile_instance_dir(
+                        name
+                    ).resolve()
+                    == wanted
+                ):
+                    profile_name = name
+                    loader_version = (
+                        profile.get(
+                            "loader_version"
+                        )
+                    )
+                    break
+            except Exception:
+                pass
+    except Exception:
+        pass
+
+    if profile_name is None:
+        profile_name = self.cfg.get(
+            "selected"
+        )
+
+    java = None
+
+    if profile_name in self.cfg[
+        "profiles"
+    ]:
+        java = self.resolve_java_for_profile(
+            profile_name
+        )["path"]
+
+    if loader == "Vanilla":
+        minecraft_launcher_lib.install.install_minecraft_version(
+            version,
+            str(instance),
+        )
+        return version
+
+    # Modern generic mod-loader API.
+    try:
+        mod_loader = (
+            minecraft_launcher_lib.mod_loader
+            .get_mod_loader(
+                loader.lower()
+            )
+        )
+
+        kwargs = {}
+
+        if loader_version:
+            kwargs[
+                "loader_version"
+            ] = loader_version
+
+        if java:
+            kwargs["java"] = java
+
+        result = mod_loader.install(
+            version,
+            str(instance),
+            **kwargs,
+        )
+
+        if isinstance(
+            result,
+            str,
+        ) and result:
+            return result
+    except TypeError:
+        # Compatibility with an older installed library.
+        try:
+            mod_loader = (
+                minecraft_launcher_lib.mod_loader
+                .get_mod_loader(
+                    loader.lower()
+                )
+            )
+
+            result = mod_loader.install(
+                version,
+                str(instance),
+            )
+
+            if isinstance(
+                result,
+                str,
+            ) and result:
+                return result
+        except Exception:
+            pass
+    except Exception:
+        pass
+
+    # Legacy fallbacks.
+    if loader == "Fabric":
+        minecraft_launcher_lib.fabric.install_fabric(
+            version,
+            str(instance),
+            loader_version=loader_version,
+            java=java,
+        )
+
+    elif loader == "Forge":
+        forge_version = (
+            loader_version
+            or minecraft_launcher_lib.forge.find_forge_version(
+                version
+            )
+        )
+
+        if not forge_version:
+            raise RuntimeError(
+                self.t(
+                    "forge_missing",
+                    version=version,
+                )
+            )
+
+        minecraft_launcher_lib.forge.install_forge_version(
+            forge_version,
+            str(instance),
+        )
+
+    elif loader == "NeoForge":
+        minecraft_launcher_lib.neoforge.install_neoforge_version(
+            loader_version
+            or version,
+            str(instance),
+        )
+
+    elif loader == "Quilt":
+        minecraft_launcher_lib.quilt.install_quilt(
+            version,
+            str(instance),
+        )
+
+    else:
+        raise RuntimeError(
+            self.t(
+                "unknown_loader",
+                loader=loader,
+            )
+        )
+
+    installed = (
+        minecraft_launcher_lib.utils
+        .get_installed_versions(
+            str(instance)
+        )
+    )
+
+    candidates = [
+        item["id"]
+        for item in installed
+        if (
+            version
+            in item.get(
+                "id",
+                "",
+            )
+        )
+    ]
+
+    if not candidates:
+        raise RuntimeError(
+            f"{loader} did not create "
+            f"a launchable version for "
+            f"Minecraft {version}."
+        )
+
+    return candidates[-1]
+
+
+def _v53_save_settings(self):
+    old_theme = self.cfg.get(
+        "theme"
+    )
+    old_language = self.cfg.get(
+        "language",
+        "pl",
+    )
+
+    if hasattr(
+        self,
+        "settings_mode",
+    ):
+        self.cfg[
+            "account_mode"
+        ] = self.settings_mode.get()
+
+    if hasattr(
+        self,
+        "settings_offline",
+    ):
+        self.cfg[
+            "offline_name"
+        ] = (
+            self.settings_offline.get()
+            .strip()
+            or "Player"
+        )
+
+    if hasattr(
+        self,
+        "settings_curseforge",
+    ):
+        self.cfg[
+            "curseforge_api_key"
+        ] = (
+            self.settings_curseforge.get()
+            .strip()
+        )
+
+    if hasattr(
+        self,
+        "settings_discord",
+    ):
+        self.cfg[
+            "discord_client_id"
+        ] = (
+            self.settings_discord.get()
+            .strip()
+        )
+
+    if hasattr(
+        self,
+        "settings_advanced",
+    ):
+        self.cfg[
+            "advanced_settings"
+        ] = bool(
+            self.settings_advanced.get()
+        )
+
+    if hasattr(
+        self,
+        "settings_theme",
+    ):
+        self.cfg[
+            "theme"
+        ] = self.settings_theme.get()
+
+    if hasattr(
+        self,
+        "settings_language",
+    ):
+        self.cfg[
+            "language"
+        ] = self.settings_language.get()
+
+    if hasattr(
+        self,
+        "settings_dir",
+    ):
+        value = (
+            self.settings_dir.get()
+            .strip()
+        )
+        if value:
+            self.cfg[
+                "game_dir"
+            ] = value
+
+    if hasattr(
+        self,
+        "settings_auto_java",
+    ):
+        self.cfg[
+            "auto_java"
+        ] = bool(
+            self.settings_auto_java.get()
+        )
+
+    if hasattr(
+        self,
+        "settings_auto_updates",
+    ):
+        self.cfg[
+            "auto_check_updates"
+        ] = bool(
+            self.settings_auto_updates.get()
+        )
+
+    self.cfg[
+        "client_id"
+    ] = MICROSOFT_CLIENT_ID
+
+    if (
+        self.cfg.get(
+            "account_mode"
+        )
+        == "Microsoft"
+    ):
+        active = (
+            active_microsoft_account_from_config(
+                self.cfg
+            )
+        )
+
+        if active is None:
+            accounts = self.cfg.get(
+                "microsoft_accounts",
+                [],
+            )
+            if accounts:
+                active = accounts[0]
+                self.cfg[
+                    "selected_microsoft_account"
+                ] = self.account_key(
+                    active
+                )
+                self.cfg[
+                    "account"
+                ] = active
+
+        self.auth = active
+
+    save_config(self.cfg)
+
+    rebuild = (
+        old_theme
+        != self.cfg.get("theme")
+        or old_language
+        != self.cfg.get(
+            "language"
+        )
+    )
+
+    if rebuild:
+        self.apply_theme_values()
+        self.build_shell()
+        self.show_settings()
+    else:
+        self.refresh_account_ui()
+        self.set_status(
+            self.t(
+                "v53_settings_saved"
+            )
+        )
+
+
+def _v53_settings_tabs(
+    self,
+    page,
+    active,
+):
+    tabs = ctk.CTkFrame(
+        page,
+        fg_color="transparent",
+    )
+    tabs.grid(
+        row=1,
+        column=0,
+        sticky="ew",
+        padx=36,
+        pady=(0, 14),
+    )
+
+    for key, label, command in (
+        (
+            "general",
+            self.t("v52_general"),
+            self.show_settings,
+        ),
+        (
+            "system",
+            self.t(
+                "v52_system_tools"
+            ),
+            self.show_system_tools_settings,
+        ),
+    ):
+        selected = (
+            active == key
+        )
+
+        ctk.CTkButton(
+            tabs,
+            text=label,
+            width=160,
+            height=40,
+            fg_color=(
+                self.accent
+                if selected
+                else SURFACE
+            ),
+            hover_color=(
+                self.accent_hover
+                if selected
+                else SURFACE_3
+            ),
+            border_width=1,
+            border_color=(
+                self.accent
+                if selected
+                else BORDER
+            ),
+            command=command,
+        ).pack(
+            side="left",
+            padx=(0, 8),
+        )
+
+
+def _v53_show_settings(self):
+    self.set_active_page(
+        "settings"
+    )
+    self.clear_content()
+
+    page = self.page()
+
+    self.page_header(
+        page,
+        self.t("nav_settings"),
+        self.t("settings_title"),
+        self.t("settings_subtitle"),
+    )
+
+    self.settings_tabs(
+        page,
+        "general",
+    )
+
+    # ---------------- account ----------------
+    account = self.card(
+        page,
+        14,
+    )
+    account.grid(
+        row=2,
+        column=0,
+        sticky="ew",
+        padx=36,
+        pady=(0, 12),
+    )
+    account.grid_columnconfigure(
+        0,
+        weight=1,
+    )
+
+    self.settings_mode = ctk.StringVar(
+        value=self.cfg.get(
+            "account_mode",
+            "Offline",
+        )
+    )
+    self.settings_offline = ctk.StringVar(
+        value=self.cfg.get(
+            "offline_name",
+            "Player",
+        )
+    )
+    self.settings_curseforge = ctk.StringVar(
+        value=self.cfg.get(
+            "curseforge_api_key",
+            "",
+        )
+    )
+    self.settings_discord = ctk.StringVar(
+        value=self.cfg.get(
+            "discord_client_id",
+            "",
+        )
+    )
+    self.settings_advanced = ctk.BooleanVar(
+        value=bool(
+            self.cfg.get(
+                "advanced_settings",
+                False,
+            )
+        )
+    )
+
+    ctk.CTkLabel(
+        account,
+        text=self.t(
+            "account_mode"
+        ),
+        text_color=MUTED,
+        font=ctk.CTkFont(
+            size=10,
+            weight="bold",
+        ),
+    ).grid(
+        row=0,
+        column=0,
+        sticky="w",
+        padx=20,
+        pady=(16, 6),
+    )
+
+    modes = ctk.CTkFrame(
+        account,
+        fg_color="transparent",
+    )
+    modes.grid(
+        row=1,
+        column=0,
+        sticky="ew",
+        padx=20,
+        pady=(0, 6),
+    )
+    modes.grid_columnconfigure(
+        (0, 1),
+        weight=1,
+    )
+
+    self.account_mode_buttons = {}
+
+    for column, mode in enumerate(
+        ("Offline", "Microsoft")
+    ):
+        selected = (
+            self.settings_mode.get()
+            == mode
+        )
+
+        button = ctk.CTkButton(
+            modes,
+            text=(
+                self.t("offline")
+                if mode == "Offline"
+                else self.t("microsoft")
+            ),
+            height=42,
+            fg_color=(
+                self.accent
+                if selected
+                else SURFACE_2
+            ),
+            hover_color=self.accent_hover,
+            border_width=1,
+            border_color=(
+                self.accent
+                if selected
+                else BORDER
+            ),
+            command=lambda value=mode:
+                self.select_account_mode_settings(
+                    value
+                ),
+        )
+        button.grid(
+            row=0,
+            column=column,
+            sticky="ew",
+            padx=(
+                (0, 5)
+                if column == 0
+                else (5, 0)
+            ),
+        )
+        self.account_mode_buttons[
+            mode
+        ] = button
+
+    self.settings_field(
+        account,
+        2,
+        self.t("offline_nick"),
+        self.settings_offline,
+    )
+
+    advanced_row = ctk.CTkFrame(
+        account,
+        fg_color="transparent",
+    )
+    advanced_row.grid(
+        row=3,
+        column=0,
+        sticky="ew",
+        padx=20,
+        pady=(15, 0),
+    )
+
+    self.advanced_switch = ctk.CTkSwitch(
+        advanced_row,
+        text=self.t("advanced"),
+        variable=self.settings_advanced,
+        progress_color=self.accent,
+        command=self.toggle_advanced_settings_ui,
+    )
+    self.advanced_switch.pack(
+        anchor="w"
+    )
+
+    self.advanced_client_frame = ctk.CTkFrame(
+        account,
+        fg_color="transparent",
+    )
+    self.advanced_client_frame.grid(
+        row=4,
+        column=0,
+        sticky="ew",
+    )
+    self.advanced_client_frame.grid_columnconfigure(
+        0,
+        weight=1,
+    )
+
+    self.settings_field(
+        self.advanced_client_frame,
+        0,
+        self.t(
+            "curseforge_api_key"
+        ),
+        self.settings_curseforge,
+    )
+
+    self.settings_field(
+        self.advanced_client_frame,
+        1,
+        self.t("v5_discord_id"),
+        self.settings_discord,
+    )
+
+    actions = ctk.CTkFrame(
+        account,
+        fg_color="transparent",
+    )
+    actions.grid(
+        row=5,
+        column=0,
+        sticky="ew",
+        padx=20,
+        pady=18,
+    )
+
+    ctk.CTkButton(
+        actions,
+        text=self.t(
+            "manage_accounts"
+        ),
+        fg_color=SURFACE_3,
+        hover_color=self.accent,
+        command=self.show_accounts_page,
+    ).pack(side="left")
+
+    ctk.CTkLabel(
+        actions,
+        text=self.t(
+            "microsoft_app_ready"
+        ),
+        text_color=MUTED,
+        justify="left",
+        wraplength=520,
+    ).pack(
+        side="left",
+        padx=14,
+    )
+
+    self.toggle_advanced_settings_ui()
+
+    # ---------------- appearance ----------------
+    appearance = self.card(
+        page,
+        14,
+    )
+    appearance.grid(
+        row=3,
+        column=0,
+        sticky="ew",
+        padx=36,
+        pady=(0, 12),
+    )
+    appearance.grid_columnconfigure(
+        0,
+        weight=1,
+    )
+
+    self.settings_theme = ctk.StringVar(
+        value=self.cfg.get(
+            "theme",
+            "Fioletowy",
+        )
+    )
+    self.settings_language = ctk.StringVar(
+        value=self.cfg.get(
+            "language",
+            "pl",
+        )
+    )
+
+    ctk.CTkLabel(
+        appearance,
+        text=self.t(
+            "theme_colors"
+        ),
+        text_color=MUTED,
+        font=ctk.CTkFont(
+            size=10,
+            weight="bold",
+        ),
+    ).grid(
+        row=0,
+        column=0,
+        sticky="w",
+        padx=20,
+        pady=(16, 5),
+    )
+
+    theme_wrap = ctk.CTkFrame(
+        appearance,
+        fg_color="transparent",
+    )
+    theme_wrap.grid(
+        row=1,
+        column=0,
+        sticky="ew",
+        padx=20,
+        pady=(0, 14),
+    )
+
+    self.theme_buttons = {}
+
+    for index, theme_name in enumerate(
+        THEMES.keys()
+    ):
+        theme_data = THEMES[
+            theme_name
+        ]
+        selected = (
+            self.settings_theme.get()
+            == theme_name
+        )
+
+        button = ctk.CTkButton(
+            theme_wrap,
+            text=self.theme_display_name(
+                theme_name
+            ),
+            height=38,
+            fg_color=(
+                theme_data["accent"]
+                if selected
+                else SURFACE_2
+            ),
+            hover_color=theme_data[
+                "hover"
+            ],
+            border_width=1,
+            border_color=(
+                theme_data["accent"]
+                if selected
+                else BORDER
+            ),
+            command=lambda name=theme_name:
+                self.select_theme_preview(
+                    name
+                ),
+        )
+
+        button.grid(
+            row=index // 3,
+            column=index % 3,
+            sticky="ew",
+            padx=(
+                0
+                if index % 3 == 0
+                else 6,
+                0,
+            ),
+            pady=(
+                0
+                if index < 3
+                else 6,
+                0,
+            ),
+        )
+
+        theme_wrap.grid_columnconfigure(
+            index % 3,
+            weight=1,
+        )
+
+        self.theme_buttons[
+            theme_name
+        ] = button
+
+    ctk.CTkLabel(
+        appearance,
+        text=self.t("language"),
+        text_color=MUTED,
+        font=ctk.CTkFont(
+            size=10,
+            weight="bold",
+        ),
+    ).grid(
+        row=2,
+        column=0,
+        sticky="w",
+        padx=20,
+        pady=(8, 5),
+    )
+
+    languages = ctk.CTkFrame(
+        appearance,
+        fg_color="transparent",
+    )
+    languages.grid(
+        row=3,
+        column=0,
+        sticky="ew",
+        padx=20,
+        pady=(0, 16),
+    )
+    languages.grid_columnconfigure(
+        (0, 1),
+        weight=1,
+    )
+
+    self.language_buttons = {}
+
+    for column, (
+        value,
+        key,
+    ) in enumerate(
+        (
+            ("pl", "polish"),
+            ("en", "english"),
+        )
+    ):
+        selected = (
+            self.settings_language.get()
+            == value
+        )
+
+        button = ctk.CTkButton(
+            languages,
+            text=self.t(key),
+            height=40,
+            fg_color=(
+                self.accent
+                if selected
+                else SURFACE_2
+            ),
+            hover_color=self.accent_hover,
+            border_width=1,
+            border_color=(
+                self.accent
+                if selected
+                else BORDER
+            ),
+            command=lambda lang=value:
+                self.select_language_preview(
+                    lang
+                ),
+        )
+
+        button.grid(
+            row=0,
+            column=column,
+            sticky="ew",
+            padx=(
+                (0, 5)
+                if column == 0
+                else (5, 0)
+            ),
+        )
+
+        self.language_buttons[
+            value
+        ] = button
+
+    # ---------------- game directory ----------------
+    runtime = self.card(
+        page,
+        14,
+    )
+    runtime.grid(
+        row=4,
+        column=0,
+        sticky="ew",
+        padx=36,
+        pady=(0, 20),
+    )
+    runtime.grid_columnconfigure(
+        0,
+        weight=1,
+    )
+
+    self.settings_dir = ctk.StringVar(
+        value=self.cfg.get(
+            "game_dir",
+            str(default_game_dir()),
+        )
+    )
+
+    self.settings_field(
+        runtime,
+        0,
+        self.t("v53_game_dir"),
+        self.settings_dir,
+    )
+
+    runtime_actions = ctk.CTkFrame(
+        runtime,
+        fg_color="transparent",
+    )
+    runtime_actions.grid(
+        row=1,
+        column=0,
+        sticky="ew",
+        padx=20,
+        pady=18,
+    )
+
+    ctk.CTkButton(
+        runtime_actions,
+        text=self.t("choose_dir"),
+        fg_color=SURFACE_3,
+        hover_color=self.accent,
+        command=self.choose_game_dir,
+    ).pack(side="left")
+
+    ctk.CTkButton(
+        runtime_actions,
+        text=self.t("save"),
+        fg_color=self.accent,
+        hover_color=self.accent_hover,
+        command=self.save_settings,
+    ).pack(side="right")
+
+
+def _v53_show_system_tools(self):
+    self.set_active_page(
+        "settings"
+    )
+    self.clear_content()
+
+    page = self.page()
+
+    self.page_header(
+        page,
+        self.t("nav_settings"),
+        self.t(
+            "v52_system_tools"
+        ),
+        self.t(
+            "v52_system_tools_subtitle"
+        ),
+    )
+
+    self.settings_tabs(
+        page,
+        "system",
+    )
+
+    self.settings_auto_java = ctk.BooleanVar(
+        value=bool(
+            self.cfg.get(
+                "auto_java",
+                True,
+            )
+        )
+    )
+
+    self.settings_auto_updates = ctk.BooleanVar(
+        value=bool(
+            self.cfg.get(
+                "auto_check_updates",
+                True,
+            )
+        )
+    )
+
+    profile_name = self.cfg.get(
+        "selected"
+    )
+    profile = self.cfg[
+        "profiles"
+    ].get(
+        profile_name,
+        {},
+    )
+
+    required = self.required_java_major(
+        profile.get("version")
+    )
+
+    best = None
+    try:
+        best = self.best_java_for_profile(
+            profile_name
+        )
+    except Exception:
+        pass
+
+    java_card = self.card(
+        page,
+        14,
+    )
+    java_card.grid(
+        row=2,
+        column=0,
+        sticky="ew",
+        padx=36,
+        pady=(0, 12),
+    )
+
+    ctk.CTkLabel(
+        java_card,
+        text="Java Manager",
+        text_color=TEXT,
+        font=ctk.CTkFont(
+            size=19,
+            weight="bold",
+        ),
+    ).pack(
+        anchor="w",
+        padx=20,
+        pady=(16, 3),
+    )
+
+    self.java_manager_label = ctk.CTkLabel(
+        java_card,
+        text=(
+            self.t(
+                "v5_java_required",
+                major=required,
+            )
+            + (
+                f"  •  Java "
+                f"{best['major']} ✓"
+                if best
+                else "  •  !"
+            )
+        ),
+        text_color=(
+            MUTED
+            if best
+            else "#F0B35B"
+        ),
+    )
+    self.java_manager_label.pack(
+        anchor="w",
+        padx=20,
+        pady=(0, 10),
+    )
+
+    java_actions = ctk.CTkFrame(
+        java_card,
+        fg_color="transparent",
+    )
+    java_actions.pack(
+        fill="x",
+        padx=20,
+        pady=(0, 16),
+    )
+
+    ctk.CTkSwitch(
+        java_actions,
+        text=self.t("v5_java_auto"),
+        variable=self.settings_auto_java,
+        progress_color=self.accent,
+        command=self.save_settings,
+    ).pack(side="left")
+
+    ctk.CTkButton(
+        java_actions,
+        text=self.t("v5_java_scan"),
+        fg_color=SURFACE_3,
+        hover_color=self.accent,
+        command=lambda:
+            self.run_bg(
+                self.detect_java_installations
+            ),
+    ).pack(
+        side="left",
+        padx=8,
+    )
+
+    ctk.CTkButton(
+        java_actions,
+        text=self.t("v5_java_select"),
+        fg_color=SURFACE_3,
+        hover_color=self.accent,
+        command=lambda:
+            self.auto_select_java_for_profile(),
+    ).pack(side="left")
+
+    update_card = self.card(
+        page,
+        14,
+    )
+    update_card.grid(
+        row=3,
+        column=0,
+        sticky="ew",
+        padx=36,
+        pady=(0, 16),
+    )
+
+    ctk.CTkLabel(
+        update_card,
+        text=self.t(
+            "v5_launcher_updates"
+        ),
+        text_color=TEXT,
+        font=ctk.CTkFont(
+            size=19,
+            weight="bold",
+        ),
+    ).pack(
+        anchor="w",
+        padx=20,
+        pady=(16, 8),
+    )
+
+    update_actions = ctk.CTkFrame(
+        update_card,
+        fg_color="transparent",
+    )
+    update_actions.pack(
+        fill="x",
+        padx=20,
+        pady=(0, 16),
+    )
+
+    ctk.CTkSwitch(
+        update_actions,
+        text=self.t(
+            "v5_auto_updates"
+        ),
+        variable=self.settings_auto_updates,
+        progress_color=self.accent,
+        command=self.save_settings,
+    ).pack(side="left")
+
+    ctk.CTkButton(
+        update_actions,
+        text=self.t(
+            "v5_check_launcher"
+        ),
+        fg_color=SURFACE_3,
+        hover_color=self.accent,
+        command=lambda:
+            self.run_bg(
+                lambda:
+                    self.check_launcher_update(
+                        True
+                    )
+            ),
+    ).pack(
+        side="left",
+        padx=8,
+    )
+
+
+def _v53_open_create_profile(self):
+    self.set_active_page(
+        "profiles"
+    )
+    self.clear_content()
+
+    page = self.page()
+
+    top = ctk.CTkFrame(
+        page,
+        fg_color="transparent",
+    )
+    top.grid(
+        row=0,
+        column=0,
+        sticky="ew",
+        padx=36,
+        pady=(28, 12),
+    )
+
+    ctk.CTkButton(
+        top,
+        text=self.t("v51_back"),
+        width=100,
+        height=36,
+        fg_color=SURFACE_3,
+        hover_color="#2B3749",
+        command=self.show_profiles,
+    ).pack(
+        side="left",
+        padx=(0, 14),
+    )
+
+    title = ctk.CTkFrame(
+        top,
+        fg_color="transparent",
+    )
+    title.pack(side="left")
+
+    ctk.CTkLabel(
+        title,
+        text=self.t(
+            "v51_create_profile"
+        ),
+        text_color=TEXT,
+        font=ctk.CTkFont(
+            size=29,
+            weight="bold",
+        ),
+    ).pack(anchor="w")
+
+    ctk.CTkLabel(
+        title,
+        text=self.t(
+            "v51_create_profile_subtitle"
+        ),
+        text_color=MUTED,
+    ).pack(anchor="w")
+
+    form = self.card(
+        page,
+        18,
+    )
+    form.grid(
+        row=1,
+        column=0,
+        sticky="ew",
+        padx=36,
+        pady=(0, 18),
+    )
+    form.grid_columnconfigure(
+        0,
+        weight=1,
+    )
+
+    icon_state = {
+        "path": None
+    }
+
+    icon_box = ctk.CTkFrame(
+        form,
+        fg_color=SURFACE_2,
+        corner_radius=12,
+    )
+    icon_box.grid(
+        row=0,
+        column=0,
+        sticky="ew",
+        padx=20,
+        pady=(18, 4),
+    )
+    icon_box.grid_columnconfigure(
+        1,
+        weight=1,
+    )
+
+    default_icon = self.profile_icon_pil(
+        "__new__",
+        72,
+    )
+    icon_image = ctk.CTkImage(
+        light_image=default_icon,
+        dark_image=default_icon,
+        size=(72, 72),
+    )
+
+    preview = ctk.CTkLabel(
+        icon_box,
+        text="",
+        image=icon_image,
+        width=80,
+        height=80,
+        fg_color=SURFACE_3,
+        corner_radius=14,
+    )
+    preview._outerclient_profile_image = (
+        icon_image
+    )
+    preview.grid(
+        row=0,
+        column=0,
+        rowspan=2,
+        padx=14,
+        pady=14,
+    )
+
+    ctk.CTkLabel(
+        icon_box,
+        text=self.t(
+            "v52_profile_icon"
+        ),
+        text_color=MUTED,
+        font=ctk.CTkFont(
+            size=10,
+            weight="bold",
+        ),
+    ).grid(
+        row=0,
+        column=1,
+        sticky="sw",
+        pady=(16, 4),
+    )
+
+    def choose_icon():
+        selected = (
+            self.choose_profile_icon_file()
+        )
+
+        if not selected:
+            return
+
+        try:
+            image = Image.open(
+                selected
+            ).convert("RGBA")
+
+            side = min(
+                image.width,
+                image.height,
+            )
+            left = (
+                image.width - side
+            ) // 2
+            top = (
+                image.height - side
+            ) // 2
+
+            image = image.crop(
+                (
+                    left,
+                    top,
+                    left + side,
+                    top + side,
+                )
+            )
+            image = image.resize(
+                (72, 72),
+                Image.Resampling.LANCZOS,
+            )
+
+            ctk_image = ctk.CTkImage(
+                light_image=image,
+                dark_image=image,
+                size=(72, 72),
+            )
+
+            preview._outerclient_profile_image = (
+                ctk_image
+            )
+            preview.configure(
+                image=ctk_image
+            )
+            icon_state[
+                "path"
+            ] = selected
+        except Exception as exc:
+            messagebox.showerror(
+                "OuterClient",
+                str(exc),
+            )
+
+    ctk.CTkButton(
+        icon_box,
+        text=self.t(
+            "v52_choose_icon"
+        ),
+        width=145,
+        fg_color=SURFACE_3,
+        hover_color=self.accent,
+        command=choose_icon,
+    ).grid(
+        row=1,
+        column=1,
+        sticky="nw",
+        pady=(0, 16),
+    )
+
+    default_word = (
+        "Profil"
+        if self.cfg.get(
+            "language"
+        ) == "pl"
+        else "Profile"
+    )
+
+    name_var = ctk.StringVar(
+        value=(
+            f"{default_word} "
+            f"{len(self.cfg['profiles']) + 1}"
+        )
+    )
+
+    versions = (
+        self.version_cache
+        or [
+            "26.1.2",
+            "26.1",
+            "1.21.11",
+            "1.21.10",
+            "1.21.8",
+            "1.21.5",
+            "1.21.4",
+            "1.21.1",
+            "1.20.1",
+        ]
+    )
+
+    version_var = ctk.StringVar(
+        value=versions[0]
+    )
+
+    loader_var = ctk.StringVar(
+        value="Fabric"
+    )
+
+    fields = ctk.CTkFrame(
+        form,
+        fg_color="transparent",
+    )
+    fields.grid(
+        row=1,
+        column=0,
+        sticky="ew",
+    )
+    fields.grid_columnconfigure(
+        0,
+        weight=1,
+    )
+
+    self.settings_field(
+        fields,
+        0,
+        self.t("profile_name"),
+        name_var,
+    )
+
+    version_box = ctk.CTkFrame(
+        fields,
+        fg_color="transparent",
+    )
+    version_box.grid(
+        row=1,
+        column=0,
+        sticky="ew",
+        padx=20,
+        pady=(14, 0),
+    )
+
+    ctk.CTkLabel(
+        version_box,
+        text=self.t(
+            "minecraft_version"
+        ),
+        text_color=MUTED,
+        font=ctk.CTkFont(
+            size=10,
+            weight="bold",
+        ),
+    ).pack(
+        anchor="w",
+        pady=(0, 5),
+    )
+
+    self.themed_option_menu(
+        version_box,
+        variable=version_var,
+        values=versions,
+    ).pack(fill="x")
+
+    loader_box = ctk.CTkFrame(
+        fields,
+        fg_color="transparent",
+    )
+    loader_box.grid(
+        row=2,
+        column=0,
+        sticky="ew",
+        padx=20,
+        pady=(14, 0),
+    )
+
+    ctk.CTkLabel(
+        loader_box,
+        text=self.t(
+            "modloader"
+        ),
+        text_color=MUTED,
+        font=ctk.CTkFont(
+            size=10,
+            weight="bold",
+        ),
+    ).pack(
+        anchor="w",
+        pady=(0, 5),
+    )
+
+    self.themed_option_menu(
+        loader_box,
+        variable=loader_var,
+        values=[
+            "Vanilla",
+            "Fabric",
+            "Forge",
+            "NeoForge",
+            "Quilt",
+        ],
+    ).pack(fill="x")
+
+    ctk.CTkButton(
+        form,
+        text=self.t("create"),
+        height=44,
+        fg_color=self.accent,
+        hover_color=self.accent_hover,
+        command=lambda:
+            self.create_profile_v53(
+                name_var.get(),
+                version_var.get(),
+                loader_var.get(),
+                icon_state["path"],
+            ),
+    ).grid(
+        row=2,
+        column=0,
+        sticky="e",
+        padx=20,
+        pady=20,
+    )
+
+
+def _v53_create_profile(
+    self,
+    name,
+    version,
+    loader,
+    icon_path=None,
+):
+    name = str(
+        name or ""
+    ).strip()
+
+    if not name:
+        messagebox.showwarning(
+            self.t("profile_title"),
+            self.t(
+                "profile_name_empty"
+            ),
+        )
+        return
+
+    if name in self.cfg[
+        "profiles"
+    ]:
+        messagebox.showwarning(
+            self.t("profile_title"),
+            self.t(
+                "profile_exists"
+            ),
+        )
+        return
+
+    self.cfg[
+        "profiles"
+    ][name] = {
+        "version": version,
+        "loader": loader,
+        "preset": "Balanced",
+        "ram": 0,
+    }
+
+    self.cfg["selected"] = name
+    save_config(self.cfg)
+
+    instance = (
+        self.profile_instance_dir(
+            name
+        )
+    )
+    instance.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+
+    if icon_path:
+        self.save_profile_icon_from_file(
+            name,
+            icon_path,
+        )
+
+    self.show_profile_manager(
+        name
+    )
+
+
+def _v53_show_profile_manager(
+    self,
+    profile_name,
+):
+    if profile_name not in self.cfg[
+        "profiles"
+    ]:
+        return
+
+    self.set_active_page(
+        "profiles"
+    )
+    self.clear_content()
+
+    self.manage_profile_name = (
+        profile_name
+    )
+    self.manage_category = getattr(
+        self,
+        "manage_category",
+        "mods",
+    )
+
+    outer = ctk.CTkFrame(
+        self.content,
+        fg_color=BG,
+        corner_radius=0,
+    )
+    outer.grid(
+        row=0,
+        column=0,
+        sticky="nsew",
+    )
+    outer.grid_columnconfigure(
+        0,
+        weight=1,
+    )
+    outer.grid_rowconfigure(
+        4,
+        weight=1,
+    )
+
+    profile = self.cfg[
+        "profiles"
+    ][profile_name]
+
+    # Header — compact, no weighted spacer rows.
+    top = ctk.CTkFrame(
+        outer,
+        fg_color="transparent",
+    )
+    top.grid(
+        row=0,
+        column=0,
+        sticky="ew",
+        padx=28,
+        pady=(20, 8),
+    )
+    top.grid_columnconfigure(
+        1,
+        weight=1,
+    )
+
+    ctk.CTkButton(
+        top,
+        text=self.t(
+            "back_to_profiles"
+        ),
+        width=100,
+        height=36,
+        fg_color=SURFACE_3,
+        hover_color="#2B3749",
+        command=self.show_profiles,
+    ).grid(
+        row=0,
+        column=0,
+        padx=(0, 12),
+    )
+
+    icon = self.profile_icon_widget(
+        top,
+        profile_name,
+        54,
+    )
+    icon.grid(
+        row=0,
+        column=1,
+        rowspan=2,
+        sticky="w",
+        padx=(0, 12),
+    )
+
+    title_box = ctk.CTkFrame(
+        top,
+        fg_color="transparent",
+    )
+    title_box.grid(
+        row=0,
+        column=2,
+        rowspan=2,
+        sticky="w",
+    )
+
+    ctk.CTkLabel(
+        title_box,
+        text=self.t(
+            "manage_for_profile",
+            name=profile_name,
+        ),
+        text_color=TEXT,
+        font=ctk.CTkFont(
+            size=26,
+            weight="bold",
+        ),
+    ).pack(anchor="w")
+
+    ctk.CTkLabel(
+        title_box,
+        text=(
+            f"Minecraft "
+            f"{profile.get('version')}"
+            f" • "
+            f"{profile.get('loader')}"
+            f" • "
+            f"{self.profile_ram(profile_name)} MB"
+        ),
+        text_color=MUTED,
+    ).pack(anchor="w")
+
+    ctk.CTkButton(
+        top,
+        text=self.t(
+            "v52_change_icon"
+        ),
+        width=110,
+        height=36,
+        fg_color=SURFACE_3,
+        hover_color=self.accent,
+        command=lambda:
+            self.choose_profile_icon(
+                profile_name
+            ),
+    ).grid(
+        row=0,
+        column=3,
+        rowspan=2,
+        padx=(12, 0),
+    )
+
+    # Categories directly below the header.
+    categories = ctk.CTkFrame(
+        outer,
+        fg_color="transparent",
+    )
+    categories.grid(
+        row=1,
+        column=0,
+        sticky="ew",
+        padx=28,
+        pady=(4, 6),
+    )
+
+    self.manage_category_buttons = {}
+
+    for key, text_key in (
+        ("mods", "manage_mods"),
+        (
+            "resources",
+            "manage_resources",
+        ),
+        (
+            "shaders",
+            "manage_shaders",
+        ),
+        (
+            "datapacks",
+            "manage_datapacks",
+        ),
+    ):
+        active = (
+            key
+            == self.manage_category
+        )
+
+        button = ctk.CTkButton(
+            categories,
+            text=self.t(
+                text_key
+            ),
+            height=36,
+            fg_color=(
+                self.accent
+                if active
+                else SURFACE
+            ),
+            border_width=1,
+            border_color=(
+                self.accent
+                if active
+                else BORDER
+            ),
+            hover_color=(
+                self.accent_hover
+                if active
+                else SURFACE_3
+            ),
+            command=lambda value=key:
+                self.manage_category_changed(
+                    value
+                ),
+        )
+        button.pack(
+            side="left",
+            padx=(0, 6),
+        )
+
+        self.manage_category_buttons[
+            key
+        ] = button
+
+    # Action row directly below tabs — fixes the second large gap.
+    actions = ctk.CTkFrame(
+        outer,
+        fg_color="transparent",
+    )
+    actions.grid(
+        row=2,
+        column=0,
+        sticky="ew",
+        padx=28,
+        pady=(0, 8),
+    )
+
+    for text, command in (
+        (
+            self.t("v5_backup"),
+            lambda:
+                self.backup_profile(
+                    profile_name
+                ),
+        ),
+        (
+            self.t("v5_restore"),
+            lambda:
+                self.restore_profile_backup(
+                    profile_name
+                ),
+        ),
+        (
+            self.t("v5_scan"),
+            lambda:
+                self.scan_profile_metadata(
+                    profile_name
+                ),
+        ),
+        (
+            self.t(
+                "v5_check_updates"
+            ),
+            lambda:
+                self.check_profile_updates(
+                    profile_name
+                ),
+        ),
+        (
+            self.t("v5_update_all"),
+            lambda:
+                self.update_all_content(
+                    profile_name
+                ),
+        ),
+    ):
+        ctk.CTkButton(
+            actions,
+            text=text,
+            height=34,
+            fg_color=SURFACE_3,
+            hover_color=self.accent,
+            command=command,
+        ).pack(
+            side="left",
+            padx=(0, 6),
+        )
+
+    info = ctk.CTkLabel(
+        outer,
+        text=self.t(
+            "v52_mods_auto"
+        ),
+        text_color=MUTED,
+        anchor="w",
+    )
+    info.grid(
+        row=3,
+        column=0,
+        sticky="w",
+        padx=30,
+        pady=(0, 6),
+    )
+
+    self.manage_list = (
+        ctk.CTkScrollableFrame(
+            outer,
+            fg_color=BG,
+            corner_radius=0,
+            scrollbar_button_color=SURFACE_3,
+            scrollbar_button_hover_color=BORDER,
+        )
+    )
+    self.manage_list.grid(
+        row=4,
+        column=0,
+        sticky="nsew",
+        padx=20,
+        pady=(0, 12),
+    )
+    self.manage_list.grid_columnconfigure(
+        0,
+        weight=1,
+    )
+
+    # Files appear immediately.
+    self.render_manage_file_list()
+
+    mods = (
+        self.profile_instance_dir(
+            profile_name
+        )
+        / "mods"
+    )
+
+    if mods.exists():
+        self.run_bg(
+            lambda:
+                self.scan_profile_metadata_worker(
+                    profile_name
+                )
+        )
+
+    self._v52_last_manager_signature = (
+        self.profile_content_signature(
+            profile_name
+        )
+    )
+
+    self.after(
+        900,
+        lambda:
+            self.auto_refresh_profile_manager(
+                profile_name
+            ),
+    )
+
+
+def _v53_launch_installed(
+    self,
+    launch_version,
+    instance,
+    profile_name,
+    server_address=None,
+):
+    mode = self.cfg.get(
+        "account_mode",
+        "Offline",
+    )
+    ram = self.profile_ram(
+        profile_name
+    )
+
+    if mode == "Microsoft":
+        if not self.auth:
+            raise RuntimeError(
+                self.t(
+                    "microsoft_not_authenticated"
+                )
+            )
+
+        auth = (
+            self.refresh_active_microsoft_account()
+        )
+
+        options = {
+            "username":
+                auth.get(
+                    "name",
+                    "Player",
+                ),
+            "uuid":
+                auth.get("id")
+                or auth.get(
+                    "uuid",
+                    "",
+                ),
+            "token":
+                auth.get(
+                    "access_token",
+                    "",
+                ),
+        }
+    else:
+        name = (
+            self.cfg.get(
+                "offline_name",
+                "Player",
+            ).strip()
+            or "Player"
+        )
+
+        options = {
+            "username": name,
+            "uuid":
+                java_offline_uuid(
+                    name
+                ),
+            "token": "0",
+        }
+
+    java_info = (
+        self.resolve_java_for_profile(
+            profile_name
+        )
+    )
+    java = java_info["path"]
+
+    self.events.put(
+        (
+            "status",
+            self.t(
+                "v53_game_starting"
+            ),
+        )
+    )
+
+    options.update({
+        "jvmArguments": [
+            f"-Xmx{ram}M",
+            "-Xms1024M",
+        ],
+        "gameDirectory":
+            str(instance),
+        "launcherName":
+            APP_NAME,
+        "launcherVersion":
+            APP_VERSION,
+        "executablePath":
+            java,
+        "defaultExecutablePath":
+            java,
+    })
+
+    if server_address:
+        address = (
+            server_address.strip()
+        )
+        host = address
+        port = None
+
+        if (
+            ":"
+            in address
+            and not address.startswith(
+                "["
+            )
+        ):
+            host, maybe_port = (
+                address.rsplit(
+                    ":",
+                    1,
+                )
+            )
+            if maybe_port.isdigit():
+                port = maybe_port
+
+        options["server"] = host
+
+        if port:
+            options["port"] = port
+
+    command = (
+        minecraft_launcher_lib.command
+        .get_minecraft_command(
+            launch_version,
+            str(instance),
+            options,
+        )
+    )
+
+    if not command:
+        raise RuntimeError(
+            "Minecraft command is empty."
+        )
+
+    command = [
+        str(item)
+        for item in command
+    ]
+    command[0] = java
+
+    log_path = (
+        self.logs_dir()
+        / "latest-minecraft.log"
+    )
+
+    log_file = log_path.open(
+        "w",
+        encoding="utf-8",
+        errors="ignore",
+    )
+
+    self.minecraft_log_handle = (
+        log_file
+    )
+
+    env = os.environ.copy()
+    env["JAVA_HOME"] = str(
+        Path(java).parent.parent
+    )
+
+    self.write_log(
+        "Minecraft launch version: "
+        f"{launch_version}"
+    )
+    self.write_log(
+        self.t(
+            "v53_java_using",
+            major=java_info[
+                "major"
+            ],
+            path=java,
+        )
+    )
+    self.write_log(
+        "Command: "
+        + (
+            subprocess.list2cmdline(
+                command
+            )
+            if sys.platform.startswith(
+                "win"
+            )
+            else " ".join(
+                command
+            )
+        )
+    )
+
+    creationflags = 0
+
+    if sys.platform.startswith(
+        "win"
+    ):
+        creationflags = getattr(
+            subprocess,
+            "CREATE_NEW_PROCESS_GROUP",
+            0,
+        )
+
+    process = subprocess.Popen(
+        command,
+        cwd=str(instance),
+        stdout=log_file,
+        stderr=subprocess.STDOUT,
+        env=env,
+        shell=False,
+        creationflags=creationflags,
+    )
+
+    self.minecraft_process = (
+        process
+    )
+
+    # Give Java a moment to fail fast if runtime/modloader is wrong.
+    time.sleep(2.2)
+
+    code = process.poll()
+
+    if code is not None:
+        try:
+            log_file.flush()
+        except Exception:
+            pass
+
+        try:
+            tail = log_path.read_text(
+                encoding="utf-8",
+                errors="ignore",
+            )[-7000:]
+        except Exception:
+            tail = (
+                f"Exit code: {code}"
+            )
+
+        raise RuntimeError(
+            self.t(
+                "v53_launch_failed",
+                code=code,
+                log=tail,
+            )
+        )
+
+    self.start_discord_presence(
+        profile_name
+    )
+
+    self.run_bg(
+        lambda:
+            self.monitor_minecraft_process(
+                process,
+                profile_name,
+                log_path,
+            )
+    )
+
+    self.events.put(
+        (
+            "status",
+            self.t(
+                "minecraft_launched"
+            ),
+        )
+    )
+
+
+def _v53_launch(
+    self,
+    server_address=None,
+):
+    process = getattr(
+        self,
+        "minecraft_process",
+        None,
+    )
+
+    if (
+        process is not None
+        and process.poll() is None
+    ):
+        self.set_status(
+            self.t(
+                "v52_already_running"
+            )
+        )
+        return
+
+    name, profile = (
+        self.selected_profile_data()
+    )
+
+    self.set_status(
+        self.t(
+            "v53_game_loading"
+        )
+    )
+
+    def worker():
+        try:
+            # Resolve Java BEFORE any install.
+            # This makes a missing Java 25 error immediate instead of hanging.
+            self.resolve_java_for_profile(
+                name
+            )
+
+            launch_version = (
+                self.installed_launch_version(
+                    name
+                )
+            )
+
+            instance = (
+                self.profile_instance_dir(
+                    name
+                )
+            )
+
+            if not launch_version:
+                self.events.put(
+                    (
+                        "status",
+                        self.t(
+                            "v53_game_installing"
+                        ),
+                    )
+                )
+
+                instance.mkdir(
+                    parents=True,
+                    exist_ok=True,
+                )
+
+                launch_version = (
+                    self.install_loader(
+                        profile["version"],
+                        profile["loader"],
+                        instance,
+                    )
+                )
+
+                profile[
+                    "launch_version"
+                ] = launch_version
+                save_config(self.cfg)
+
+            self.launch_installed_v5(
+                launch_version,
+                instance,
+                name,
+                server_address,
+            )
+
+        except Exception as exc:
+            self.events.put(
+                (
+                    "error",
+                    self.t(
+                        "profile_error",
+                        error=exc,
+                    ),
+                )
+            )
+
+    self.run_bg(worker)
+
+
+# New modpack wrapper keeps icon behavior while preserving loader_version.
+def _v53_install_modpack_job(
+    self,
+    job,
+):
+    before = set(
+        self.cfg[
+            "profiles"
+        ].keys()
+    )
+
+    _V53_INSTALL_MODPACK_BASE(
+        self,
+        job,
+    )
+
+    after = set(
+        self.cfg[
+            "profiles"
+        ].keys()
+    )
+
+    created = list(
+        after - before
+    )
+
+    profile_name = (
+        created[0]
+        if created
+        else self.cfg.get(
+            "selected"
+        )
+    )
+
+    if not profile_name:
+        return
+
+    hit = job.get(
+        "hit",
+        {},
+    )
+
+    icon_url = hit.get(
+        "icon_url"
+    )
+
+    if not icon_url:
+        project_id = (
+            hit.get(
+                "project_id"
+            )
+            or hit.get("id")
+            or hit.get("slug")
+        )
+
+        if project_id:
+            try:
+                response = requests.get(
+                    f"{MODRINTH_API}/project/{project_id}",
+                    timeout=15,
+                    headers={
+                        "User-Agent":
+                            f"OuterClient/{APP_VERSION}"
+                    },
+                )
+                response.raise_for_status()
+                icon_url = response.json().get(
+                    "icon_url"
+                )
+            except Exception:
+                pass
+
+    if icon_url:
+        self.save_profile_icon_from_url(
+            profile_name,
+            icon_url,
+        )
+
+    try:
+        self.scan_profile_metadata_worker(
+            profile_name
+        )
+    except Exception:
+        pass
+
+
+# Bind 5.3.
+OuterClient.build_download_bar = _v53_build_download_bar
+OuterClient.set_game_loading = _v53_game_loading
+OuterClient.set_status = _v53_set_status
+
+OuterClient.required_java_major = _v53_required_java
+OuterClient.detect_java_installations = _v53_detect_java
+OuterClient.resolve_java_for_profile = _v53_resolve_java
+OuterClient.install_loader = _v53_install_loader
+
+OuterClient.save_settings = _v53_save_settings
+OuterClient.settings_tabs = _v53_settings_tabs
+OuterClient.show_settings = _v53_show_settings
+OuterClient.show_system_tools_settings = _v53_show_system_tools
+
+OuterClient.open_create_profile = _v53_open_create_profile
+OuterClient.create_profile_v53 = _v53_create_profile
+OuterClient.show_profile_manager = _v53_show_profile_manager
+
+OuterClient.launch_installed_v5 = _v53_launch_installed
+OuterClient.launch = _v53_launch
+
+OuterClient.install_modpack_job = _v53_install_modpack_job
 
 
 

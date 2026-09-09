@@ -1,55 +1,62 @@
-# OuterClient v5.2
+# OuterClient v5.3
 
-## Ustawienia
-Ustawienia mają teraz dwie podzakładki:
+## Minecraft 26.x / Java 25
+Naprawiono ważny błąd Java Managera.
+
+v5.2 traktował Minecraft 26.1.x jak starą numerację i wybierał Java 21.
+Minecraft 26.1 wymaga Java 25.
+
+v5.3:
+- Minecraft 26.x → Java 25
+- Minecraft 1.20.5–1.21.x → Java 21
+- Minecraft 1.18–1.20.4 → Java 17
+- starsze → Java 8
+
+Przed instalacją/uruchomieniem OuterClient sprawdza właściwą Javę.
+Jeśli jej brakuje, od razu pokazuje czytelny błąd zamiast wisieć na „Przygotowywanie gry”.
+
+## Dolny pasek
+Podczas uruchamiania Minecrafta pasek pobierania przełącza się w animowany tryb:
+`Uruchamianie Minecrafta…`
+
+Po uruchomieniu/niepowodzeniu wraca do normalnego paska pobierania.
+
+## UI
+Naprawiono obie duże puste przestrzenie:
+- Ustawienia
+- Zarządzaj profilem
+
+Ustawienia są budowane od nowa w zwartym układzie:
 - Ogólne
 - Narzędzia systemowe
 
-Java Manager i aktualizacje OuterClient nie zajmują już miejsca na stronie głównych ustawień.
+Manager profilu ma:
+- nagłówek
+- kategorie
+- akcje
+- listę modów
 
-## Profile i ikony
-Każdy profil może mieć własną ikonę.
-
-Ikonę można:
-- wybrać podczas tworzenia profilu,
-- zmienić w Edytuj profil,
-- zmienić w Zarządzaj profilem,
-- usunąć.
-
-Ikona jest przechowywana w:
-`<profil>/.outerclient/profile-icon.png`
-
-Przy instalacji modpacka z Modrinth OuterClient automatycznie pobiera ikonę projektu
-i ustawia ją jako ikonę nowo utworzonego profilu.
-
-## Mody
-Manager pokazuje pliki od razu.
-Metadane Modrinth są skanowane automatycznie w tle.
-Lista modów/resource packów/shaderów odświeża się sama, gdy zawartość folderu się zmieni.
-
-## Graj
-Dodano przycisk:
-`Zakończ grę`
-
-OuterClient nie przechodzi już zawsze przez pełne instalowanie profilu.
-Jeśli zgodna wersja Minecrafta/loadera jest już zainstalowana, launcher używa jej od razu.
-
-Status po zakończeniu Minecrafta wraca do `Gotowy / Ready`.
+bez ważonego pustego wiersza pomiędzy elementami.
 
 ## Performance Pack
-Pozostaje jeden rekomendowany Performance Pack Fabric.
+Performance Pack został usunięty z:
+- tworzenia profilu,
+- zarządzania profilem.
 
-## Modrinth
-Pozostaje:
-- szybsze ładowanie,
-- poprawione ikony,
-- `Install + ▼`,
-- wybór konkretnej wersji moda.
+## Modpacki
+Nowe profile z `.mrpack` zapisują również dokładną wersję loadera, jeśli manifest ją podaje.
+OuterClient nadal próbuje pobrać ikonę projektu i ustawić ją jako ikonę profilu.
 
-## Build
-GitHub:
-Actions → Build and Release OuterClient 5.2 → Run workflow
+## Launch
+- właściwa Java jest wybierana przed instalacją loadera,
+- Java jest przekazywana także do instalatora modloadera,
+- zapisywany jest dokładny loader version z modpacka,
+- pełna komenda startowa trafia do logu,
+- szybki crash pokazuje końcówkę `latest-minecraft.log`.
+
+## GitHub
+Actions → Build and Release OuterClient 5.3 → Run workflow
 
 Pliki:
-- OuterClient-v5.2-x86_64.AppImage
-- OuterClient-v5.2.exe
+- OuterClient-v5.3-x86_64.AppImage
+- OuterClient-v5.3.exe
