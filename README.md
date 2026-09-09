@@ -1,60 +1,59 @@
-# OuterClient v5.0.1
+# OuterClient v5.1
 
-## Hotfix startu
+## Główne zmiany
 
-Naprawiono crash po uruchomieniu:
+### Microsoft
+- Zarządzanie kontami działa wewnątrz głównego okna launchera.
+- OAuth otwiera systemową przeglądarkę.
+- Nie ma osobnego okna OuterClient do logowania.
 
-`AttributeError: '_tkinter.tkapp' object has no attribute '_v5_startup_tasks'`
+### Profile
+- `Zmień profil` otwiera pełną stronę z dużymi kartami profili.
+- Tworzenie nowego profilu odbywa się wewnątrz launchera.
+- Jest strzałka powrotu.
+- Na ekranie Graj jest suwak RAM zapisujący RAM osobno dla profilu.
 
-Przyczyną było nieprzypięte wywołanie zadania startowego v5.
+### Performance Pack
+Jedna rekomendowana paczka Fabric:
+- Sodium
+- Lithium
+- FerriteCore
+- ImmediatelyFast
+- EntityCulling
+- Fabric API
 
-v5.0.1:
-- uruchamia startup task bezpośrednio,
-- dodatkowo przypina `_v5_startup_tasks` do `OuterClient`,
-- zawiera statyczny test wszystkich odwołań `self._v5_*`,
-- zachowuje wszystkie funkcje v5.0,
-- zachowuje poprawki AppImage/Pillow i Microsoft login.
+Można ją:
+- zaznaczyć podczas tworzenia profilu,
+- zainstalować lub zainstalować ponownie w `Zarządzaj profilem`.
 
-Duża aktualizacja interfejsu i funkcji.
+### Modrinth
+- Pierwsze wyszukiwanie jest lżejsze.
+- Na start renderowanych jest mniej kart.
+- Ikony są tworzone po stronie głównego wątku Tk.
+- Przycisk instalacji ma układ `Install + ▼`.
+- `▼` pokazuje zgodne wersje projektu bez opuszczania strony.
+- Można zainstalować konkretną wersję moda.
 
-## Nowy wybór profilu
-Na ekranie Gra nie ma już małego dropdownu. Wybrany profil jest dużą kartą z nazwą, wersją Minecrafta, loaderem, presetem, RAM-em, Javą i liczbą modów. Profil można zmieniać strzałkami albo przez pełnoekranowy picker kart.
+### Windows
+Uruchamianie Minecrafta:
+- dobiera Javę pod wersję profilu,
+- ustawia `executablePath` i `defaultExecutablePath`,
+- ustawia `JAVA_HOME`,
+- loguje pełną komendę startową,
+- jeśli Minecraft kończy się od razu, pokazuje ostatnie linie logu zamiast milczeć.
 
-## Szybszy Modrinth
-- wyniki po 24 zamiast 100+100,
-- fuzzy fallback pobierany tylko gdy normalne wyszukiwanie ma mało wyników,
-- cache wyszukiwań 5 minut,
-- tylko 12 kart renderowanych naraz,
-- Pokaż więcej ładuje kolejne 12,
-- debounce wyszukiwania,
-- tylko widoczne ikony są pobierane,
-- Favorites.
+### Ustawienia
+Java Manager i aktualizacje OuterClient są na samym dole przewijanej strony Ustawień.
 
-## Profile
-- Presety Low / Balanced / High / Custom,
-- backup i restore,
-- rozpoznawanie istniejących modów po SHA-1 przez Modrinth,
-- sprawdzanie i instalowanie aktualizacji,
-- Update all,
-- Fabric Performance Pack: Sodium, Lithium, FerriteCore, ImmediatelyFast, Fabric API.
+## GitHub
 
-## Java Manager
-Wykrywa Javy 8/17/21, określa wymaganą wersję dla Minecrafta i może automatycznie wybrać właściwą przy uruchomieniu.
+Podmień:
+- `outerclient.py`
+- `.github/workflows/build-binaries.yml`
 
-## OuterClient updater
-Może automatycznie sprawdzać Latest Release repozytorium GitHub i otworzyć stronę nowej wersji.
+Uruchom:
+`Actions → Build and Release OuterClient 5.1 → Run workflow`
 
-## Serwery
-Nowa zakładka Serwery: adres + przypisany profil + Play.
-
-## Diagnostyka
-- latest-minecraft.log,
-- OuterClient log,
-- kopiowanie raportu,
-- prosty crash detector (Java/RAM/mod conflict).
-
-## Discord Rich Presence
-Opcjonalne. W Opcjach zaawansowanych można podać własny Discord Application ID.
-
-## Build
-GitHub Actions buduje `OuterClient-v5.0.1-x86_64.AppImage` oraz `OuterClient-v5.0.1.exe`. Poprawka `PIL._tkinter_finder` pozostaje w workflow.
+Pliki:
+- `OuterClient-v5.1-x86_64.AppImage`
+- `OuterClient-v5.1.exe`
