@@ -1,30 +1,43 @@
-# OuterClient v4.9.2
+# OuterClient v4.9.3
 
-## Microsoft login
+## AppImage crash naprawiony
 
-Ta wersja nie używa stałego portu callback.
+Błąd:
 
-OuterClient binduje lokalny serwer do `127.0.0.1` z portem `0`,
-więc system operacyjny wybiera wolny port automatycznie.
+`ModuleNotFoundError: No module named 'PIL._tkinter_finder'`
 
-W razie błędu okno pokaże:
-- `OuterClient 4.9.2`
-- numer portu callback
+pochodził z builda PyInstaller. Pillow/ImageTk wymaga tego modułu do tworzenia obrazów Tk.
 
-Jeżeli okno programu nie pokazuje `4.9.2`, uruchomiony jest inny plik.
+Build v4.9.3 dodaje:
+
+- `--collect-all PIL`
+- `--hidden-import PIL.ImageTk`
+- `--hidden-import PIL._tkinter_finder`
+
+zarówno dla Linux AppImage, jak i Windows EXE.
+
+Workflow przed buildem dodatkowo sprawdza, czy:
+- `PIL.ImageTk` się importuje,
+- `PIL._tkinter_finder` się importuje,
+- Tkinter jest dostępny.
 
 ## GitHub
 
-Workflow `.github/workflows/build.yml` buduje wyłącznie v4.9.2.
+Zastąp w repo:
+- `outerclient.py`
+- `.github/workflows/build-binaries.yml`
+- najlepiej całą zawartość tej paczki
 
-Po **Run workflow** automatycznie tworzy Release:
-`OuterClient v4.9.2`
+Następnie:
 
-i ustawia go jako **Latest**.
+GitHub → Actions → Build and Release OuterClient 4.9.3 → Run workflow
 
-Pliki do pobrania:
-- `OuterClient-v4.9.2-x86_64.AppImage`
-- `OuterClient-v4.9.2.exe`
+Pobierz:
+- `OuterClient-v4.9.3-x86_64.AppImage`
+- `OuterClient-v4.9.3.exe`
 
-Przed uruchomieniem workflow zastąp w repozytorium stare pliki zawartością tej paczki,
-szczególnie `outerclient.py` oraz `.github/workflows/build.yml`.
+Nie uruchamiaj starego artifactu 4.9.2.
+
+## Fontconfig
+
+Komunikaty `Fontconfig warning` widoczne na Archu nie są przyczyną crasha.

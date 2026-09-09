@@ -1,6 +1,6 @@
 $ErrorActionPreference = "Stop"
 
-$Version = "4.9.2"
+$Version = "4.9.3"
 
 py -3.13 -m venv .build-venv
 & .\.build-venv\Scripts\Activate.ps1
@@ -8,6 +8,8 @@ py -3.13 -m venv .build-venv
 python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
 python -m pip install pyinstaller
+
+python -c "import PIL, PIL.ImageTk, PIL._tkinter_finder, tkinter; print('PIL._tkinter_finder OK')"
 
 Remove-Item -Recurse -Force build, dist -ErrorAction SilentlyContinue
 Remove-Item -Force *.spec -ErrorAction SilentlyContinue
@@ -22,6 +24,9 @@ pyinstaller `
   --add-data "assets;assets" `
   --collect-all customtkinter `
   --collect-all minecraft_launcher_lib `
+  --collect-all PIL `
+  --hidden-import PIL.ImageTk `
+  --hidden-import PIL._tkinter_finder `
   outerclient.py
 
 Write-Host "Gotowe: dist\OuterClient-v$Version.exe"

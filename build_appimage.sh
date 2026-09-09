@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-VERSION="4.9.2"
+VERSION="4.9.3"
 
 python3 -m venv .build-venv
 source .build-venv/bin/activate
@@ -9,6 +9,17 @@ source .build-venv/bin/activate
 python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
 python -m pip install pyinstaller
+
+python - <<'PY'
+import PIL
+import PIL.ImageTk
+import PIL._tkinter_finder
+import tkinter
+
+print("Pillow:", PIL.__version__)
+print("Tk:", tkinter.TkVersion)
+print("PIL._tkinter_finder: OK")
+PY
 
 rm -rf build dist AppDir
 rm -f ./*.spec OuterClient-*.AppImage
@@ -22,6 +33,9 @@ pyinstaller \
   --add-data "assets:assets" \
   --collect-all customtkinter \
   --collect-all minecraft_launcher_lib \
+  --collect-all PIL \
+  --hidden-import PIL.ImageTk \
+  --hidden-import PIL._tkinter_finder \
   outerclient.py
 
 mkdir -p AppDir/usr/bin/OuterClient
@@ -31,14 +45,14 @@ cp assets/outerclient-logo.png AppDir/outerclient.png
 cat > AppDir/OuterClient.desktop <<'EOF'
 [Desktop Entry]
 Type=Application
-Name=OuterClient 4.9.2
+Name=OuterClient 4.9.3
 Comment=OuterClient Minecraft Launcher
 Exec=OuterClient
 Icon=outerclient
 Categories=Game;
 Terminal=false
 StartupWMClass=OuterClient
-X-AppImage-Version=4.9.2
+X-AppImage-Version=4.9.3
 EOF
 
 cat > AppDir/AppRun <<'EOF'

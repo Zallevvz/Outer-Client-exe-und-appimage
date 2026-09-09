@@ -1,8 +1,16 @@
-# Build OuterClient v4.9.2
+# Build OuterClient v4.9.3
 
-GitHub → Actions → Build and Release OuterClient 4.9.2 → Run workflow
+Workflow:
+`.github/workflows/build-binaries.yml`
 
-Po zakończeniu:
-- Release `OuterClient v4.9.2` jest oznaczony jako Latest,
-- AppImage: `OuterClient-v4.9.2-x86_64.AppImage`,
-- EXE: `OuterClient-v4.9.2.exe`.
+Najważniejsza poprawka PyInstaller:
+
+```text
+--collect-all PIL
+--hidden-import PIL.ImageTk
+--hidden-import PIL._tkinter_finder
+```
+
+Artifacts:
+- OuterClient-v4.9.3-AppImage
+- OuterClient-v4.9.3-Windows
