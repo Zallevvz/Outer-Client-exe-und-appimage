@@ -1,59 +1,55 @@
-# OuterClient v5.1
+# OuterClient v5.2
 
-## Główne zmiany
+## Ustawienia
+Ustawienia mają teraz dwie podzakładki:
+- Ogólne
+- Narzędzia systemowe
 
-### Microsoft
-- Zarządzanie kontami działa wewnątrz głównego okna launchera.
-- OAuth otwiera systemową przeglądarkę.
-- Nie ma osobnego okna OuterClient do logowania.
+Java Manager i aktualizacje OuterClient nie zajmują już miejsca na stronie głównych ustawień.
 
-### Profile
-- `Zmień profil` otwiera pełną stronę z dużymi kartami profili.
-- Tworzenie nowego profilu odbywa się wewnątrz launchera.
-- Jest strzałka powrotu.
-- Na ekranie Graj jest suwak RAM zapisujący RAM osobno dla profilu.
+## Profile i ikony
+Każdy profil może mieć własną ikonę.
 
-### Performance Pack
-Jedna rekomendowana paczka Fabric:
-- Sodium
-- Lithium
-- FerriteCore
-- ImmediatelyFast
-- EntityCulling
-- Fabric API
+Ikonę można:
+- wybrać podczas tworzenia profilu,
+- zmienić w Edytuj profil,
+- zmienić w Zarządzaj profilem,
+- usunąć.
 
-Można ją:
-- zaznaczyć podczas tworzenia profilu,
-- zainstalować lub zainstalować ponownie w `Zarządzaj profilem`.
+Ikona jest przechowywana w:
+`<profil>/.outerclient/profile-icon.png`
 
-### Modrinth
-- Pierwsze wyszukiwanie jest lżejsze.
-- Na start renderowanych jest mniej kart.
-- Ikony są tworzone po stronie głównego wątku Tk.
-- Przycisk instalacji ma układ `Install + ▼`.
-- `▼` pokazuje zgodne wersje projektu bez opuszczania strony.
-- Można zainstalować konkretną wersję moda.
+Przy instalacji modpacka z Modrinth OuterClient automatycznie pobiera ikonę projektu
+i ustawia ją jako ikonę nowo utworzonego profilu.
 
-### Windows
-Uruchamianie Minecrafta:
-- dobiera Javę pod wersję profilu,
-- ustawia `executablePath` i `defaultExecutablePath`,
-- ustawia `JAVA_HOME`,
-- loguje pełną komendę startową,
-- jeśli Minecraft kończy się od razu, pokazuje ostatnie linie logu zamiast milczeć.
+## Mody
+Manager pokazuje pliki od razu.
+Metadane Modrinth są skanowane automatycznie w tle.
+Lista modów/resource packów/shaderów odświeża się sama, gdy zawartość folderu się zmieni.
 
-### Ustawienia
-Java Manager i aktualizacje OuterClient są na samym dole przewijanej strony Ustawień.
+## Graj
+Dodano przycisk:
+`Zakończ grę`
 
-## GitHub
+OuterClient nie przechodzi już zawsze przez pełne instalowanie profilu.
+Jeśli zgodna wersja Minecrafta/loadera jest już zainstalowana, launcher używa jej od razu.
 
-Podmień:
-- `outerclient.py`
-- `.github/workflows/build-binaries.yml`
+Status po zakończeniu Minecrafta wraca do `Gotowy / Ready`.
 
-Uruchom:
-`Actions → Build and Release OuterClient 5.1 → Run workflow`
+## Performance Pack
+Pozostaje jeden rekomendowany Performance Pack Fabric.
+
+## Modrinth
+Pozostaje:
+- szybsze ładowanie,
+- poprawione ikony,
+- `Install + ▼`,
+- wybór konkretnej wersji moda.
+
+## Build
+GitHub:
+Actions → Build and Release OuterClient 5.2 → Run workflow
 
 Pliki:
-- `OuterClient-v5.1-x86_64.AppImage`
-- `OuterClient-v5.1.exe`
+- OuterClient-v5.2-x86_64.AppImage
+- OuterClient-v5.2.exe
