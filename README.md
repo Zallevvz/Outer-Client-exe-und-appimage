@@ -1,4 +1,19 @@
-# OuterClient v5.0
+# OuterClient v5.0.1
+
+## Hotfix startu
+
+Naprawiono crash po uruchomieniu:
+
+`AttributeError: '_tkinter.tkapp' object has no attribute '_v5_startup_tasks'`
+
+Przyczyną było nieprzypięte wywołanie zadania startowego v5.
+
+v5.0.1:
+- uruchamia startup task bezpośrednio,
+- dodatkowo przypina `_v5_startup_tasks` do `OuterClient`,
+- zawiera statyczny test wszystkich odwołań `self._v5_*`,
+- zachowuje wszystkie funkcje v5.0,
+- zachowuje poprawki AppImage/Pillow i Microsoft login.
 
 Duża aktualizacja interfejsu i funkcji.
 
@@ -42,4 +57,4 @@ Nowa zakładka Serwery: adres + przypisany profil + Play.
 Opcjonalne. W Opcjach zaawansowanych można podać własny Discord Application ID.
 
 ## Build
-GitHub Actions buduje `OuterClient-v5.0-x86_64.AppImage` oraz `OuterClient-v5.0.exe`. Poprawka `PIL._tkinter_finder` pozostaje w workflow.
+GitHub Actions buduje `OuterClient-v5.0.1-x86_64.AppImage` oraz `OuterClient-v5.0.1.exe`. Poprawka `PIL._tkinter_finder` pozostaje w workflow.

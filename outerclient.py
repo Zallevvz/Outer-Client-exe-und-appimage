@@ -29,7 +29,7 @@ from tkinter import filedialog, messagebox
 
 
 APP_NAME = "OuterClient"
-APP_VERSION = "5.0"
+APP_VERSION = "5.0.1"
 CONFIG_PATH = Path.home() / ".outerclient.json"
 REDIRECT_URI = "http://localhost:8765/callback"
 MICROSOFT_CLIENT_ID = "fb14d1c4-7d14-4a35-99a7-3f921f7a1e77"
@@ -939,7 +939,7 @@ class OuterClient(ctk.CTk):
                 try:
                     import ctypes
                     ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(
-                        "OuterClient.Launcher.5.0"
+                        "OuterClient.Launcher.5.0.1"
                     )
                 except Exception:
                     pass
@@ -5831,7 +5831,7 @@ def _v5_init(self):
     self.discord_rpc = None
     self.profile_picker_window = None
     _V49_INIT(self)
-    self.after(2800, self._v5_startup_tasks)
+    self.after(2800, lambda: _v5_startup_tasks(self))
 
 
 def _v5_startup_tasks(self):
@@ -6678,6 +6678,7 @@ def _v5_copy_report(self):
 default_config = _v5_default_config
 load_config = _v5_load_config
 OuterClient.__init__ = _v5_init
+OuterClient._v5_startup_tasks = _v5_startup_tasks
 OuterClient.build_shell = _v5_build_shell
 OuterClient.create_profile = _v5_create_profile
 OuterClient.import_profile_bundle = _v5_import_profile
