@@ -1,99 +1,37 @@
-# OuterClient v5.5
+# OuterClient v5.5.1
 
-## Fix from the Fabric error screenshot
+## Fabric API hotfix
 
-The screenshot showed:
-- profile: Minecraft 1.16.5 + Fabric
-- Java 8
-- ImmediatelyFast build intended for Minecraft 26.2.x + Java 25
+v5.5 could incorrectly keep or install a Fabric API build for the wrong
+Minecraft version.
 
-Java 8 is correct for Minecraft 1.16.5.
-The installed ImmediatelyFast file was the incompatible component.
+Example from testing:
+- profile Minecraft: 26.2
+- wrong Fabric API: 0.116.17+1.21.1
 
-v5.5 reads `fabric.mod.json` directly from local JAR files.
-Before launching a Fabric profile, obviously incompatible Minecraft-version mods
-are moved to:
+v5.5.1 uses three safety layers:
 
-`<profile>/mods-disabled/`
+1. Existing Fabric API JARs are read through `fabric.mod.json`.
+2. Modrinth versions are fetched and then explicitly filtered by:
+   - exact `game_versions` match
+   - Fabric loader
+3. The downloaded JAR is opened and its local Minecraft dependency is verified
+   before it is accepted.
 
-They are never deleted.
+A definitely incompatible Fabric API is moved to:
 
-Unknown/complex dependency syntax is left untouched rather than guessed.
+`mods-disabled/`
 
-## Fabric API
+It is never deleted.
 
-Every Fabric profile now automatically gets a Fabric API version filtered by:
-- the profile Minecraft version
-- Fabric loader
-
-This happens:
-- after creating a Fabric profile
-- at startup for existing Fabric profiles
-- before launching a Fabric profile
-
-Existing Fabric API is not downloaded again.
-
-## Java Manager
-
-Settings → System tools now shows:
-- Minecraft bundled runtime
-- every detected system Java
-- Java major version
-- full executable path
-- per-profile selected Java
-
-Controls:
-- automatic Minecraft runtime
-- scan Java
-- choose java.exe/java manually
-- download/repair the Minecraft runtime
-- select a specific Java for the active profile
-
-When automatic mode is on, OuterClient prefers Minecraft's own runtime.
-When it is off, the profile-specific Java path is passed explicitly.
-
-## Microsoft login
-
-Microsoft login uses the registered callback:
-
-`http://localhost:8765/callback`
-
-The OAuth URL:
-- opens in the normal system browser
-- stays visible inside the Microsoft Accounts page
-- can be opened again
-- can be copied manually
-
-No separate OuterClient login window is used.
-
-## Mod links / local mod information
-
-Manage Profile reads `fabric.mod.json` locally, so mod name/version can appear
-even before Modrinth metadata lookup succeeds.
-
-Each mod gets a `Mod page` button:
-- Modrinth project page when known
-- Fabric metadata homepage/sources when available
-- Modrinth search fallback otherwise
-
-## Desktop shortcut icon
-
-Windows shortcut now explicitly uses the packaged `outerclient.ico`.
-Linux shortcut uses `outerclient-logo.png`.
-
-The shortcut still points to OuterClient's stable managed location, so updates
-replace the target without requiring a new shortcut.
-
-## Profile icons
-
-All existing profiles without a custom icon are filled with the OuterClient logo.
-New profiles keep the same behavior.
+The Fabric semantic-version parser also understands dependency range boundary
+forms such as versions ending in `-`.
 
 ## Build
 
 GitHub Actions:
-`Build and Release OuterClient 5.5`
+`Build and Release OuterClient 5.5.1`
 
 Expected files:
-- `OuterClient-v5.5-x86_64.AppImage`
-- `OuterClient-v5.5.exe`
+- `OuterClient-v5.5.1-x86_64.AppImage`
+- `OuterClient-v5.5.1.exe`

@@ -29,7 +29,7 @@ from tkinter import filedialog, messagebox
 
 
 APP_NAME = "OuterClient"
-APP_VERSION = "5.5"
+APP_VERSION = "5.5.1"
 CONFIG_PATH = Path.home() / ".outerclient.json"
 REDIRECT_URI = "http://localhost:8765/callback"
 MICROSOFT_CLIENT_ID = "fb14d1c4-7d14-4a35-99a7-3f921f7a1e77"
@@ -378,6 +378,11 @@ TEXTS = {
         "v55_disabled_folder": "Niezgodne mody są przenoszone do mods-disabled, nigdy kasowane.",
         "v55_local_metadata": "Dane odczytane bezpośrednio z pliku moda.",
         "v55_profile_java": "Java dla profilu",
+        "v551_fabric_api_wrong": "Wykryto niezgodne Fabric API: {name}. Przeniesiono je do mods-disabled.",
+        "v551_fabric_api_strict": "Dobieranie Fabric API dokładnie dla Minecraft {version}…",
+        "v551_fabric_api_no_exact": "Nie znaleziono Fabric API oznaczonego dokładnie jako zgodne z Minecraft {version}.",
+        "v551_fabric_api_verified": "Fabric API {version} jest zgodne z Minecraft {minecraft}.",
+        "v551_fabric_api_verify_failed": "Pobrane Fabric API nie przeszło weryfikacji zgodności i zostało wyłączone.",
         "v5_change_profile": "Zmień profil",
         "v5_previous": "Poprzedni",
         "v5_next": "Następny",
@@ -733,6 +738,11 @@ TEXTS = {
         "v55_disabled_folder": "Incompatible mods are moved to mods-disabled and are never deleted.",
         "v55_local_metadata": "Metadata read directly from the mod file.",
         "v55_profile_java": "Profile Java",
+        "v551_fabric_api_wrong": "Incompatible Fabric API detected: {name}. It was moved to mods-disabled.",
+        "v551_fabric_api_strict": "Selecting Fabric API strictly for Minecraft {version}…",
+        "v551_fabric_api_no_exact": "No Fabric API version explicitly compatible with Minecraft {version} was found.",
+        "v551_fabric_api_verified": "Fabric API {version} is compatible with Minecraft {minecraft}.",
+        "v551_fabric_api_verify_failed": "The downloaded Fabric API failed compatibility verification and was disabled.",
         "v5_change_profile": "Change profile",
         "v5_previous": "Previous",
         "v5_next": "Next",
@@ -1123,7 +1133,7 @@ class OuterClient(ctk.CTk):
                 try:
                     import ctypes
                     ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(
-                        "OuterClient.Launcher.5.5"
+                        "OuterClient.Launcher.5.5.1"
                     )
                 except Exception:
                     pass
@@ -18855,6 +18865,435 @@ OuterClient.launch_installed_v54 = _v55_launch_installed
 
 def _v5_startup_tasks(self):
     return _v55_startup_tasks(self)
+
+
+
+# ============================================================
+# OuterClient 5.5.1 — strict Fabric API compatibility hotfix
+# ============================================================
+
+_V551_CONSTRAINT_BASE = OuterClient.fabric_constraint_result
+
+
+def _v551_constraint_result(self, current, constraint):
+    if constraint is None:
+        return None
+
+    if isinstance(constraint, list):
+        results = [
+            self.fabric_constraint_result(current, item)
+            for item in constraint
+        ]
+        if any(result is True for result in results):
+            return True
+        if results and all(result is False for result in results):
+            return False
+        return None
+
+    text = str(constraint).strip()
+
+    # Fabric's semantic version ranges can use forms such as:
+    # >=1.21- <1.21.2-
+    # The trailing '-' denotes the beginning of that semantic-version line.
+    # For Minecraft release comparison we can safely normalize the boundary.
+    text = re.sub(
+        r"(?<=\d)-(?=\s|$|,|\)|\])",
+        "",
+        text,
+    )
+
+    result = _V551_CONSTRAINT_BASE(
+        self,
+        current,
+        text,
+    )
+
+    return result
+
+
+def _v551_strict_modrinth_version(
+    self,
+    project_id,
+    mc_version,
+    loader,
+):
+    response = requests.get(
+        f"{MODRINTH_API}/project/{project_id}/version",
+        timeout=25,
+        headers={
+            "User-Agent": f"OuterClient/{APP_VERSION}"
+        },
+    )
+    response.raise_for_status()
+
+    versions = response.json()
+    if not isinstance(versions, list):
+        return None
+
+    wanted_loader = str(loader).casefold()
+    wanted_mc = str(mc_version)
+
+    exact = []
+
+    for version in versions:
+        game_versions = [
+            str(item)
+            for item in version.get("game_versions", [])
+        ]
+        loaders = [
+            str(item).casefold()
+            for item in version.get("loaders", [])
+        ]
+
+        if wanted_mc not in game_versions:
+            continue
+
+        if wanted_loader not in loaders:
+            continue
+
+        exact.append(version)
+
+    if not exact:
+        return None
+
+    def sort_key(version):
+        # Prefer release > beta > alpha, then newest publication date.
+        kind_rank = {
+            "release": 3,
+            "beta": 2,
+            "alpha": 1,
+        }.get(
+            str(version.get("version_type", "")).casefold(),
+            0,
+        )
+
+        return (
+            kind_rank,
+            str(version.get("date_published", "")),
+        )
+
+    exact.sort(
+        key=sort_key,
+        reverse=True,
+    )
+
+    return exact[0]
+
+
+def _v551_move_to_disabled(
+    self,
+    profile_name,
+    jar,
+    reason=None,
+):
+    jar = Path(jar)
+
+    if not jar.exists():
+        return None
+
+    instance = self.profile_instance_dir(
+        profile_name
+    )
+    disabled = instance / "mods-disabled"
+    disabled.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+
+    target = disabled / jar.name
+    counter = 1
+
+    while target.exists():
+        target = disabled / (
+            f"{jar.stem}-{counter}{jar.suffix}"
+        )
+        counter += 1
+
+    shutil.move(
+        str(jar),
+        str(target),
+    )
+
+    if reason:
+        self.write_log(
+            f"Disabled {jar.name}: {reason}"
+        )
+
+    return target
+
+
+def _v551_fabric_api_jars(
+    self,
+    profile_name,
+):
+    mods = (
+        self.profile_instance_dir(profile_name)
+        / "mods"
+    )
+
+    if not mods.exists():
+        return []
+
+    found = []
+
+    for jar in mods.glob("*.jar"):
+        local = self.read_fabric_mod_metadata(
+            jar
+        )
+
+        is_api = False
+
+        if local and local.get("id") in {
+            "fabric-api",
+            "fabric_api",
+        }:
+            is_api = True
+
+        if jar.name.casefold().startswith(
+            "fabric-api-"
+        ):
+            is_api = True
+
+        if is_api:
+            found.append(
+                (jar, local)
+            )
+
+    return found
+
+
+def _v551_existing_fabric_api_compatible(
+    self,
+    profile_name,
+):
+    profile = self.cfg["profiles"].get(
+        profile_name,
+        {},
+    )
+    mc_version = str(
+        profile.get("version", "")
+    )
+
+    compatible = []
+
+    for jar, local in self.fabric_api_jars(
+        profile_name
+    ):
+        if not local:
+            # Filename-only detection is not sufficient proof.
+            continue
+
+        depends = local.get("depends") or {}
+        constraint = depends.get(
+            "minecraft"
+        )
+
+        result = self.fabric_constraint_result(
+            mc_version,
+            constraint,
+        )
+
+        if result is True:
+            compatible.append(
+                (jar, local)
+            )
+            continue
+
+        if result is False:
+            self.move_mod_to_disabled(
+                profile_name,
+                jar,
+                f"Fabric API Minecraft constraint {constraint} "
+                f"does not match {mc_version}",
+            )
+
+            self.events.put(
+                (
+                    "status",
+                    self.t(
+                        "v551_fabric_api_wrong",
+                        name=(
+                            local.get("name")
+                            or jar.name
+                        ),
+                    ),
+                )
+            )
+
+    return compatible
+
+
+def _v551_ensure_fabric_api(
+    self,
+    profile_name,
+):
+    profile = self.cfg["profiles"].get(
+        profile_name,
+        {},
+    )
+
+    if profile.get("loader") != "Fabric":
+        return False
+
+    mc_version = str(
+        profile.get("version", "")
+    )
+
+    # First, validate every already installed Fabric API.
+    compatible = (
+        self.existing_fabric_api_compatible(
+            profile_name
+        )
+    )
+
+    if compatible:
+        jar, local = compatible[0]
+
+        self.events.put(
+            (
+                "fabric_api_ready",
+                profile_name,
+            )
+        )
+
+        self.write_log(
+            self.t(
+                "v551_fabric_api_verified",
+                version=(
+                    local.get("version")
+                    or jar.name
+                ),
+                minecraft=mc_version,
+            )
+        )
+
+        return True
+
+    self.events.put(
+        (
+            "status",
+            self.t(
+                "v551_fabric_api_strict",
+                version=mc_version,
+            ),
+        )
+    )
+
+    # Do NOT rely only on the Modrinth query filter here.
+    # Fetch project versions and explicitly verify game_versions + loaders.
+    version = self.strict_modrinth_version(
+        "fabric-api",
+        mc_version,
+        "fabric",
+    )
+
+    if not version:
+        raise RuntimeError(
+            self.t(
+                "v551_fabric_api_no_exact",
+                version=mc_version,
+            )
+        )
+
+    dest = (
+        self.profile_instance_dir(
+            profile_name
+        )
+        / "mods"
+    )
+    dest.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+
+    target = self.download_modrinth_version(
+        version,
+        dest,
+    )
+
+    # Verify the actual downloaded JAR as a second safety layer.
+    local = self.read_fabric_mod_metadata(
+        target
+    )
+
+    valid = False
+
+    if local:
+        constraint = (
+            local.get("depends")
+            or {}
+        ).get("minecraft")
+
+        result = self.fabric_constraint_result(
+            mc_version,
+            constraint,
+        )
+
+        valid = result is True
+
+    if not valid:
+        self.move_mod_to_disabled(
+            profile_name,
+            target,
+            "Downloaded Fabric API failed local fabric.mod.json verification",
+        )
+
+        raise RuntimeError(
+            self.t(
+                "v551_fabric_api_verify_failed"
+            )
+        )
+
+    self.record_installed_content(
+        profile_name,
+        target,
+        {
+            "source": "Modrinth",
+            "project_id":
+                version.get("project_id")
+                or "P7dR8mSH",
+            "version_id":
+                version.get("id"),
+            "version_number":
+                version.get("version_number"),
+            "title": "Fabric API",
+            "slug": "fabric-api",
+            "category": "Mody",
+        },
+    )
+
+    self.write_log(
+        self.t(
+            "v551_fabric_api_verified",
+            version=(
+                version.get(
+                    "version_number"
+                )
+                or local.get("version")
+                or target.name
+            ),
+            minecraft=mc_version,
+        )
+    )
+
+    self.events.put(
+        (
+            "fabric_api_ready",
+            profile_name,
+        )
+    )
+
+    return True
+
+
+# Also upgrade the general incompatible-Fabric scanner's parser,
+# so ranges containing semantic boundary dashes are recognized.
+OuterClient.fabric_constraint_result = _v551_constraint_result
+OuterClient.strict_modrinth_version = _v551_strict_modrinth_version
+OuterClient.move_mod_to_disabled = _v551_move_to_disabled
+OuterClient.fabric_api_jars = _v551_fabric_api_jars
+OuterClient.existing_fabric_api_compatible = _v551_existing_fabric_api_compatible
+OuterClient.ensure_fabric_api = _v551_ensure_fabric_api
 
 
 
