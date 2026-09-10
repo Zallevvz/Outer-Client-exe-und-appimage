@@ -29,7 +29,7 @@ from tkinter import filedialog, messagebox
 
 
 APP_NAME = "OuterClient"
-APP_VERSION = "5.5.1"
+APP_VERSION = "5.5.2"
 CONFIG_PATH = Path.home() / ".outerclient.json"
 REDIRECT_URI = "http://localhost:8765/callback"
 MICROSOFT_CLIENT_ID = "fb14d1c4-7d14-4a35-99a7-3f921f7a1e77"
@@ -383,6 +383,7 @@ TEXTS = {
         "v551_fabric_api_no_exact": "Nie znaleziono Fabric API oznaczonego dokładnie jako zgodne z Minecraft {version}.",
         "v551_fabric_api_verified": "Fabric API {version} jest zgodne z Minecraft {minecraft}.",
         "v551_fabric_api_verify_failed": "Pobrane Fabric API nie przeszło weryfikacji zgodności i zostało wyłączone.",
+        "v552_hotfix_ready": "Poprawka zgodności Fabric API jest aktywna.",
         "v5_change_profile": "Zmień profil",
         "v5_previous": "Poprzedni",
         "v5_next": "Następny",
@@ -743,6 +744,7 @@ TEXTS = {
         "v551_fabric_api_no_exact": "No Fabric API version explicitly compatible with Minecraft {version} was found.",
         "v551_fabric_api_verified": "Fabric API {version} is compatible with Minecraft {minecraft}.",
         "v551_fabric_api_verify_failed": "The downloaded Fabric API failed compatibility verification and was disabled.",
+        "v552_hotfix_ready": "The Fabric API compatibility hotfix is active.",
         "v5_change_profile": "Change profile",
         "v5_previous": "Previous",
         "v5_next": "Next",
@@ -1133,7 +1135,7 @@ class OuterClient(ctk.CTk):
                 try:
                     import ctypes
                     ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(
-                        "OuterClient.Launcher.5.5.1"
+                        "OuterClient.Launcher.5.5.2"
                     )
                 except Exception:
                     pass
@@ -16054,7 +16056,7 @@ _V55_SYSTEM_TOOLS_BASE = OuterClient.show_system_tools_settings
 
 # ---------- version constraint helpers ----------
 
-def _v55_version_tuple(value):
+def _v55_version_tuple(self, value):
     parts = [
         int(x)
         for x in re.findall(

@@ -1,37 +1,33 @@
-# OuterClient v5.5.1
+# OuterClient v5.5.2
 
-## Fabric API hotfix
+## Hotfix
 
-v5.5 could incorrectly keep or install a Fabric API build for the wrong
-Minecraft version.
+v5.5.1 contained a Python method-binding bug:
 
-Example from testing:
-- profile Minecraft: 26.2
-- wrong Fabric API: 0.116.17+1.21.1
+`_v55_version_tuple() takes 1 positional argument but 2 were given`
 
-v5.5.1 uses three safety layers:
+Cause:
+`_v55_version_tuple` was attached to `OuterClient.simple_version_tuple`
+but did not accept `self`.
 
-1. Existing Fabric API JARs are read through `fabric.mod.json`.
-2. Modrinth versions are fetched and then explicitly filtered by:
-   - exact `game_versions` match
-   - Fabric loader
-3. The downloaded JAR is opened and its local Minecraft dependency is verified
-   before it is accepted.
+v5.5.2 fixes the signature and includes a static validation pass for all
+v5.x helper functions bound onto `OuterClient`, so the same class-binding
+mistake is caught before packaging.
 
-A definitely incompatible Fabric API is moved to:
+## Fabric API
 
-`mods-disabled/`
-
-It is never deleted.
-
-The Fabric semantic-version parser also understands dependency range boundary
-forms such as versions ending in `-`.
+The strict v5.5.1 compatibility logic remains enabled:
+- exact Modrinth `game_versions` filtering,
+- exact Fabric loader filtering,
+- local `fabric.mod.json` verification,
+- incompatible Fabric API moved to `mods-disabled`,
+- never deleted.
 
 ## Build
 
 GitHub Actions:
-`Build and Release OuterClient 5.5.1`
+`Build and Release OuterClient 5.5.2`
 
 Expected files:
-- `OuterClient-v5.5.1-x86_64.AppImage`
-- `OuterClient-v5.5.1.exe`
+- `OuterClient-v5.5.2-x86_64.AppImage`
+- `OuterClient-v5.5.2.exe`
