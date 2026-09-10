@@ -9,6 +9,7 @@ import os
 import queue
 import re
 import shutil
+import socket
 import subprocess
 import sys
 import threading
@@ -37,12 +38,23 @@ except Exception:
 
 
 APP_NAME = "OuterClient"
-APP_VERSION = "5.7"
+APP_VERSION = "5.8"
 CONFIG_PATH = Path.home() / ".outerclient.json"
 REDIRECT_URI = "http://localhost:8765/callback"
 MICROSOFT_CLIENT_ID = "fb14d1c4-7d14-4a35-99a7-3f921f7a1e77"
 MODRINTH_API = "https://api.modrinth.com/v2"
-ASSETS_DIR = Path(__file__).resolve().parent / "assets"
+
+
+def asset_path(*parts):
+    """Return a resource path in source, PyInstaller EXE and AppImage."""
+    if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
+        base = Path(sys._MEIPASS)
+    else:
+        base = Path(__file__).resolve().parent
+    return base.joinpath(*parts)
+
+
+ASSETS_DIR = asset_path("assets")
 LOGO_PNG = ASSETS_DIR / "outerclient-logo.png"
 LOGO_ICO = ASSETS_DIR / "outerclient.ico"
 
@@ -416,6 +428,28 @@ TEXTS = {
         "v57_release": "Release",
         "v57_beta": "Beta",
         "v57_alpha": "Alpha",
+        "v58_update_checking": "Checking for OuterClient updates…",
+        "v58_update_failed": "Could not check for updates: {error}",
+        "v58_latest": "You already have the latest OuterClient version ({version}).",
+        "v58_release_missing": "GitHub did not return any OuterClient release.",
+        "v58_fast_start": "Fast start — using the installed profile files.",
+        "v58_full_prepare": "First launch / profile repair…",
+        "v58_callback_ready": "Microsoft sign-in callback is listening on localhost:8765 (IPv4/IPv6).",
+        "v58_callback_failed": "Could not start the sign-in server on localhost:8765. Close an older OuterClient and try again.",
+        "v58_login_success_page": "Sign-in finished. You can return to OuterClient.",
+        "v58_shortcut_ready": "The desktop shortcut was created with the OuterClient icon.",
+        "v58_startup_optimized": "Fast OuterClient startup is enabled.",
+        "v58_update_checking": "Sprawdzanie aktualizacji OuterClient…",
+        "v58_update_failed": "Nie udało się sprawdzić aktualizacji: {error}",
+        "v58_latest": "Masz najnowszą wersję OuterClient ({version}).",
+        "v58_release_missing": "GitHub nie zwrócił żadnego wydania OuterClient.",
+        "v58_fast_start": "Szybki start — używam gotowych plików profilu.",
+        "v58_full_prepare": "Pierwsze uruchomienie / naprawa profilu…",
+        "v58_callback_ready": "Serwer logowania Microsoft działa na localhost:8765 (IPv4/IPv6).",
+        "v58_callback_failed": "Nie udało się uruchomić serwera logowania na localhost:8765. Zamknij starszy OuterClient i spróbuj ponownie.",
+        "v58_login_success_page": "Logowanie zakończone. Możesz wrócić do OuterClient.",
+        "v58_shortcut_ready": "Skrót na pulpicie został utworzony z ikoną OuterClient.",
+        "v58_startup_optimized": "Szybkie uruchamianie OuterClient jest aktywne.",
         "v5_change_profile": "Zmień profil",
         "v5_previous": "Poprzedni",
         "v5_next": "Następny",
@@ -1191,7 +1225,7 @@ class OuterClient(ctk.CTk):
                 try:
                     import ctypes
                     ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(
-                        "OuterClient.Launcher.5.7"
+                        "OuterClient.Launcher.5.8"
                     )
                 except Exception:
                     pass
@@ -7088,7 +7122,14 @@ def _v5_process_events(self):
                 self.set_status(self.t("v54_update_installed",version=version))
                 messagebox.showinfo("OuterClient",self.t("v54_update_installed",version=version))
             elif kind=="launcher_latest":
-                self.set_status(self.t("v5_latest_launcher")); messagebox.showinfo("OuterClient",self.t("v5_latest_launcher"))
+                version=value or APP_VERSION
+                text=self.t("v58_latest",version=version)
+                self.set_status(text)
+                messagebox.showinfo("OuterClient",text)
+            elif kind=="launcher_check_failed":
+                text=self.t("v58_update_failed",error=value)
+                self.set_status(text)
+                messagebox.showerror("OuterClient",text)
             elif kind=="minecraft_exit":
                 code,hint,profile_name=value; self.write_log(f"Minecraft exit {code} ({profile_name})")
                 if code!=0: messagebox.showerror("Minecraft",self.t("v5_crash",code=code,hint=hint))
@@ -22431,6 +22472,1021 @@ OuterClient.install_curseforge_job = _v57_install_cf_content
 OuterClient.parse_curseforge_modpack_loader_v57 = _v57_parse_cf_loader
 OuterClient.extract_curseforge_overrides_v57 = _v57_extract_cf_overrides
 OuterClient.install_curseforge_modpack_v57 = _v57_install_cf_modpack
+
+
+
+# ============================================================
+# OuterClient 5.8
+# - reliable Microsoft localhost callback (IPv4 + IPv6)
+# - fixed resource path / desktop icon
+# - visible update check result
+# - faster launcher startup and Minecraft launch
+# ============================================================
+
+_V58_FULL_PREPARE_BASE = _V55_PREPARE_PROFILE_BASE
+_V58_SYSTEM_TOOLS_BASE = OuterClient.show_system_tools_settings
+
+
+# ---------------- Microsoft OAuth callback ----------------
+
+class MicrosoftCallbackHandlerV58(BaseHTTPRequestHandler):
+    callback_url = None
+    callback_event = threading.Event()
+
+    def do_GET(self):
+        # Always reconstruct with the exact registered redirect host.
+        # This also works when the browser reached us through ::1.
+        MicrosoftCallbackHandlerV58.callback_url = (
+            "http://localhost:8765"
+            + self.path
+        )
+        MicrosoftCallbackHandlerV58.callback_event.set()
+
+        body = (
+            "<!doctype html><html><head><meta charset='utf-8'>"
+            "<meta name='viewport' content='width=device-width,initial-scale=1'>"
+            "<title>OuterClient</title>"
+            "<style>"
+            "body{margin:0;background:#0A0D12;color:#F5F7FB;"
+            "font-family:system-ui;display:grid;place-items:center;height:100vh}"
+            ".box{background:#121823;border:1px solid #263143;"
+            "border-radius:18px;padding:28px 34px;max-width:520px}"
+            "h2{margin-top:0}.ok{color:#48D597}"
+            "</style></head><body><div class='box'>"
+            "<h2>OuterClient</h2>"
+            "<p class='ok'>Microsoft login completed.</p>"
+            "<p>You can close this tab and return to OuterClient.</p>"
+            "</div></body></html>"
+        ).encode("utf-8")
+
+        try:
+            self.send_response(200)
+            self.send_header(
+                "Content-Type",
+                "text/html; charset=utf-8",
+            )
+            self.send_header(
+                "Content-Length",
+                str(len(body)),
+            )
+            self.send_header(
+                "Cache-Control",
+                "no-store",
+            )
+            self.end_headers()
+            self.wfile.write(body)
+        except Exception:
+            pass
+
+    def log_message(self, *_):
+        pass
+
+
+class IPv6LoopbackHTTPServerV58(ReusableHTTPServer):
+    address_family = socket.AF_INET6
+
+    def server_bind(self):
+        try:
+            self.socket.setsockopt(
+                socket.IPPROTO_IPV6,
+                socket.IPV6_V6ONLY,
+                1,
+            )
+        except Exception:
+            pass
+        super().server_bind()
+
+
+def _v58_login_worker(self, client_id):
+    servers = []
+    threads = []
+
+    try:
+        MicrosoftCallbackHandlerV58.callback_url = None
+        MicrosoftCallbackHandlerV58.callback_event.clear()
+
+        # IPv4 listener is mandatory.
+        try:
+            v4 = ReusableHTTPServer(
+                ("127.0.0.1", 8765),
+                MicrosoftCallbackHandlerV58,
+            )
+            servers.append(v4)
+        except OSError as exc:
+            raise RuntimeError(
+                self.t("v58_callback_failed")
+            ) from exc
+
+        # localhost often resolves to ::1 first in modern browsers.
+        # Run an IPv6 listener on the same port as well when available.
+        try:
+            v6 = IPv6LoopbackHTTPServerV58(
+                ("::1", 8765),
+                MicrosoftCallbackHandlerV58,
+            )
+            servers.append(v6)
+        except Exception as exc:
+            self.write_log(
+                "Microsoft IPv6 callback listener unavailable: "
+                + str(exc)
+            )
+
+        for server in servers:
+            thread = threading.Thread(
+                target=server.serve_forever,
+                kwargs={"poll_interval": 0.1},
+                daemon=True,
+                name="OuterClient-Microsoft-Callback",
+            )
+            thread.start()
+            threads.append(thread)
+
+        redirect_uri = REDIRECT_URI
+
+        url, state, verifier = (
+            minecraft_launcher_lib.microsoft_account
+            .get_secure_login_data(
+                client_id,
+                redirect_uri,
+            )
+        )
+
+        if "prompt=" not in url:
+            separator = "&" if "?" in url else "?"
+            url = (
+                f"{url}{separator}"
+                "prompt=select_account"
+            )
+
+        self.microsoft_oauth_url = url
+
+        self.events.put(
+            (
+                "status",
+                self.t("v58_callback_ready"),
+            )
+        )
+        self.events.put(
+            (
+                "oauth_link_ready",
+                url,
+            )
+        )
+        self.events.put(
+            (
+                "open_url",
+                url,
+            )
+        )
+
+        # Event-based wait keeps both listeners alive for the entire login.
+        if not MicrosoftCallbackHandlerV58.callback_event.wait(
+            timeout=600
+        ):
+            raise TimeoutError(
+                "Microsoft login timed out after 10 minutes."
+            )
+
+        callback_url = (
+            MicrosoftCallbackHandlerV58.callback_url
+        )
+
+        if not callback_url:
+            raise RuntimeError(
+                "Microsoft callback was received without a URL."
+            )
+
+        code = (
+            minecraft_launcher_lib.microsoft_account
+            .parse_auth_code_url(
+                callback_url,
+                state,
+            )
+        )
+
+        auth = (
+            minecraft_launcher_lib.microsoft_account
+            .complete_login(
+                client_id,
+                None,
+                redirect_uri,
+                code,
+                verifier,
+            )
+        )
+
+        auth[
+            "_outerclient_redirect_uri"
+        ] = redirect_uri
+
+        self.events.put(
+            ("account", auth)
+        )
+
+    except Exception as exc:
+        self.events.put(
+            (
+                "error",
+                (
+                    "Microsoft login:\n"
+                    f"OuterClient {APP_VERSION}\n"
+                    f"Callback: {REDIRECT_URI}\n"
+                    f"{exc}"
+                ),
+            )
+        )
+
+    finally:
+        self.microsoft_login_in_progress = False
+
+        for server in servers:
+            try:
+                server.shutdown()
+            except Exception:
+                pass
+            try:
+                server.server_close()
+            except Exception:
+                pass
+
+
+# ---------------- Updates ----------------
+
+def _v58_version_tuple(value):
+    parts = [
+        int(item)
+        for item in re.findall(
+            r"\d+",
+            str(value or ""),
+        )[:4]
+    ]
+    while len(parts) < 4:
+        parts.append(0)
+    return tuple(parts)
+
+
+def _v58_check_launcher_update(self, manual=False):
+    # This function always emits a visible result for a manual check.
+    self.events.put(
+        (
+            "status",
+            self.t("v58_update_checking"),
+        )
+    )
+
+    try:
+        repo = self.cfg.get(
+            "update_repo",
+            "Zallevvz/Outer-Client-exe-und-appimage",
+        )
+
+        headers = {
+            "Accept":
+                "application/vnd.github+json",
+            "X-GitHub-Api-Version":
+                "2022-11-28",
+            "User-Agent":
+                f"OuterClient/{APP_VERSION}",
+        }
+
+        response = requests.get(
+            (
+                "https://api.github.com/repos/"
+                f"{repo}/releases"
+            ),
+            params={
+                "per_page": 20,
+            },
+            headers=headers,
+            timeout=12,
+        )
+        response.raise_for_status()
+
+        releases = response.json()
+
+        if not isinstance(
+            releases,
+            list,
+        ):
+            releases = []
+
+        candidates = []
+
+        for release in releases:
+            if release.get(
+                "draft"
+            ):
+                continue
+
+            if release.get(
+                "prerelease"
+            ):
+                continue
+
+            version = str(
+                release.get(
+                    "tag_name"
+                )
+                or ""
+            ).lstrip(
+                "vV"
+            ).strip()
+
+            if not re.search(
+                r"\d",
+                version,
+            ):
+                continue
+
+            candidates.append(
+                (
+                    self.version_tuple(
+                        version
+                    ),
+                    version,
+                    release,
+                )
+            )
+
+        if not candidates:
+            raise RuntimeError(
+                self.t(
+                    "v58_release_missing"
+                )
+            )
+
+        candidates.sort(
+            key=lambda item:
+                item[0],
+            reverse=True,
+        )
+
+        _tuple, version, release = (
+            candidates[0]
+        )
+
+        if (
+            self.version_tuple(
+                version
+            )
+            > self.version_tuple(
+                APP_VERSION
+            )
+        ):
+            self.events.put(
+                (
+                    "launcher_update",
+                    (
+                        version,
+                        release,
+                        manual,
+                    ),
+                )
+            )
+            return
+
+        if manual:
+            self.events.put(
+                (
+                    "launcher_latest",
+                    version,
+                )
+            )
+        else:
+            self.events.put(
+                (
+                    "status",
+                    self.t(
+                        "ready"
+                    ),
+                )
+            )
+
+    except Exception as exc:
+        if manual:
+            self.events.put(
+                (
+                    "launcher_check_failed",
+                    str(exc),
+                )
+            )
+        else:
+            self.write_log(
+                "Automatic update check failed: "
+                + str(exc)
+            )
+
+
+# ---------------- Shortcut + icon ----------------
+
+def _v58_linux_icon_file(self):
+    return (
+        Path.home()
+        / ".local"
+        / "share"
+        / "icons"
+        / "hicolor"
+        / "256x256"
+        / "apps"
+        / "outerclient.png"
+    )
+
+
+def _v58_write_shortcut(self):
+    root = self.managed_install_dir()
+    root.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+
+    target = self.managed_executable()
+    current = self.current_outerclient_package()
+
+    if current is not None:
+        try:
+            same_file = (
+                current.resolve()
+                == target.resolve()
+            )
+        except Exception:
+            same_file = False
+
+        # Avoid copying a 30–40 MB AppImage/EXE every startup.
+        needs_copy = (
+            not target.exists()
+            or self.version_tuple(
+                APP_VERSION
+            )
+            > self.version_tuple(
+                self.cfg.get(
+                    "managed_version",
+                    "0",
+                )
+            )
+        )
+
+        if (
+            not same_file
+            and needs_copy
+        ):
+            temp = target.with_suffix(
+                target.suffix
+                + ".new"
+            )
+            shutil.copy2(
+                current,
+                temp,
+            )
+
+            if not sys.platform.startswith(
+                "win"
+            ):
+                os.chmod(
+                    temp,
+                    0o755,
+                )
+
+            os.replace(
+                temp,
+                target,
+            )
+
+    if not target.exists():
+        raise RuntimeError(
+            "Uruchom tę funkcję z wersji AppImage lub EXE."
+        )
+
+    desktop = self.desktop_directory_v57()
+    desktop.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+
+    if sys.platform.startswith(
+        "win"
+    ):
+        # Use the packaged ICO explicitly.
+        icons = self.copy_shortcut_assets_v55()
+
+        icon_file = Path(
+            icons["ico"]
+        )
+
+        if not icon_file.exists():
+            raise RuntimeError(
+                "Brak outerclient.ico w paczce."
+            )
+
+        shortcut = (
+            desktop
+            / "OuterClient.lnk"
+        )
+
+        q_target = str(
+            target
+        ).replace(
+            "'",
+            "''",
+        )
+        q_shortcut = str(
+            shortcut
+        ).replace(
+            "'",
+            "''",
+        )
+        q_root = str(
+            root
+        ).replace(
+            "'",
+            "''",
+        )
+        q_icon = str(
+            icon_file
+        ).replace(
+            "'",
+            "''",
+        )
+
+        command = (
+            "$ws=New-Object -ComObject WScript.Shell;"
+            f"$s=$ws.CreateShortcut('{q_shortcut}');"
+            f"$s.TargetPath='{q_target}';"
+            f"$s.WorkingDirectory='{q_root}';"
+            f"$s.IconLocation='{q_icon},0';"
+            "$s.Description='OuterClient Minecraft Launcher';"
+            "$s.Save();"
+        )
+
+        subprocess.run(
+            [
+                "powershell",
+                "-NoProfile",
+                "-ExecutionPolicy",
+                "Bypass",
+                "-Command",
+                command,
+            ],
+            check=True,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.PIPE,
+            text=True,
+            timeout=20,
+        )
+
+        try:
+            subprocess.run(
+                [
+                    "ie4uinit.exe",
+                    "-show",
+                ],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                timeout=5,
+            )
+        except Exception:
+            pass
+
+    else:
+        self.install_linux_icon_theme_v57()
+
+        icon_file = (
+            self.linux_shortcut_icon_v58()
+        )
+
+        if not icon_file.exists():
+            # Absolute fallback copied from the AppImage resources.
+            icon_file.parent.mkdir(
+                parents=True,
+                exist_ok=True,
+            )
+            image = Image.open(
+                LOGO_PNG
+            ).convert(
+                "RGBA"
+            )
+            image.thumbnail(
+                (256, 256),
+                Image.Resampling.LANCZOS,
+            )
+            image.save(
+                icon_file,
+                "PNG",
+            )
+
+        applications = (
+            Path.home()
+            / ".local"
+            / "share"
+            / "applications"
+        )
+        applications.mkdir(
+            parents=True,
+            exist_ok=True,
+        )
+
+        # Application menu uses icon-theme name.
+        app_content = f"""[Desktop Entry]
+Type=Application
+Version=1.0
+Name=OuterClient
+Comment=OuterClient Minecraft Launcher
+Exec={target}
+TryExec={target}
+Icon=outerclient
+Categories=Game;
+Terminal=false
+StartupNotify=true
+StartupWMClass=OuterClient
+X-KDE-StartupNotify=true
+"""
+
+        # Desktop shortcut uses an absolute PNG as an additional KDE-safe path.
+        desktop_content = f"""[Desktop Entry]
+Type=Application
+Version=1.0
+Name=OuterClient
+Comment=OuterClient Minecraft Launcher
+Exec={target}
+TryExec={target}
+Icon={icon_file}
+Categories=Game;
+Terminal=false
+StartupNotify=true
+StartupWMClass=OuterClient
+X-KDE-StartupNotify=true
+"""
+
+        app_entry = (
+            applications
+            / "outerclient.desktop"
+        )
+        desktop_entry = (
+            desktop
+            / "OuterClient.desktop"
+        )
+
+        app_entry.write_text(
+            app_content,
+            encoding="utf-8",
+        )
+        desktop_entry.write_text(
+            desktop_content,
+            encoding="utf-8",
+        )
+
+        os.chmod(
+            app_entry,
+            0o755,
+        )
+        os.chmod(
+            desktop_entry,
+            0o755,
+        )
+        os.chmod(
+            target,
+            0o755,
+        )
+
+        # KDE may require the desktop file to be marked as trusted.
+        if shutil.which(
+            "gio"
+        ):
+            try:
+                subprocess.run(
+                    [
+                        "gio",
+                        "set",
+                        str(
+                            desktop_entry
+                        ),
+                        "metadata::trusted",
+                        "true",
+                    ],
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                    timeout=5,
+                )
+            except Exception:
+                pass
+
+        self.refresh_linux_desktop_cache_v57()
+
+    self.cfg[
+        "desktop_shortcut"
+    ] = True
+    self.cfg[
+        "managed_version"
+    ] = APP_VERSION
+    save_config(
+        self.cfg
+    )
+
+    self.events.put(
+        (
+            "status",
+            self.t(
+                "v58_shortcut_ready"
+            ),
+        )
+    )
+
+    return True
+
+
+def _v58_sync_shortcut(self):
+    if not self.cfg.get(
+        "desktop_shortcut",
+        False,
+    ):
+        return
+
+    managed = self.cfg.get(
+        "managed_version",
+        "0",
+    )
+
+    # Only rewrite/copy on a newer build, not on every launcher startup.
+    if (
+        self.version_tuple(
+            APP_VERSION
+        )
+        > self.version_tuple(
+            managed
+        )
+    ):
+        try:
+            self.write_outerclient_shortcut()
+        except Exception as exc:
+            self.write_log(
+                "Shortcut sync failed: "
+                + str(exc)
+            )
+
+
+# ---------------- faster Fabric checks ----------------
+
+def _v58_fabric_mod_signature(
+    self,
+    profile_name,
+):
+    mods = (
+        self.profile_instance_dir(
+            profile_name
+        )
+        / "mods"
+    )
+
+    if not mods.exists():
+        return "empty"
+
+    data = []
+
+    for jar in sorted(
+        mods.glob("*.jar"),
+        key=lambda item:
+            item.name.casefold(),
+    ):
+        try:
+            stat = jar.stat()
+            data.append(
+                (
+                    jar.name,
+                    stat.st_size,
+                    stat.st_mtime_ns,
+                )
+            )
+        except Exception:
+            data.append(
+                (
+                    jar.name,
+                    0,
+                    0,
+                )
+            )
+
+    raw = json.dumps(
+        data,
+        ensure_ascii=False,
+        separators=(
+            ",",
+            ":",
+        ),
+    )
+
+    return hashlib.sha1(
+        raw.encode(
+            "utf-8"
+        )
+    ).hexdigest()
+
+
+def _v58_prepare_profile_fast(
+    self,
+    profile_name,
+):
+    profile = self.cfg[
+        "profiles"
+    ][profile_name]
+
+    instance = (
+        self.profile_instance_dir(
+            profile_name
+        )
+    )
+    instance.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+
+    loader = profile.get(
+        "loader",
+        "Vanilla",
+    )
+
+    if loader == "Fabric":
+        before = self.fabric_mod_signature_v58(
+            profile_name
+        )
+
+        if (
+            profile.get(
+                "_fabric_scan_signature"
+            )
+            != before
+        ):
+            self.disable_incompatible_fabric_mods(
+                profile_name
+            )
+
+        # This is local-only when a valid Fabric API already exists.
+        # Network is used only if Fabric API is actually missing.
+        self.ensure_fabric_api(
+            profile_name
+        )
+
+        after = self.fabric_mod_signature_v58(
+            profile_name
+        )
+
+        if (
+            profile.get(
+                "_fabric_scan_signature"
+            )
+            != after
+        ):
+            profile[
+                "_fabric_scan_signature"
+            ] = after
+            save_config(
+                self.cfg
+            )
+
+    launch_version = (
+        self.installed_launch_version(
+            profile_name
+        )
+    )
+
+    runtime = (
+        self.vanilla_runtime_for_profile(
+            profile.get(
+                "version"
+            ),
+            instance,
+        )
+    )
+
+    manual_java = (
+        self.profile_manual_java(
+            profile_name
+        )
+        if hasattr(
+            self,
+            "profile_manual_java",
+        )
+        else None
+    )
+
+    java_available = (
+        runtime is not None
+        or manual_java is not None
+    )
+
+    # Older Minecraft versions often use a system Java instead of a
+    # Minecraft runtime. Only scan Java if it is actually needed.
+    if (
+        launch_version
+        and not java_available
+    ):
+        try:
+            java_available = (
+                self.best_java_for_profile(
+                    profile_name
+                )
+                is not None
+            )
+        except Exception:
+            java_available = False
+
+    if (
+        launch_version
+        and java_available
+    ):
+        self.events.put(
+            (
+                "status",
+                self.t(
+                    "v58_fast_start"
+                ),
+            )
+        )
+
+        return (
+            instance,
+            launch_version,
+            runtime,
+        )
+
+    self.events.put(
+        (
+            "status",
+            self.t(
+                "v58_full_prepare"
+            ),
+        )
+    )
+
+    # Full repair/download is now reserved for first launch or damaged profiles.
+    return _V58_FULL_PREPARE_BASE(
+        self,
+        profile_name,
+    )
+
+
+# ---------------- lighter startup ----------------
+
+def _v58_show_system_tools(self):
+    _V58_SYSTEM_TOOLS_BASE(
+        self
+    )
+
+    # Java scan is lazy: only run it when the user opens Java Manager.
+    if not self.java_installations:
+        self.run_bg(
+            self.detect_java_installations
+        )
+
+
+def _v58_startup_tasks(self):
+    # Cheap local migration only.
+    self.ensure_all_profile_icons()
+
+    # Do not scan all Javas and do not query Fabric/Modrinth for every profile
+    # during launcher startup anymore.
+    if self.cfg.get(
+        "desktop_shortcut",
+        False,
+    ):
+        self.run_bg(
+            self.sync_managed_shortcut
+        )
+
+    # Delay the optional automatic update check so it does not compete
+    # with initial UI rendering, skin loading or a quick Play click.
+    if self.cfg.get(
+        "auto_check_updates",
+        True,
+    ):
+        self.after(
+            6500,
+            lambda:
+                self.run_bg(
+                    lambda:
+                        self.check_launcher_update(
+                            False
+                        )
+                ),
+        )
+
+
+# Bind v5.8.
+OuterClient.version_tuple = staticmethod(
+    _v58_version_tuple
+)
+OuterClient.login_worker = _v58_login_worker
+OuterClient.check_launcher_update = _v58_check_launcher_update
+
+OuterClient.linux_shortcut_icon_v58 = _v58_linux_icon_file
+OuterClient.write_outerclient_shortcut = _v58_write_shortcut
+OuterClient.sync_managed_shortcut = _v58_sync_shortcut
+
+OuterClient.fabric_mod_signature_v58 = _v58_fabric_mod_signature
+OuterClient.prepare_profile_for_launch = _v58_prepare_profile_fast
+
+OuterClient.show_system_tools_settings = _v58_show_system_tools
+
+def _v5_startup_tasks(self):
+    return _v58_startup_tasks(self)
 
 
 
