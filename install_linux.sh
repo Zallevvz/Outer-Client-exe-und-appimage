@@ -6,7 +6,7 @@ python -m venv .venv
 . .venv/bin/activate
 python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
-echo "OuterClient v5.5.2 zainstalowany."
+echo "OuterClient v5.6 zainstalowany."
 
 
 DIR="$(pwd)"

@@ -27,9 +27,17 @@ import requests
 from PIL import Image, ImageDraw
 from tkinter import filedialog, messagebox
 
+try:
+    from outerclient_build_secrets import CURSEFORGE_API_KEY as BUILTIN_CURSEFORGE_API_KEY
+except Exception:
+    BUILTIN_CURSEFORGE_API_KEY = os.environ.get(
+        "OUTERCLIENT_CURSEFORGE_API_KEY",
+        "",
+    ).strip()
+
 
 APP_NAME = "OuterClient"
-APP_VERSION = "5.5.2"
+APP_VERSION = "5.6"
 CONFIG_PATH = Path.home() / ".outerclient.json"
 REDIRECT_URI = "http://localhost:8765/callback"
 MICROSOFT_CLIENT_ID = "fb14d1c4-7d14-4a35-99a7-3f921f7a1e77"
@@ -253,7 +261,7 @@ TEXTS = {
         "curseforge_api_key": "CURSEFORGE API KEY",
         "source": "ŹRÓDŁO",
         "curseforge": "CurseForge",
-        "curseforge_key_missing": "Dodaj CurseForge API Key w Ustawienia → Opcje zaawansowane.",
+        "curseforge_key_missing": "CurseForge API nie jest skonfigurowane w tej kompilacji.",
         "curseforge_mods_only": "CurseForge obsługuje obecnie mody.",
         "curseforge_distribution_blocked": "Ten projekt nie pozwala na dystrybucję przez zewnętrzny launcher.",
         "curseforge_unavailable": "Ten projekt nie jest obecnie dostępny.",
@@ -384,6 +392,16 @@ TEXTS = {
         "v551_fabric_api_verified": "Fabric API {version} jest zgodne z Minecraft {minecraft}.",
         "v551_fabric_api_verify_failed": "Pobrane Fabric API nie przeszło weryfikacji zgodności i zostało wyłączone.",
         "v552_hotfix_ready": "Poprawka zgodności Fabric API jest aktywna.",
+        "v56_offline_account": "Konto Offline",
+        "v56_offline_account_desc": "Ten nick będzie używany podczas uruchamiania Minecrafta w trybie Offline.",
+        "v56_offline_nick": "Nick Offline",
+        "v56_save_nick": "Zapisz nick",
+        "v56_nick_saved": "Nick Offline został zmieniony na {name}.",
+        "v56_nick_invalid": "Nick musi mieć od 3 do 16 znaków i może zawierać tylko litery, cyfry oraz _.",
+        "v56_offline_active": "Tryb Offline jest aktywny.",
+        "v56_switch_offline": "Użyj trybu Offline",
+        "v56_curseforge_builtin": "CurseForge API jest wbudowane w tę kompilację OuterClient.",
+        "v56_curseforge_not_built": "CurseForge API nie jest skonfigurowane w tej kompilacji. Dodaj GitHub Actions Secret CURSEFORGE_API_KEY i zbuduj launcher ponownie.",
         "v5_change_profile": "Zmień profil",
         "v5_previous": "Poprzedni",
         "v5_next": "Następny",
@@ -614,7 +632,7 @@ TEXTS = {
         "curseforge_api_key": "CURSEFORGE API KEY",
         "source": "SOURCE",
         "curseforge": "CurseForge",
-        "curseforge_key_missing": "Add a CurseForge API Key in Settings → Advanced options.",
+        "curseforge_key_missing": "CurseForge API is not configured in this build.",
         "curseforge_mods_only": "CurseForge currently supports mods only.",
         "curseforge_distribution_blocked": "This project does not allow distribution through a third-party launcher.",
         "curseforge_unavailable": "This project is currently unavailable.",
@@ -745,6 +763,16 @@ TEXTS = {
         "v551_fabric_api_verified": "Fabric API {version} is compatible with Minecraft {minecraft}.",
         "v551_fabric_api_verify_failed": "The downloaded Fabric API failed compatibility verification and was disabled.",
         "v552_hotfix_ready": "The Fabric API compatibility hotfix is active.",
+        "v56_offline_account": "Offline account",
+        "v56_offline_account_desc": "This nickname will be used when launching Minecraft in Offline mode.",
+        "v56_offline_nick": "Offline nickname",
+        "v56_save_nick": "Save nickname",
+        "v56_nick_saved": "Offline nickname changed to {name}.",
+        "v56_nick_invalid": "Nickname must be 3–16 characters and may only contain letters, numbers and _.",
+        "v56_offline_active": "Offline mode is active.",
+        "v56_switch_offline": "Use Offline mode",
+        "v56_curseforge_builtin": "CurseForge API is built into this OuterClient build.",
+        "v56_curseforge_not_built": "CurseForge API is not configured in this build. Add the GitHub Actions secret CURSEFORGE_API_KEY and rebuild the launcher.",
         "v5_change_profile": "Change profile",
         "v5_previous": "Previous",
         "v5_next": "Next",
@@ -1135,7 +1163,7 @@ class OuterClient(ctk.CTk):
                 try:
                     import ctypes
                     ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(
-                        "OuterClient.Launcher.5.5.2"
+                        "OuterClient.Launcher.5.6"
                     )
                 except Exception:
                     pass
@@ -19296,6 +19324,427 @@ OuterClient.move_mod_to_disabled = _v551_move_to_disabled
 OuterClient.fabric_api_jars = _v551_fabric_api_jars
 OuterClient.existing_fabric_api_compatible = _v551_existing_fabric_api_compatible
 OuterClient.ensure_fabric_api = _v551_ensure_fabric_api
+
+
+
+# ============================================================
+# OuterClient 5.6 — editable Offline nick + private CurseForge key
+# ============================================================
+
+_V56_SHOW_SETTINGS_BASE = OuterClient.show_settings
+_V56_SAVE_SETTINGS_BASE = OuterClient.save_settings
+_V56_SHOW_ACCOUNTS_BASE = OuterClient.show_accounts_page
+
+
+def _v56_curseforge_headers(self):
+    key = str(
+        BUILTIN_CURSEFORGE_API_KEY or ""
+    ).strip()
+
+    if not key:
+        return None
+
+    return {
+        "Accept": "application/json",
+        "x-api-key": key,
+        "User-Agent": f"OuterClient/{APP_VERSION}",
+    }
+
+
+def _v56_show_settings(self):
+    _V56_SHOW_SETTINGS_BASE(self)
+
+    # v5.3 creates the old CurseForge field in row 0 of the advanced frame.
+    # Remove it entirely. Discord Application ID (row 1) becomes row 0.
+    frame = getattr(
+        self,
+        "advanced_client_frame",
+        None,
+    )
+
+    if frame is not None:
+        try:
+            children = list(
+                frame.winfo_children()
+            )
+
+            for child in children:
+                try:
+                    info = child.grid_info()
+                    row = int(
+                        info.get(
+                            "row",
+                            -1,
+                        )
+                    )
+
+                    if row == 0:
+                        child.destroy()
+                    elif row == 1:
+                        child.grid_configure(
+                            row=0
+                        )
+                except Exception:
+                    pass
+        except Exception:
+            pass
+
+    # Prevent save_settings from persisting any legacy value entered in old builds.
+    if hasattr(
+        self,
+        "settings_curseforge",
+    ):
+        try:
+            delattr(
+                self,
+                "settings_curseforge",
+            )
+        except Exception:
+            pass
+
+    # Remove old saved key; CurseForge now comes only from the private build secret.
+    if "curseforge_api_key" in self.cfg:
+        self.cfg.pop(
+            "curseforge_api_key",
+            None,
+        )
+        save_config(
+            self.cfg
+        )
+
+
+def _v56_save_settings(self):
+    _V56_SAVE_SETTINGS_BASE(self)
+
+    if "curseforge_api_key" in self.cfg:
+        self.cfg.pop(
+            "curseforge_api_key",
+            None,
+        )
+        save_config(
+            self.cfg
+        )
+
+
+def _v56_save_offline_name(
+    self,
+    value,
+):
+    name = str(
+        value or ""
+    ).strip()
+
+    if not re.fullmatch(
+        r"[A-Za-z0-9_]{3,16}",
+        name,
+    ):
+        messagebox.showwarning(
+            self.t(
+                "v56_offline_account"
+            ),
+            self.t(
+                "v56_nick_invalid"
+            ),
+        )
+        return False
+
+    self.cfg[
+        "offline_name"
+    ] = name
+
+    save_config(
+        self.cfg
+    )
+
+    self.skin_head_cache.clear()
+    self.refresh_account_ui()
+
+    self.set_status(
+        self.t(
+            "v56_nick_saved",
+            name=name,
+        )
+    )
+
+    if getattr(
+        self,
+        "active_page",
+        "",
+    ) == "accounts":
+        self.show_accounts_page()
+
+    return True
+
+
+def _v56_use_offline_account(self):
+    self.cfg[
+        "account_mode"
+    ] = "Offline"
+
+    save_config(
+        self.cfg
+    )
+
+    self.skin_head_cache.clear()
+    self.refresh_account_ui()
+
+    self.set_status(
+        self.t(
+            "v56_offline_active"
+        )
+    )
+
+    if getattr(
+        self,
+        "active_page",
+        "",
+    ) == "accounts":
+        self.show_accounts_page()
+    elif getattr(
+        self,
+        "active_page",
+        "",
+    ) == "home":
+        self.show_home()
+
+
+def _v56_show_accounts_page(self):
+    _V56_SHOW_ACCOUNTS_BASE(
+        self
+    )
+
+    pages = self.content.winfo_children()
+    page = pages[0] if pages else None
+
+    if page is None:
+        return
+
+    # Shift the OAuth card + Microsoft account cards down.
+    for child in list(
+        page.winfo_children()
+    ):
+        try:
+            info = child.grid_info()
+            row = int(
+                info.get(
+                    "row",
+                    -1,
+                )
+            )
+
+            if row >= 2:
+                child.grid_configure(
+                    row=row + 1
+                )
+        except Exception:
+            pass
+
+    offline_card = self.card(
+        page,
+        14,
+    )
+    offline_card.grid(
+        row=2,
+        column=0,
+        sticky="ew",
+        padx=36,
+        pady=(0, 10),
+    )
+    offline_card.grid_columnconfigure(
+        1,
+        weight=1,
+    )
+
+    current_offline = (
+        self.cfg.get(
+            "account_mode",
+            "Offline",
+        )
+        == "Offline"
+    )
+
+    badge = ctk.CTkLabel(
+        offline_card,
+        text="O",
+        width=54,
+        height=54,
+        corner_radius=14,
+        fg_color=(
+            self.accent
+            if current_offline
+            else SURFACE_3
+        ),
+        text_color="white",
+        font=ctk.CTkFont(
+            size=18,
+            weight="bold",
+        ),
+    )
+    badge.grid(
+        row=0,
+        column=0,
+        rowspan=3,
+        padx=16,
+        pady=14,
+    )
+
+    ctk.CTkLabel(
+        offline_card,
+        text=self.t(
+            "v56_offline_account"
+        ),
+        text_color=TEXT,
+        anchor="w",
+        font=ctk.CTkFont(
+            size=16,
+            weight="bold",
+        ),
+    ).grid(
+        row=0,
+        column=1,
+        sticky="sw",
+        pady=(13, 0),
+    )
+
+    ctk.CTkLabel(
+        offline_card,
+        text=self.t(
+            "v56_offline_account_desc"
+        ),
+        text_color=MUTED,
+        anchor="w",
+    ).grid(
+        row=1,
+        column=1,
+        columnspan=2,
+        sticky="w",
+        pady=(2, 7),
+    )
+
+    nick_row = ctk.CTkFrame(
+        offline_card,
+        fg_color="transparent",
+    )
+    nick_row.grid(
+        row=2,
+        column=1,
+        columnspan=2,
+        sticky="ew",
+        pady=(0, 13),
+        padx=(0, 14),
+    )
+    nick_row.grid_columnconfigure(
+        0,
+        weight=1,
+    )
+
+    offline_var = ctk.StringVar(
+        value=self.cfg.get(
+            "offline_name",
+            "Player",
+        )
+    )
+
+    entry = ctk.CTkEntry(
+        nick_row,
+        textvariable=offline_var,
+        height=38,
+        fg_color=SURFACE_2,
+        border_color=(
+            self.accent
+            if current_offline
+            else BORDER
+        ),
+        placeholder_text=self.t(
+            "v56_offline_nick"
+        ),
+    )
+    entry.grid(
+        row=0,
+        column=0,
+        sticky="ew",
+        padx=(0, 8),
+    )
+
+    save_button = ctk.CTkButton(
+        nick_row,
+        text=self.t(
+            "v56_save_nick"
+        ),
+        width=110,
+        height=38,
+        fg_color=(
+            self.accent
+            if current_offline
+            else SURFACE_3
+        ),
+        hover_color=self.accent_hover,
+        command=lambda:
+            self.save_offline_name(
+                offline_var.get()
+            ),
+    )
+    save_button.grid(
+        row=0,
+        column=1,
+        padx=(0, 8),
+    )
+
+    if not current_offline:
+        ctk.CTkButton(
+            nick_row,
+            text=self.t(
+                "v56_switch_offline"
+            ),
+            width=125,
+            height=38,
+            fg_color=SURFACE_3,
+            hover_color=self.accent,
+            command=self.use_offline_account,
+        ).grid(
+            row=0,
+            column=2,
+        )
+
+    entry.bind(
+        "<Return>",
+        lambda _event:
+            self.save_offline_name(
+                offline_var.get()
+            ),
+    )
+
+
+def _v56_startup_tasks(self):
+    # Never use a key from ~/.outerclient.json anymore.
+    if "curseforge_api_key" in self.cfg:
+        self.cfg.pop(
+            "curseforge_api_key",
+            None,
+        )
+        save_config(
+            self.cfg
+        )
+
+    return _v55_startup_tasks(
+        self
+    )
+
+
+OuterClient.curseforge_headers = _v56_curseforge_headers
+
+OuterClient.show_settings = _v56_show_settings
+OuterClient.save_settings = _v56_save_settings
+
+OuterClient.save_offline_name = _v56_save_offline_name
+OuterClient.use_offline_account = _v56_use_offline_account
+
+OuterClient.show_accounts_page = _v56_show_accounts_page
+OuterClient.account_action = _v56_show_accounts_page
+OuterClient.open_account_manager = _v56_show_accounts_page
+
+def _v5_startup_tasks(self):
+    return _v56_startup_tasks(self)
 
 
 
