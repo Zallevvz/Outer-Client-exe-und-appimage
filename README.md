@@ -1,32 +1,37 @@
-# OuterClient v5.10.1
+# OuterClient v5.10.2
 
-## Custom main title bar
+## KDE / Linux title-bar hotfix
 
-v5.10 added a colored focus border around the normal system window.
-That was not the intended design.
+v5.10.1 could show two bars on KDE:
+1. the native KDE title bar
+2. the new OuterClient custom title bar
 
-v5.10.1 removes that outer border completely and replaces the native
-Windows/Linux title bar with a real OuterClient title bar.
+v5.10.2 fixes this by remapping the root window in borderless mode:
+- withdraw
+- overrideredirect(True)
+- remove Tk highlight/border
+- deiconify
+- reapply after mapping
 
-Features:
-- OuterClient logo in the title bar
-- centered `OuterClient 5.10.1` title
-- custom minimize button
-- custom maximize / restore button
-- custom close button
-- red close hover
-- double-click the title bar to maximize/restore
-- drag the title bar to move the window
-- manual edge/corner resize on borderless Windows and Linux windows
-- no purple outline around the whole application
+On X11/XWayland, OuterClient also tries a `_MOTIF_WM_HINTS`
+fallback through `xprop` to remove KWin decorations.
 
-The custom popup dialogs from v5.10 remain enabled.
+The custom OuterClient bar remains:
+- logo
+- version
+- minimize
+- maximize/restore
+- close
+- dragging
+- edge/corner resizing
+
+No colored outer border is used.
 
 ## Build
 
 GitHub Actions:
-`Build and Release OuterClient 5.10.1`
+`Build and Release OuterClient 5.10.2`
 
 Expected:
-- `OuterClient-v5.10.1-x86_64.AppImage`
-- `OuterClient-v5.10.1.exe`
+- `OuterClient-v5.10.2-x86_64.AppImage`
+- `OuterClient-v5.10.2.exe`

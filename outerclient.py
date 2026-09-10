@@ -38,7 +38,7 @@ except Exception:
 
 
 APP_NAME = "OuterClient"
-APP_VERSION = "5.10.1"
+APP_VERSION = "5.10.2"
 CONFIG_PATH = Path.home() / ".outerclient.json"
 REDIRECT_URI = "http://localhost:8765/callback"
 MICROSOFT_CLIENT_ID = "fb14d1c4-7d14-4a35-99a7-3f921f7a1e77"
@@ -446,6 +446,7 @@ TEXTS = {
         "v5101_maximize": "Maksymalizuj",
         "v5101_restore": "Przywróć",
         "v5101_close": "Zamknij",
+        "v5102_titlebar_fixed": "Customowy pasek OuterClient jest aktywny.",
         "v58_update_checking": "Sprawdzanie aktualizacji OuterClient…",
         "v58_update_failed": "Nie udało się sprawdzić aktualizacji: {error}",
         "v58_latest": "Masz najnowszą wersję OuterClient ({version}).",
@@ -871,6 +872,7 @@ TEXTS = {
         "v5101_maximize": "Maximize",
         "v5101_restore": "Restore",
         "v5101_close": "Close",
+        "v5102_titlebar_fixed": "The OuterClient custom title bar is active.",
         "v5_change_profile": "Change profile",
         "v5_previous": "Previous",
         "v5_next": "Next",
@@ -1261,7 +1263,7 @@ class OuterClient(ctk.CTk):
                 try:
                     import ctypes
                     ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(
-                        "OuterClient.Launcher.5.10.1"
+                        "OuterClient.Launcher.5.10.2"
                     )
                 except Exception:
                     pass
@@ -25415,6 +25417,189 @@ OuterClient.relayout_custom_shell_v5101 = _v5101_relayout_shell
 
 OuterClient.build_shell = _v5101_build_shell
 OuterClient.__init__ = _v5101_init
+
+
+
+# ============================================================
+# OuterClient 5.10.2 — Linux/KDE native title-bar removal fix
+# ============================================================
+
+_V5102_INIT_BASE = OuterClient.__init__
+
+
+def _v5102_force_borderless(self):
+    """
+    Force a real borderless root window.
+
+    KDE/Tk can keep the native decoration if overrideredirect(True)
+    is applied after the window is already mapped. Withdraw -> set
+    override -> deiconify forces the WM to remap it without decorations.
+    """
+    was_visible = False
+
+    try:
+        was_visible = bool(self.winfo_viewable())
+    except Exception:
+        pass
+
+    try:
+        self.withdraw()
+    except Exception:
+        pass
+
+    try:
+        self.update_idletasks()
+    except Exception:
+        pass
+
+    # Tk-native borderless path.
+    try:
+        self.overrideredirect(True)
+    except Exception:
+        pass
+
+    # Remove Tk's own border/highlight as well.
+    try:
+        self.tk.call(
+            self._w,
+            "configure",
+            "-highlightthickness",
+            0,
+            "-borderwidth",
+            0,
+        )
+    except Exception:
+        pass
+
+    # KDE/X11 fallback: if Tk exposes a normal window id, ask KWin/X11
+    # to remove Motif decorations while keeping the client window intact.
+    if (
+        not sys.platform.startswith("win")
+        and shutil.which("xprop")
+    ):
+        try:
+            self.update_idletasks()
+            window_id = int(self.winfo_id())
+
+            subprocess.run(
+                [
+                    "xprop",
+                    "-id",
+                    str(window_id),
+                    "-f",
+                    "_MOTIF_WM_HINTS",
+                    "32c",
+                    "-set",
+                    "_MOTIF_WM_HINTS",
+                    "2, 0, 0, 0, 0",
+                ],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                timeout=2,
+            )
+        except Exception:
+            pass
+
+    try:
+        self.deiconify()
+    except Exception:
+        pass
+
+    try:
+        self.lift()
+    except Exception:
+        pass
+
+    try:
+        self.update_idletasks()
+    except Exception:
+        pass
+
+
+def _v5102_on_map(self, event=None):
+    if (
+        event is not None
+        and getattr(event, "widget", None) is not self
+    ):
+        return
+
+    # After minimize/restore KDE can remap decorations.
+    # Re-assert borderless mode a moment after mapping.
+    self.after(
+        25,
+        lambda:
+            self.force_borderless_v5102()
+    )
+
+
+def _v5102_minimize(self):
+    self._custom_minimized = True
+
+    # For borderless windows simply withdraw and restore.
+    # This avoids re-enabling native decorations on KDE.
+    try:
+        self.withdraw()
+    except Exception:
+        return
+
+    def restore():
+        # This callback is not automatic; iconify isn't reliable with
+        # override-redirect windows. Use native iconify where it works,
+        # otherwise preserve borderless state on re-show.
+        try:
+            self.overrideredirect(False)
+            self.deiconify()
+            self.iconify()
+        except Exception:
+            pass
+
+    # Windows handles iconify with override-redirect better.
+    if sys.platform.startswith("win"):
+        try:
+            self.overrideredirect(False)
+            self.deiconify()
+            self.iconify()
+        except Exception:
+            self.deiconify()
+    else:
+        # On Linux use wm state transition, then reapply borderless on map.
+        try:
+            self.overrideredirect(False)
+            self.deiconify()
+            self.iconify()
+        except Exception:
+            self.deiconify()
+
+
+def _v5102_init(self):
+    # Hide the root BEFORE the v5.10.1 init maps/decorates it.
+    try:
+        self.withdraw()
+    except Exception:
+        pass
+
+    _V5102_INIT_BASE(self)
+
+    # v5.10.1 already created the custom title bar.
+    # Force a remap now so KDE never keeps its native title bar above it.
+    self.after(
+        1,
+        self.force_borderless_v5102,
+    )
+    self.after(
+        80,
+        self.force_borderless_v5102,
+    )
+    self.after(
+        250,
+        self.force_borderless_v5102,
+    )
+
+
+OuterClient.force_borderless_v5102 = _v5102_force_borderless
+OuterClient.custom_on_map_v5101 = _v5102_on_map
+OuterClient.custom_minimize_v5101 = _v5102_minimize
+OuterClient.__init__ = _v5102_init
 
 
 
