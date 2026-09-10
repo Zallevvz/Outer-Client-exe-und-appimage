@@ -1,53 +1,32 @@
-# OuterClient v5.10
+# OuterClient v5.10.1
 
-## Custom popup windows
+## Custom main title bar
 
-System message boxes have been replaced with OuterClient-styled dialogs.
+v5.10 added a colored focus border around the normal system window.
+That was not the intended design.
 
-Supported existing calls:
-- showinfo
-- showwarning
-- showerror
-- askyesno
-
-The rest of OuterClient can keep calling `messagebox.*`; v5.10 redirects them
-to the new custom dialog system.
+v5.10.1 removes that outer border completely and replaces the native
+Windows/Linux title bar with a real OuterClient title bar.
 
 Features:
-- dark OuterClient styling
-- rounded cards
-- theme/accent border
+- OuterClient logo in the title bar
+- centered `OuterClient 5.10.1` title
+- custom minimize button
+- custom maximize / restore button
 - custom close button
-- icon/state badge
-- draggable custom title bar
-- Enter to confirm
-- Escape to close/cancel
-- subtle fade-in animation
-- dialogs centered over the launcher
-- question dialogs return True/False exactly like askyesno
+- red close hover
+- double-click the title bar to maximize/restore
+- drag the title bar to move the window
+- manual edge/corner resize on borderless Windows and Linux windows
+- no purple outline around the whole application
 
-Worker-thread calls are dispatched back to the Tk main thread.
-
-## Main window border
-
-The main launcher keeps the normal Windows/Linux system title bar so resize,
-maximize, taskbar integration and desktop-window management keep working.
-
-OuterClient adds a polished inner window border:
-- accent color while focused
-- neutral border when unfocused
-
-This avoids the reliability problems of completely frameless custom main
-windows while still giving Windows and Linux a more consistent look.
+The custom popup dialogs from v5.10 remain enabled.
 
 ## Build
 
 GitHub Actions:
-`Build and Release OuterClient 5.10`
+`Build and Release OuterClient 5.10.1`
 
 Expected:
-- `OuterClient-v5.10-x86_64.AppImage`
-- `OuterClient-v5.10.exe`
-
-CurseForge still uses:
-`CURSEFORGE_API_KEY`
+- `OuterClient-v5.10.1-x86_64.AppImage`
+- `OuterClient-v5.10.1.exe`

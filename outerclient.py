@@ -38,7 +38,7 @@ except Exception:
 
 
 APP_NAME = "OuterClient"
-APP_VERSION = "5.10"
+APP_VERSION = "5.10.1"
 CONFIG_PATH = Path.home() / ".outerclient.json"
 REDIRECT_URI = "http://localhost:8765/callback"
 MICROSOFT_CLIENT_ID = "fb14d1c4-7d14-4a35-99a7-3f921f7a1e77"
@@ -442,6 +442,10 @@ TEXTS = {
         "v510_question": "Potwierdzenie",
         "v510_popup_hint": "Enter — potwierdź   •   Esc — zamknij",
         "v510_window_border": "Nowa ramka okna OuterClient jest aktywna.",
+        "v5101_minimize": "Minimalizuj",
+        "v5101_maximize": "Maksymalizuj",
+        "v5101_restore": "Przywróć",
+        "v5101_close": "Zamknij",
         "v58_update_checking": "Sprawdzanie aktualizacji OuterClient…",
         "v58_update_failed": "Nie udało się sprawdzić aktualizacji: {error}",
         "v58_latest": "Masz najnowszą wersję OuterClient ({version}).",
@@ -863,6 +867,10 @@ TEXTS = {
         "v510_question": "Confirmation",
         "v510_popup_hint": "Enter — confirm   •   Esc — close",
         "v510_window_border": "The new OuterClient window border is active.",
+        "v5101_minimize": "Minimize",
+        "v5101_maximize": "Maximize",
+        "v5101_restore": "Restore",
+        "v5101_close": "Close",
         "v5_change_profile": "Change profile",
         "v5_previous": "Previous",
         "v5_next": "Next",
@@ -1253,7 +1261,7 @@ class OuterClient(ctk.CTk):
                 try:
                     import ctypes
                     ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(
-                        "OuterClient.Launcher.5.10"
+                        "OuterClient.Launcher.5.10.1"
                     )
                 except Exception:
                     pass
@@ -24602,6 +24610,811 @@ OuterClient.custom_dialog_v510 = _v510_custom_dialog
 OuterClient.install_dialog_hooks_v510 = _v510_install_dialog_hooks
 
 OuterClient.__init__ = _v510_init
+
+
+
+# ============================================================
+# OuterClient 5.10.1
+# - remove the v5.10 outer focus border
+# - real custom main title bar on Windows + Linux
+# - custom minimize / maximize / restore / close
+# - manual borderless resize
+# ============================================================
+
+_V5101_INIT_BASE = OuterClient.__init__
+_V5101_BUILD_SHELL_BASE = OuterClient.build_shell
+
+
+def _v5101_noop_root_border(self, focused=True):
+    # v5.10 used a purple/neutral highlight around the whole window.
+    # v5.10.1 intentionally removes it.
+    try:
+        self.tk.call(
+            self._w,
+            "configure",
+            "-highlightthickness",
+            0,
+            "-borderwidth",
+            0,
+        )
+    except Exception:
+        pass
+
+
+def _v5101_work_area(self):
+    """Best-effort usable desktop area excluding panels/taskbar."""
+    # Windows: exact work area excluding taskbar.
+    if sys.platform.startswith("win"):
+        try:
+            import ctypes
+            from ctypes import wintypes
+
+            class RECT(ctypes.Structure):
+                _fields_ = [
+                    ("left", wintypes.LONG),
+                    ("top", wintypes.LONG),
+                    ("right", wintypes.LONG),
+                    ("bottom", wintypes.LONG),
+                ]
+
+            rect = RECT()
+            SPI_GETWORKAREA = 0x0030
+
+            if ctypes.windll.user32.SystemParametersInfoW(
+                SPI_GETWORKAREA,
+                0,
+                ctypes.byref(rect),
+                0,
+            ):
+                return (
+                    int(rect.left),
+                    int(rect.top),
+                    int(rect.right - rect.left),
+                    int(rect.bottom - rect.top),
+                )
+        except Exception:
+            pass
+
+    # Linux/X11/XWayland: EWMH work area if available.
+    if not sys.platform.startswith("win") and shutil.which("xprop"):
+        try:
+            result = subprocess.run(
+                ["xprop", "-root", "_NET_WORKAREA"],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.DEVNULL,
+                text=True,
+                timeout=2,
+            )
+            values = re.findall(
+                r"-?\d+",
+                result.stdout,
+            )
+            if len(values) >= 4:
+                x, y, width, height = map(
+                    int,
+                    values[-4:],
+                )
+                if width > 300 and height > 300:
+                    return (
+                        x,
+                        y,
+                        width,
+                        height,
+                    )
+        except Exception:
+            pass
+
+    return (
+        0,
+        0,
+        int(self.winfo_screenwidth()),
+        int(self.winfo_screenheight()),
+    )
+
+
+def _v5101_set_override(self, enabled=True):
+    try:
+        self.overrideredirect(
+            bool(enabled)
+        )
+    except Exception:
+        pass
+
+
+def _v5101_minimize(self):
+    self._custom_minimized = True
+
+    # On some Linux WMs an override-redirect window cannot become iconic.
+    # Temporarily restore native decoration only for the minimize transition.
+    try:
+        self.overrideredirect(False)
+    except Exception:
+        pass
+
+    try:
+        self.iconify()
+    except Exception:
+        try:
+            self.withdraw()
+            self.after(
+                120,
+                self.deiconify,
+            )
+        except Exception:
+            pass
+
+
+def _v5101_on_map(self, event=None):
+    if event is not None and getattr(event, "widget", None) is not self:
+        return
+
+    if getattr(
+        self,
+        "_custom_minimized",
+        False,
+    ):
+        self._custom_minimized = False
+        self.after(
+            10,
+            lambda:
+                self.set_custom_override_v5101(
+                    True
+                ),
+        )
+
+
+def _v5101_toggle_maximize(self):
+    if getattr(
+        self,
+        "_custom_maximized",
+        False,
+    ):
+        geometry = getattr(
+            self,
+            "_custom_restore_geometry",
+            None,
+        )
+
+        self._custom_maximized = False
+
+        if geometry:
+            x, y, width, height = geometry
+            self.geometry(
+                f"{width}x{height}+{x}+{y}"
+            )
+
+        if hasattr(
+            self,
+            "_title_max_button",
+        ):
+            self._title_max_button.configure(
+                text="□"
+            )
+        return
+
+    try:
+        self.update_idletasks()
+
+        self._custom_restore_geometry = (
+            int(self.winfo_x()),
+            int(self.winfo_y()),
+            int(self.winfo_width()),
+            int(self.winfo_height()),
+        )
+    except Exception:
+        self._custom_restore_geometry = None
+
+    x, y, width, height = self.custom_work_area_v5101()
+
+    self.geometry(
+        f"{width}x{height}+{x}+{y}"
+    )
+    self._custom_maximized = True
+
+    if hasattr(
+        self,
+        "_title_max_button",
+    ):
+        self._title_max_button.configure(
+            text="❐"
+        )
+
+
+def _v5101_title_drag_start(self, event):
+    if getattr(
+        self,
+        "_custom_maximized",
+        False,
+    ):
+        return
+
+    self._title_drag_origin = (
+        event.x_root,
+        event.y_root,
+        self.winfo_x(),
+        self.winfo_y(),
+    )
+
+
+def _v5101_title_drag_move(self, event):
+    origin = getattr(
+        self,
+        "_title_drag_origin",
+        None,
+    )
+
+    if (
+        not origin
+        or getattr(
+            self,
+            "_custom_maximized",
+            False,
+        )
+    ):
+        return
+
+    start_x, start_y, win_x, win_y = origin
+
+    dx = event.x_root - start_x
+    dy = event.y_root - start_y
+
+    self.geometry(
+        f"+{win_x + dx}+{win_y + dy}"
+    )
+
+
+def _v5101_title_drag_end(self, _event=None):
+    self._title_drag_origin = None
+
+
+def _v5101_resize_edge(self, x, y):
+    if getattr(
+        self,
+        "_custom_maximized",
+        False,
+    ):
+        return ""
+
+    width = self.winfo_width()
+    height = self.winfo_height()
+    margin = 6
+
+    left = x <= margin
+    right = x >= width - margin
+    top = y <= margin
+    bottom = y >= height - margin
+
+    if left and top:
+        return "nw"
+    if right and top:
+        return "ne"
+    if left and bottom:
+        return "sw"
+    if right and bottom:
+        return "se"
+    if left:
+        return "w"
+    if right:
+        return "e"
+    if top:
+        return "n"
+    if bottom:
+        return "s"
+
+    return ""
+
+
+def _v5101_resize_cursor(self, edge):
+    return {
+        "n": "top_side",
+        "s": "bottom_side",
+        "e": "right_side",
+        "w": "left_side",
+        "ne": "top_right_corner",
+        "nw": "top_left_corner",
+        "se": "bottom_right_corner",
+        "sw": "bottom_left_corner",
+    }.get(
+        edge,
+        "",
+    )
+
+
+def _v5101_root_motion(self, event):
+    if getattr(
+        self,
+        "_resize_mode_v5101",
+        "",
+    ):
+        return
+
+    try:
+        x = self.winfo_pointerx() - self.winfo_rootx()
+        y = self.winfo_pointery() - self.winfo_rooty()
+
+        edge = self.resize_edge_v5101(
+            x,
+            y,
+        )
+
+        self.configure(
+            cursor=self.resize_cursor_v5101(
+                edge
+            )
+        )
+    except Exception:
+        pass
+
+
+def _v5101_resize_start(self, event):
+    try:
+        x = self.winfo_pointerx() - self.winfo_rootx()
+        y = self.winfo_pointery() - self.winfo_rooty()
+
+        edge = self.resize_edge_v5101(
+            x,
+            y,
+        )
+    except Exception:
+        edge = ""
+
+    if not edge:
+        self._resize_mode_v5101 = ""
+        return
+
+    self._resize_mode_v5101 = edge
+
+    self._resize_origin_v5101 = (
+        event.x_root,
+        event.y_root,
+        self.winfo_x(),
+        self.winfo_y(),
+        self.winfo_width(),
+        self.winfo_height(),
+    )
+
+
+def _v5101_resize_move(self, event):
+    edge = getattr(
+        self,
+        "_resize_mode_v5101",
+        "",
+    )
+
+    origin = getattr(
+        self,
+        "_resize_origin_v5101",
+        None,
+    )
+
+    if not edge or not origin:
+        return
+
+    (
+        start_x,
+        start_y,
+        win_x,
+        win_y,
+        win_w,
+        win_h,
+    ) = origin
+
+    dx = event.x_root - start_x
+    dy = event.y_root - start_y
+
+    min_w = 1000
+    min_h = 700
+
+    x = win_x
+    y = win_y
+    width = win_w
+    height = win_h
+
+    if "e" in edge:
+        width = max(
+            min_w,
+            win_w + dx,
+        )
+
+    if "s" in edge:
+        height = max(
+            min_h,
+            win_h + dy,
+        )
+
+    if "w" in edge:
+        proposed = max(
+            min_w,
+            win_w - dx,
+        )
+        x = win_x + (
+            win_w - proposed
+        )
+        width = proposed
+
+    if "n" in edge:
+        proposed = max(
+            min_h,
+            win_h - dy,
+        )
+        y = win_y + (
+            win_h - proposed
+        )
+        height = proposed
+
+    self.geometry(
+        f"{width}x{height}+{x}+{y}"
+    )
+
+
+def _v5101_resize_end(self, _event=None):
+    self._resize_mode_v5101 = ""
+    self._resize_origin_v5101 = None
+
+    try:
+        self.configure(
+            cursor=""
+        )
+    except Exception:
+        pass
+
+
+def _v5101_build_titlebar(self):
+    old = getattr(
+        self,
+        "_custom_titlebar_v5101",
+        None,
+    )
+
+    if old is not None:
+        try:
+            if old.winfo_exists():
+                old.destroy()
+        except Exception:
+            pass
+
+    bar = ctk.CTkFrame(
+        self,
+        height=38,
+        fg_color="#0C1118",
+        corner_radius=0,
+        border_width=0,
+    )
+    bar.grid(
+        row=0,
+        column=0,
+        columnspan=2,
+        sticky="ew",
+    )
+    bar.grid_propagate(
+        False
+    )
+    bar.grid_columnconfigure(
+        1,
+        weight=1,
+    )
+
+    self._custom_titlebar_v5101 = bar
+
+    left = ctk.CTkFrame(
+        bar,
+        fg_color="transparent",
+    )
+    left.grid(
+        row=0,
+        column=0,
+        sticky="w",
+        padx=(10, 0),
+    )
+
+    try:
+        if LOGO_PNG.exists():
+            pil = Image.open(
+                LOGO_PNG
+            ).convert(
+                "RGBA"
+            )
+            self._title_logo_image_v5101 = ctk.CTkImage(
+                light_image=pil,
+                dark_image=pil,
+                size=(20, 20),
+            )
+
+            logo = ctk.CTkLabel(
+                left,
+                text="",
+                image=self._title_logo_image_v5101,
+                width=24,
+                height=24,
+            )
+            logo.pack(
+                side="left",
+                padx=(0, 7),
+            )
+        else:
+            raise FileNotFoundError
+    except Exception:
+        logo = ctk.CTkLabel(
+            left,
+            text="◆",
+            text_color=self.accent,
+            width=22,
+        )
+        logo.pack(
+            side="left",
+            padx=(0, 7),
+        )
+
+    title_left = ctk.CTkLabel(
+        left,
+        text="OuterClient",
+        text_color=MUTED,
+        font=ctk.CTkFont(
+            size=11,
+            weight="bold",
+        ),
+    )
+    title_left.pack(
+        side="left"
+    )
+
+    title_center = ctk.CTkLabel(
+        bar,
+        text=f"OuterClient {APP_VERSION}",
+        text_color="#DCE3EC",
+        font=ctk.CTkFont(
+            size=11,
+            weight="normal",
+        ),
+    )
+    title_center.grid(
+        row=0,
+        column=1,
+        sticky="nsew",
+    )
+
+    buttons = ctk.CTkFrame(
+        bar,
+        fg_color="transparent",
+    )
+    buttons.grid(
+        row=0,
+        column=2,
+        sticky="e",
+    )
+
+    self._title_min_button = ctk.CTkButton(
+        buttons,
+        text="—",
+        width=46,
+        height=38,
+        corner_radius=0,
+        fg_color="transparent",
+        hover_color="#1C2532",
+        text_color="#C5CEDA",
+        font=ctk.CTkFont(
+            size=13,
+            weight="bold",
+        ),
+        command=self.custom_minimize_v5101,
+    )
+    self._title_min_button.pack(
+        side="left"
+    )
+
+    self._title_max_button = ctk.CTkButton(
+        buttons,
+        text=(
+            "❐"
+            if getattr(
+                self,
+                "_custom_maximized",
+                False,
+            )
+            else "□"
+        ),
+        width=46,
+        height=38,
+        corner_radius=0,
+        fg_color="transparent",
+        hover_color="#1C2532",
+        text_color="#C5CEDA",
+        font=ctk.CTkFont(
+            size=14,
+        ),
+        command=self.custom_toggle_maximize_v5101,
+    )
+    self._title_max_button.pack(
+        side="left"
+    )
+
+    self._title_close_button = ctk.CTkButton(
+        buttons,
+        text="×",
+        width=48,
+        height=38,
+        corner_radius=0,
+        fg_color="transparent",
+        hover_color="#C42B3B",
+        text_color="#E8EDF5",
+        font=ctk.CTkFont(
+            size=20,
+            weight="normal",
+        ),
+        command=self.destroy,
+    )
+    self._title_close_button.pack(
+        side="left"
+    )
+
+    # Drag anywhere on the neutral title-bar area.
+    for widget in (
+        bar,
+        left,
+        logo,
+        title_left,
+        title_center,
+    ):
+        widget.bind(
+            "<ButtonPress-1>",
+            self.custom_title_drag_start_v5101,
+        )
+        widget.bind(
+            "<B1-Motion>",
+            self.custom_title_drag_move_v5101,
+        )
+        widget.bind(
+            "<ButtonRelease-1>",
+            self.custom_title_drag_end_v5101,
+        )
+        widget.bind(
+            "<Double-Button-1>",
+            lambda _event:
+                self.custom_toggle_maximize_v5101(),
+        )
+
+
+def _v5101_relayout_shell(self):
+    # The old shell uses row 0 for app content and row 1 for downloads.
+    # Reserve row 0 for the new custom title bar.
+    try:
+        self.sidebar.grid_configure(
+            row=1,
+            column=0,
+        )
+    except Exception:
+        pass
+
+    try:
+        self.content.grid_configure(
+            row=1,
+            column=1,
+        )
+    except Exception:
+        pass
+
+    try:
+        self.download_bar.grid_configure(
+            row=2,
+            column=0,
+            columnspan=2,
+        )
+    except Exception:
+        pass
+
+    self.grid_rowconfigure(
+        0,
+        weight=0,
+        minsize=38,
+    )
+    self.grid_rowconfigure(
+        1,
+        weight=1,
+        minsize=0,
+    )
+    self.grid_rowconfigure(
+        2,
+        weight=0,
+    )
+
+    self.build_custom_titlebar_v5101()
+
+
+def _v5101_build_shell(self):
+    _V5101_BUILD_SHELL_BASE(
+        self
+    )
+
+    self.relayout_custom_shell_v5101()
+
+
+def _v5101_init(self):
+    self._custom_titlebar_v5101 = None
+    self._custom_maximized = False
+    self._custom_restore_geometry = None
+    self._custom_minimized = False
+    self._title_drag_origin = None
+    self._resize_mode_v5101 = ""
+    self._resize_origin_v5101 = None
+
+    _V5101_INIT_BASE(
+        self
+    )
+
+    # Completely remove v5.10's focus border.
+    self.apply_root_border_v5101(
+        False
+    )
+
+    # Replace the native OS title bar with the OuterClient one.
+    self.set_custom_override_v5101(
+        True
+    )
+
+    # Reapply after Tk has fully mapped the AppImage/EXE window.
+    self.after(
+        40,
+        lambda:
+            self.set_custom_override_v5101(
+                True
+            ),
+    )
+
+    self.bind(
+        "<Map>",
+        self.custom_on_map_v5101,
+        add="+",
+    )
+
+    # Manual resize keeps the borderless window resizable on both platforms.
+    self.bind(
+        "<Motion>",
+        self.custom_root_motion_v5101,
+        add="+",
+    )
+    self.bind(
+        "<ButtonPress-1>",
+        self.custom_resize_start_v5101,
+        add="+",
+    )
+    self.bind(
+        "<B1-Motion>",
+        self.custom_resize_move_v5101,
+        add="+",
+    )
+    self.bind(
+        "<ButtonRelease-1>",
+        self.custom_resize_end_v5101,
+        add="+",
+    )
+
+
+# Disable the old v5.10 purple/neutral highlight, including its FocusIn/FocusOut hooks.
+OuterClient.apply_root_border_v5101 = _v5101_noop_root_border
+OuterClient.apply_root_border_v510 = _v5101_noop_root_border
+
+OuterClient.custom_work_area_v5101 = _v5101_work_area
+OuterClient.set_custom_override_v5101 = _v5101_set_override
+OuterClient.custom_minimize_v5101 = _v5101_minimize
+OuterClient.custom_on_map_v5101 = _v5101_on_map
+OuterClient.custom_toggle_maximize_v5101 = _v5101_toggle_maximize
+
+OuterClient.custom_title_drag_start_v5101 = _v5101_title_drag_start
+OuterClient.custom_title_drag_move_v5101 = _v5101_title_drag_move
+OuterClient.custom_title_drag_end_v5101 = _v5101_title_drag_end
+
+OuterClient.resize_edge_v5101 = _v5101_resize_edge
+OuterClient.resize_cursor_v5101 = _v5101_resize_cursor
+OuterClient.custom_root_motion_v5101 = _v5101_root_motion
+OuterClient.custom_resize_start_v5101 = _v5101_resize_start
+OuterClient.custom_resize_move_v5101 = _v5101_resize_move
+OuterClient.custom_resize_end_v5101 = _v5101_resize_end
+
+OuterClient.build_custom_titlebar_v5101 = _v5101_build_titlebar
+OuterClient.relayout_custom_shell_v5101 = _v5101_relayout_shell
+
+OuterClient.build_shell = _v5101_build_shell
+OuterClient.__init__ = _v5101_init
 
 
 
