@@ -1,4 +1,4 @@
-name: Build and Release OuterClient 5.10
+name: Build and Release OuterClient 5.10.1
 
 on:
   workflow_dispatch:
@@ -7,11 +7,11 @@ permissions:
   contents: write
 
 env:
-  OC_VERSION: "5.10"
+  OC_VERSION: "5.10.1"
 
 jobs:
   verify-source:
-    name: Verify OuterClient 5.10
+    name: Verify OuterClient 5.10.1
     runs-on: ubuntu-latest
 
     steps:
@@ -22,10 +22,10 @@ jobs:
         shell: bash
         run: |
           set -eux
-          grep -F 'APP_VERSION = "5.10"' outerclient.py
+          grep -F 'APP_VERSION = "5.10.1"' outerclient.py
 
   linux-appimage:
-    name: Linux AppImage 5.10
+    name: Linux AppImage 5.10.1
     needs: verify-source
     runs-on: ubuntu-22.04
 
@@ -132,14 +132,14 @@ jobs:
           cat > AppDir/OuterClient.desktop <<'EOF'
           [Desktop Entry]
           Type=Application
-          Name=OuterClient 5.10
+          Name=OuterClient 5.10.1
           Comment=OuterClient Minecraft Launcher
           Exec=OuterClient
           Icon=outerclient
           Categories=Game;
           Terminal=false
           StartupWMClass=OuterClient
-          X-AppImage-Version=5.10
+          X-AppImage-Version=5.10.1
           EOF
 
           cat > AppDir/AppRun <<'EOF'
@@ -164,25 +164,25 @@ jobs:
         shell: bash
         env:
           ARCH: x86_64
-          VERSION: "5.10"
+          VERSION: "5.10.1"
           APPIMAGE_EXTRACT_AND_RUN: "1"
         run: |
           ./appimagetool.AppImage \
             AppDir \
-            OuterClient-v5.10-x86_64.AppImage
+            OuterClient-v5.10.1-x86_64.AppImage
 
-          chmod +x OuterClient-v5.10-x86_64.AppImage
-          test -f OuterClient-v5.10-x86_64.AppImage
+          chmod +x OuterClient-v5.10.1-x86_64.AppImage
+          test -f OuterClient-v5.10.1-x86_64.AppImage
 
       - name: Upload AppImage
         uses: actions/upload-artifact@v4
         with:
-          name: OuterClient-v5.10-AppImage
-          path: OuterClient-v5.10-x86_64.AppImage
+          name: OuterClient-v5.10.1-AppImage
+          path: OuterClient-v5.10.1-x86_64.AppImage
           if-no-files-found: error
 
   windows-exe:
-    name: Windows EXE 5.10
+    name: Windows EXE 5.10.1
     needs: verify-source
     runs-on: windows-latest
 
@@ -229,7 +229,7 @@ jobs:
             --clean `
             --onefile `
             --windowed `
-            --name "OuterClient-v5.10" `
+            --name "OuterClient-v5.10.1" `
             --icon assets/outerclient.ico `
             --add-data "assets;assets" `
             --collect-all customtkinter `
@@ -240,19 +240,19 @@ jobs:
             --hidden-import outerclient_build_secrets `
             outerclient.py
 
-          if (-not (Test-Path "dist\OuterClient-v5.10.exe")) {
-            throw "OuterClient-v5.10.exe was not created"
+          if (-not (Test-Path "dist\OuterClient-v5.10.1.exe")) {
+            throw "OuterClient-v5.10.1.exe was not created"
           }
 
       - name: Upload Windows EXE
         uses: actions/upload-artifact@v4
         with:
-          name: OuterClient-v5.10-Windows
-          path: dist/OuterClient-v5.10.exe
+          name: OuterClient-v5.10.1-Windows
+          path: dist/OuterClient-v5.10.1.exe
           if-no-files-found: error
 
   release:
-    name: Make 5.10 Latest
+    name: Make 5.10.1 Latest
     needs:
       - linux-appimage
       - windows-exe
@@ -265,13 +265,13 @@ jobs:
           path: release
           merge-multiple: true
 
-      - name: Publish OuterClient 5.10
+      - name: Publish OuterClient 5.10.1
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v5.10
-          name: OuterClient v5.10
+          tag_name: v5.10.1
+          name: OuterClient v5.10.1
           make_latest: true
           generate_release_notes: true
           files: |
-            release/OuterClient-v5.10-x86_64.AppImage
-            release/OuterClient-v5.10.exe
+            release/OuterClient-v5.10.1-x86_64.AppImage
+            release/OuterClient-v5.10.1.exe
