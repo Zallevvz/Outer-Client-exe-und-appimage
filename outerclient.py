@@ -38,7 +38,7 @@ except Exception:
 
 
 APP_NAME = "OuterClient"
-APP_VERSION = "5.10.2"
+APP_VERSION = "5.10.3"
 CONFIG_PATH = Path.home() / ".outerclient.json"
 REDIRECT_URI = "http://localhost:8765/callback"
 MICROSOFT_CLIENT_ID = "fb14d1c4-7d14-4a35-99a7-3f921f7a1e77"
@@ -447,6 +447,7 @@ TEXTS = {
         "v5101_restore": "Przywróć",
         "v5101_close": "Zamknij",
         "v5102_titlebar_fixed": "Customowy pasek OuterClient jest aktywny.",
+        "v5103_titlebar_stable": "Customowy pasek działa bez ponownego mapowania okna.",
         "v58_update_checking": "Sprawdzanie aktualizacji OuterClient…",
         "v58_update_failed": "Nie udało się sprawdzić aktualizacji: {error}",
         "v58_latest": "Masz najnowszą wersję OuterClient ({version}).",
@@ -873,6 +874,7 @@ TEXTS = {
         "v5101_restore": "Restore",
         "v5101_close": "Close",
         "v5102_titlebar_fixed": "The OuterClient custom title bar is active.",
+        "v5103_titlebar_stable": "The custom title bar now works without repeated window remapping.",
         "v5_change_profile": "Change profile",
         "v5_previous": "Previous",
         "v5_next": "Next",
@@ -1263,7 +1265,7 @@ class OuterClient(ctk.CTk):
                 try:
                     import ctypes
                     ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(
-                        "OuterClient.Launcher.5.10.2"
+                        "OuterClient.Launcher.5.10.3"
                     )
                 except Exception:
                     pass
@@ -25600,6 +25602,183 @@ OuterClient.force_borderless_v5102 = _v5102_force_borderless
 OuterClient.custom_on_map_v5101 = _v5102_on_map
 OuterClient.custom_minimize_v5101 = _v5102_minimize
 OuterClient.__init__ = _v5102_init
+
+
+
+# ============================================================
+# OuterClient 5.10.3 — stable borderless remap fix
+# ============================================================
+
+_V5103_INIT_BASE = OuterClient.__init__
+
+
+def _v5103_apply_borderless_once(self, force=False):
+    if (
+        getattr(self, "_borderless_applied_v5103", False)
+        and not force
+    ):
+        return
+
+    if getattr(self, "_borderless_busy_v5103", False):
+        return
+
+    self._borderless_busy_v5103 = True
+
+    try:
+        try:
+            self.withdraw()
+        except Exception:
+            pass
+
+        try:
+            self.update_idletasks()
+        except Exception:
+            pass
+
+        try:
+            self.overrideredirect(True)
+        except Exception:
+            pass
+
+        try:
+            self.tk.call(
+                self._w,
+                "configure",
+                "-highlightthickness",
+                0,
+                "-borderwidth",
+                0,
+            )
+        except Exception:
+            pass
+
+        # X11/KWin fallback only once per remap request.
+        if (
+            not sys.platform.startswith("win")
+            and shutil.which("xprop")
+        ):
+            try:
+                self.update_idletasks()
+                window_id = int(self.winfo_id())
+
+                subprocess.run(
+                    [
+                        "xprop",
+                        "-id",
+                        str(window_id),
+                        "-f",
+                        "_MOTIF_WM_HINTS",
+                        "32c",
+                        "-set",
+                        "_MOTIF_WM_HINTS",
+                        "2, 0, 0, 0, 0",
+                    ],
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                    timeout=2,
+                )
+            except Exception:
+                pass
+
+        try:
+            self.deiconify()
+        except Exception:
+            pass
+
+        try:
+            self.lift()
+        except Exception:
+            pass
+
+        self._borderless_applied_v5103 = True
+
+    finally:
+        self._borderless_busy_v5103 = False
+
+
+def _v5103_on_map(self, event=None):
+    if (
+        event is not None
+        and getattr(event, "widget", None) is not self
+    ):
+        return
+
+    # Normal Map events do NOTHING.
+    # Only a real minimize/restore transition may require reapplying borderless.
+    if getattr(self, "_needs_borderless_restore_v5103", False):
+        self._needs_borderless_restore_v5103 = False
+
+        self.after(
+            30,
+            lambda:
+                self.apply_borderless_once_v5103(
+                    force=True
+                ),
+        )
+
+
+def _v5103_minimize(self):
+    self._custom_minimized = True
+    self._needs_borderless_restore_v5103 = True
+
+    # Temporarily restore WM management so the OS can minimize normally.
+    try:
+        self.overrideredirect(False)
+    except Exception:
+        pass
+
+    try:
+        self.iconify()
+    except Exception:
+        # Fallback: hide, then let taskbar/dock restore on platforms that support it.
+        try:
+            self.withdraw()
+        except Exception:
+            pass
+
+
+def _v5103_restore_from_taskbar(self):
+    # Helper for future platform-specific integrations.
+    try:
+        self.deiconify()
+    except Exception:
+        pass
+
+    self._needs_borderless_restore_v5103 = True
+
+
+def _v5103_init(self):
+    self._borderless_applied_v5103 = False
+    self._borderless_busy_v5103 = False
+    self._needs_borderless_restore_v5103 = False
+
+    _V5103_INIT_BASE(self)
+
+    # v5.10.2 installed a Map callback that continuously remapped the window.
+    # Replace it with a guarded callback and apply borderless only once.
+    self.unbind("<Map>")
+    self.bind(
+        "<Map>",
+        self.custom_on_map_v5101,
+        add="+",
+    )
+
+    self.after(
+        10,
+        lambda:
+            self.apply_borderless_once_v5103(
+                force=True
+            ),
+    )
+
+
+OuterClient.apply_borderless_once_v5103 = _v5103_apply_borderless_once
+OuterClient.custom_on_map_v5101 = _v5103_on_map
+OuterClient.custom_minimize_v5101 = _v5103_minimize
+OuterClient.restore_from_taskbar_v5103 = _v5103_restore_from_taskbar
+OuterClient.force_borderless_v5102 = _v5103_apply_borderless_once
+
+OuterClient.__init__ = _v5103_init
 
 
 

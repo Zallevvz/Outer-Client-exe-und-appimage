@@ -1,37 +1,41 @@
-# OuterClient v5.10.2
+# OuterClient v5.10.3
 
-## KDE / Linux title-bar hotfix
+## Fix for dark / flickering window
 
-v5.10.1 could show two bars on KDE:
-1. the native KDE title bar
-2. the new OuterClient custom title bar
+v5.10.2 remapped the root window every time Tk generated a `<Map>` event.
+The remap itself generated another `<Map>` event, creating a loop:
 
-v5.10.2 fixes this by remapping the root window in borderless mode:
-- withdraw
-- overrideredirect(True)
-- remove Tk highlight/border
-- deiconify
-- reapply after mapping
+withdraw -> overrideredirect -> deiconify -> Map -> repeat
 
-On X11/XWayland, OuterClient also tries a `_MOTIF_WM_HINTS`
-fallback through `xprop` to remove KWin decorations.
+Symptoms:
+- dark/dim launcher
+- flickering
+- UI appearing frozen
+- repeated remapping
 
-The custom OuterClient bar remains:
+v5.10.3 removes that loop.
+
+Borderless/custom-titlebar mode is now:
+- applied once after startup
+- reapplied only after an actual minimize/restore transition
+- guarded against re-entrant remaps
+
+The custom title bar from v5.10.1 stays enabled:
 - logo
 - version
 - minimize
 - maximize/restore
 - close
-- dragging
+- window dragging
 - edge/corner resizing
 
-No colored outer border is used.
+No native KDE/Windows title bar and no purple outer border.
 
 ## Build
 
 GitHub Actions:
-`Build and Release OuterClient 5.10.2`
+`Build and Release OuterClient 5.10.3`
 
 Expected:
-- `OuterClient-v5.10.2-x86_64.AppImage`
-- `OuterClient-v5.10.2.exe`
+- `OuterClient-v5.10.3-x86_64.AppImage`
+- `OuterClient-v5.10.3.exe`
