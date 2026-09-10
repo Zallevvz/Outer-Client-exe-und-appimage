@@ -38,7 +38,7 @@ except Exception:
 
 
 APP_NAME = "OuterClient"
-APP_VERSION = "5.8"
+APP_VERSION = "5.10"
 CONFIG_PATH = Path.home() / ".outerclient.json"
 REDIRECT_URI = "http://localhost:8765/callback"
 MICROSOFT_CLIENT_ID = "fb14d1c4-7d14-4a35-99a7-3f921f7a1e77"
@@ -428,17 +428,20 @@ TEXTS = {
         "v57_release": "Release",
         "v57_beta": "Beta",
         "v57_alpha": "Alpha",
-        "v58_update_checking": "Checking for OuterClient updates…",
-        "v58_update_failed": "Could not check for updates: {error}",
-        "v58_latest": "You already have the latest OuterClient version ({version}).",
-        "v58_release_missing": "GitHub did not return any OuterClient release.",
-        "v58_fast_start": "Fast start — using the installed profile files.",
-        "v58_full_prepare": "First launch / profile repair…",
-        "v58_callback_ready": "Microsoft sign-in callback is listening on localhost:8765 (IPv4/IPv6).",
-        "v58_callback_failed": "Could not start the sign-in server on localhost:8765. Close an older OuterClient and try again.",
-        "v58_login_success_page": "Sign-in finished. You can return to OuterClient.",
-        "v58_shortcut_ready": "The desktop shortcut was created with the OuterClient icon.",
-        "v58_startup_optimized": "Fast OuterClient startup is enabled.",
+        "v59_profile_target_hint": "Kliknij, aby wybrać inny profil",
+        "v59_new_profile": "Nowy profil",
+        "v59_modpack_target_meta": "Modpack utworzy osobny profil",
+        "v59_accounts_moved": "Tryb konta i nick Offline są teraz dostępne wyłącznie w zakładce Konta.",
+        "v510_ok": "OK",
+        "v510_yes": "Tak",
+        "v510_no": "Nie",
+        "v510_close": "Zamknij",
+        "v510_info": "Informacja",
+        "v510_warning": "Ostrzeżenie",
+        "v510_error": "Błąd",
+        "v510_question": "Potwierdzenie",
+        "v510_popup_hint": "Enter — potwierdź   •   Esc — zamknij",
+        "v510_window_border": "Nowa ramka okna OuterClient jest aktywna.",
         "v58_update_checking": "Sprawdzanie aktualizacji OuterClient…",
         "v58_update_failed": "Nie udało się sprawdzić aktualizacji: {error}",
         "v58_latest": "Masz najnowszą wersję OuterClient ({version}).",
@@ -835,6 +838,31 @@ TEXTS = {
         "v57_release": "Release",
         "v57_beta": "Beta",
         "v57_alpha": "Alpha",
+        "v58_update_checking": "Checking for OuterClient updates…",
+        "v58_update_failed": "Could not check for updates: {error}",
+        "v58_latest": "You already have the latest OuterClient version ({version}).",
+        "v58_release_missing": "GitHub did not return any OuterClient release.",
+        "v58_fast_start": "Fast start — using the installed profile files.",
+        "v58_full_prepare": "First launch / profile repair…",
+        "v58_callback_ready": "Microsoft sign-in callback is listening on localhost:8765 (IPv4/IPv6).",
+        "v58_callback_failed": "Could not start the sign-in server on localhost:8765. Close an older OuterClient and try again.",
+        "v58_login_success_page": "Sign-in finished. You can return to OuterClient.",
+        "v58_shortcut_ready": "The desktop shortcut was created with the OuterClient icon.",
+        "v58_startup_optimized": "Fast OuterClient startup is enabled.",
+        "v59_profile_target_hint": "Click to choose another profile",
+        "v59_new_profile": "New profile",
+        "v59_modpack_target_meta": "The modpack will create a separate profile",
+        "v59_accounts_moved": "Account type and Offline nickname are now available only on the Accounts page.",
+        "v510_ok": "OK",
+        "v510_yes": "Yes",
+        "v510_no": "No",
+        "v510_close": "Close",
+        "v510_info": "Information",
+        "v510_warning": "Warning",
+        "v510_error": "Error",
+        "v510_question": "Confirmation",
+        "v510_popup_hint": "Enter — confirm   •   Esc — close",
+        "v510_window_border": "The new OuterClient window border is active.",
         "v5_change_profile": "Change profile",
         "v5_previous": "Previous",
         "v5_next": "Next",
@@ -1225,7 +1253,7 @@ class OuterClient(ctk.CTk):
                 try:
                     import ctypes
                     ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(
-                        "OuterClient.Launcher.5.8"
+                        "OuterClient.Launcher.5.10"
                     )
                 except Exception:
                     pass
@@ -23487,6 +23515,1093 @@ OuterClient.show_system_tools_settings = _v58_show_system_tools
 
 def _v5_startup_tasks(self):
     return _v58_startup_tasks(self)
+
+
+
+# ============================================================
+# OuterClient 5.9
+# - account mode / Offline nick only in Accounts
+# - rich inline target-profile selector in Modrinth + CurseForge
+# ============================================================
+
+_V59_SHOW_SETTINGS_BASE = OuterClient.show_settings
+_V59_SHOW_MODRINTH_BASE = OuterClient.show_modrinth
+
+
+def _v59_show_settings(self):
+    _V59_SHOW_SETTINGS_BASE(self)
+
+    pages = self.content.winfo_children()
+    page = pages[0] if pages else None
+    if page is None:
+        return
+
+    account_card = None
+
+    for child in page.winfo_children():
+        try:
+            info = child.grid_info()
+            if int(info.get("row", -1)) == 2:
+                account_card = child
+                break
+        except Exception:
+            pass
+
+    if account_card is not None:
+        for child in list(account_card.winfo_children()):
+            try:
+                info = child.grid_info()
+                row = int(info.get("row", -1))
+
+                # Remove account type, mode buttons and Offline nickname.
+                if row in (0, 1, 2):
+                    child.destroy()
+                elif row == 3:
+                    child.grid_configure(
+                        row=0,
+                        pady=(16, 0),
+                    )
+                elif row == 4:
+                    child.grid_configure(row=1)
+                elif row == 5:
+                    child.grid_configure(
+                        row=2,
+                        pady=(14, 18),
+                    )
+            except Exception:
+                pass
+
+    # General Settings must no longer own or save account state.
+    for attribute in (
+        "settings_mode",
+        "settings_offline",
+        "account_mode_buttons",
+    ):
+        try:
+            delattr(self, attribute)
+        except Exception:
+            pass
+
+
+def _v59_target_profile_icon(self, profile_name, size=42):
+    return self.profile_icon_ctk(
+        profile_name,
+        size,
+    )
+
+
+def _v59_build_target_selector(self):
+    old_button = getattr(
+        self,
+        "modrinth_profile_button",
+        None,
+    )
+
+    if old_button is None:
+        return
+
+    target = old_button.master
+
+    try:
+        old_button.destroy()
+    except Exception:
+        pass
+
+    self.modrinth_target_card = target
+
+    selector = ctk.CTkFrame(
+        target,
+        fg_color=SURFACE_2,
+        corner_radius=12,
+        border_width=1,
+        border_color=BORDER,
+        cursor="hand2",
+    )
+    selector.pack(
+        fill="x",
+        padx=10,
+        pady=(0, 10),
+    )
+    selector.grid_columnconfigure(
+        1,
+        weight=1,
+    )
+
+    self.modrinth_target_selector = selector
+
+    self.modrinth_target_icon = ctk.CTkLabel(
+        selector,
+        text="",
+        width=52,
+        height=52,
+        corner_radius=11,
+        fg_color=SURFACE_3,
+    )
+    self.modrinth_target_icon.grid(
+        row=0,
+        column=0,
+        rowspan=2,
+        padx=(9, 10),
+        pady=9,
+    )
+
+    self.modrinth_target_name = ctk.CTkLabel(
+        selector,
+        text="",
+        text_color=TEXT,
+        anchor="w",
+        font=ctk.CTkFont(
+            size=14,
+            weight="bold",
+        ),
+    )
+    self.modrinth_target_name.grid(
+        row=0,
+        column=1,
+        sticky="sw",
+        pady=(10, 0),
+    )
+
+    self.modrinth_target_meta = ctk.CTkLabel(
+        selector,
+        text="",
+        text_color=MUTED,
+        anchor="w",
+        font=ctk.CTkFont(size=10),
+    )
+    self.modrinth_target_meta.grid(
+        row=1,
+        column=1,
+        sticky="nw",
+        pady=(2, 10),
+    )
+
+    self.modrinth_target_arrow = ctk.CTkButton(
+        selector,
+        text="⌄",
+        width=40,
+        height=40,
+        corner_radius=10,
+        fg_color=SURFACE_3,
+        hover_color=self.accent,
+        command=self.toggle_modrinth_profile_menu_v59,
+    )
+    self.modrinth_target_arrow.grid(
+        row=0,
+        column=2,
+        rowspan=2,
+        padx=(8, 9),
+    )
+
+    # Keep compatibility with old code checking this attribute.
+    self.modrinth_profile_button = self.modrinth_target_arrow
+
+    for widget in (
+        selector,
+        self.modrinth_target_icon,
+        self.modrinth_target_name,
+        self.modrinth_target_meta,
+    ):
+        widget.bind(
+            "<Button-1>",
+            lambda _event:
+                self.toggle_modrinth_profile_menu_v59(),
+        )
+
+    self.modrinth_profile_menu = ctk.CTkFrame(
+        target,
+        fg_color=SURFACE,
+        corner_radius=11,
+        border_width=1,
+        border_color=BORDER,
+    )
+
+    self.update_modrinth_target_ui()
+
+
+def _v59_close_target_menu(self):
+    menu = getattr(
+        self,
+        "modrinth_profile_menu",
+        None,
+    )
+    if menu is None:
+        return
+
+    try:
+        menu.pack_forget()
+    except Exception:
+        pass
+
+
+def _v59_select_target_profile(self, profile_name):
+    if profile_name not in self.cfg["profiles"]:
+        return
+
+    old = self.modrinth_profile.get()
+
+    self.modrinth_profile.set(profile_name)
+    self.update_modrinth_target_ui()
+    self.close_modrinth_profile_menu_v59()
+
+    if profile_name != old:
+        self.search_modrinth()
+
+
+def _v59_toggle_target_menu(self):
+    if self.modrinth_category == "Modpacki":
+        return
+
+    menu = getattr(
+        self,
+        "modrinth_profile_menu",
+        None,
+    )
+    if menu is None:
+        return
+
+    try:
+        visible = bool(menu.winfo_ismapped())
+    except Exception:
+        visible = False
+
+    if visible:
+        self.close_modrinth_profile_menu_v59()
+        return
+
+    for child in menu.winfo_children():
+        child.destroy()
+
+    current = self.modrinth_profile.get()
+
+    for profile_name, profile in self.cfg["profiles"].items():
+        active = profile_name == current
+        icon = self.target_profile_icon_v59(
+            profile_name,
+            34,
+        )
+
+        text = (
+            f"{profile_name}\n"
+            f"Minecraft {profile.get('version','?')} • "
+            f"{profile.get('loader','?')}"
+        )
+
+        button = ctk.CTkButton(
+            menu,
+            text=(("✓  " if active else "   ") + text),
+            image=icon,
+            compound="left",
+            anchor="w",
+            height=58,
+            corner_radius=9,
+            fg_color=(
+                self.accent
+                if active
+                else SURFACE_2
+            ),
+            hover_color=(
+                self.accent_hover
+                if active
+                else SURFACE_3
+            ),
+            border_width=1,
+            border_color=(
+                self.accent
+                if active
+                else BORDER
+            ),
+            command=lambda name=profile_name:
+                self.select_modrinth_target_profile_v59(name),
+        )
+        button._outerclient_profile_icon = icon
+        button.pack(
+            fill="x",
+            padx=7,
+            pady=(7, 0),
+        )
+
+    ctk.CTkLabel(
+        menu,
+        text=self.t("v59_profile_target_hint"),
+        text_color=MUTED,
+        font=ctk.CTkFont(size=9),
+    ).pack(
+        anchor="w",
+        padx=11,
+        pady=(7, 9),
+    )
+
+    menu.pack(
+        fill="x",
+        padx=10,
+        pady=(0, 10),
+    )
+
+
+def _v59_update_target(self):
+    if not hasattr(
+        self,
+        "modrinth_target_name",
+    ):
+        return
+
+    if self.modrinth_category == "Modpacki":
+        self.close_modrinth_profile_menu_v59()
+
+        self.modrinth_target_label.configure(
+            text=self.t("modpack_new_profile")
+        )
+
+        icon = self.target_profile_icon_v59(
+            "__new__",
+            42,
+        )
+        self.modrinth_target_icon._outerclient_profile_icon = icon
+        self.modrinth_target_icon.configure(
+            image=icon,
+            text="",
+        )
+
+        self.modrinth_target_name.configure(
+            text=self.t("v59_new_profile")
+        )
+        self.modrinth_target_meta.configure(
+            text=self.t("v59_modpack_target_meta")
+        )
+
+        self.modrinth_target_arrow.configure(
+            state="disabled",
+            text="+",
+            fg_color=SURFACE_3,
+        )
+
+        self.modrinth_target_selector.configure(
+            border_color=BORDER
+        )
+        return
+
+    self.modrinth_target_label.configure(
+        text=self.t("install_on_profile")
+    )
+
+    self.modrinth_target_arrow.configure(
+        state="normal",
+        text="⌄",
+        fg_color=SURFACE_3,
+    )
+
+    name = self.modrinth_profile.get()
+
+    if name not in self.cfg["profiles"]:
+        name = self.cfg.get("selected")
+
+    if name not in self.cfg["profiles"]:
+        name = next(iter(self.cfg["profiles"]))
+
+    if self.modrinth_profile.get() != name:
+        self.modrinth_profile.set(name)
+
+    profile = self.cfg["profiles"].get(
+        name,
+        {},
+    )
+
+    icon = self.target_profile_icon_v59(
+        name,
+        42,
+    )
+    self.modrinth_target_icon._outerclient_profile_icon = icon
+    self.modrinth_target_icon.configure(
+        image=icon,
+        text="",
+    )
+
+    self.modrinth_target_name.configure(
+        text=name
+    )
+    self.modrinth_target_meta.configure(
+        text=(
+            f"Minecraft {profile.get('version','?')} • "
+            f"{profile.get('loader','?')}"
+        )
+    )
+
+    self.modrinth_target_selector.configure(
+        border_color=self.accent
+    )
+
+
+def _v59_show_modrinth(self):
+    _V59_SHOW_MODRINTH_BASE(self)
+    self.build_modrinth_target_selector_v59()
+
+
+def _v59_set_target_profile(self, profile_name):
+    if profile_name not in self.cfg["profiles"]:
+        return
+
+    self.modrinth_profile.set(profile_name)
+    self.update_modrinth_target_ui()
+    self.close_modrinth_profile_menu_v59()
+
+
+OuterClient.show_settings = _v59_show_settings
+
+OuterClient.target_profile_icon_v59 = _v59_target_profile_icon
+OuterClient.build_modrinth_target_selector_v59 = _v59_build_target_selector
+OuterClient.close_modrinth_profile_menu_v59 = _v59_close_target_menu
+OuterClient.select_modrinth_target_profile_v59 = _v59_select_target_profile
+OuterClient.toggle_modrinth_profile_menu_v59 = _v59_toggle_target_menu
+
+OuterClient.update_modrinth_target_ui = _v59_update_target
+OuterClient.show_modrinth = _v59_show_modrinth
+OuterClient.set_modrinth_target_profile = _v59_set_target_profile
+
+
+
+# ============================================================
+# OuterClient 5.10 — custom dialogs + polished window borders
+# ============================================================
+
+_V510_INIT_BASE = OuterClient.__init__
+
+
+def _v510_apply_root_border(self, focused=True):
+    """Subtle inner border that works without breaking native resize/maximize."""
+    color = (
+        self.accent
+        if focused
+        else BORDER
+    )
+
+    try:
+        self.tk.call(
+            self._w,
+            "configure",
+            "-highlightthickness",
+            1,
+            "-highlightbackground",
+            color,
+            "-highlightcolor",
+            color,
+            "-borderwidth",
+            0,
+        )
+    except Exception:
+        pass
+
+
+def _v510_focus_in(self, _event=None):
+    self.apply_root_border_v510(True)
+
+
+def _v510_focus_out(self, _event=None):
+    self.apply_root_border_v510(False)
+
+
+def _v510_center_popup(self, popup, width, height):
+    self.update_idletasks()
+
+    try:
+        parent_x = self.winfo_rootx()
+        parent_y = self.winfo_rooty()
+        parent_w = self.winfo_width()
+        parent_h = self.winfo_height()
+
+        x = parent_x + max(
+            0,
+            (parent_w - width) // 2,
+        )
+        y = parent_y + max(
+            0,
+            (parent_h - height) // 2,
+        )
+    except Exception:
+        x = 100
+        y = 100
+
+    popup.geometry(
+        f"{width}x{height}+{x}+{y}"
+    )
+
+
+def _v510_popup_style(self, kind):
+    if kind == "error":
+        return {
+            "accent": "#E75A64",
+            "icon": "!",
+            "title": self.t("v510_error"),
+        }
+
+    if kind == "warning":
+        return {
+            "accent": "#E7A24C",
+            "icon": "!",
+            "title": self.t("v510_warning"),
+        }
+
+    if kind == "question":
+        return {
+            "accent": self.accent,
+            "icon": "?",
+            "title": self.t("v510_question"),
+        }
+
+    return {
+        "accent": self.accent,
+        "icon": "i",
+        "title": self.t("v510_info"),
+    }
+
+
+def _v510_animate_popup(self, popup, target=1.0):
+    try:
+        popup.attributes("-alpha", 0.0)
+    except Exception:
+        return
+
+    steps = 7
+
+    def tick(index=0):
+        try:
+            if not popup.winfo_exists():
+                return
+
+            alpha = min(
+                target,
+                (index + 1) / steps,
+            )
+
+            popup.attributes(
+                "-alpha",
+                alpha,
+            )
+
+            if index + 1 < steps:
+                popup.after(
+                    18,
+                    lambda:
+                        tick(index + 1),
+                )
+        except Exception:
+            pass
+
+    tick()
+
+
+def _v510_dialog_mainthread(
+    self,
+    kind,
+    title,
+    message,
+    question=False,
+):
+    style = self.popup_style_v510(
+        "question"
+        if question
+        else kind
+    )
+
+    message = str(
+        message or ""
+    )
+
+    title = str(
+        title
+        or style["title"]
+    )
+
+    lines = message.count("\n") + 1
+    width = 520
+
+    if len(message) > 360:
+        width = 640
+    elif len(message) > 170:
+        width = 575
+
+    height = 245
+
+    if len(message) > 300:
+        height = 330
+    elif len(message) > 130:
+        height = 285
+
+    height += min(
+        120,
+        max(
+            0,
+            lines - 4
+        ) * 16,
+    )
+
+    popup = ctk.CTkToplevel(
+        self
+    )
+    popup.withdraw()
+    popup.overrideredirect(True)
+    popup.configure(
+        fg_color=BG
+    )
+
+    try:
+        popup.transient(self)
+    except Exception:
+        pass
+
+    outer = ctk.CTkFrame(
+        popup,
+        fg_color=BG,
+        corner_radius=18,
+        border_width=2,
+        border_color=style[
+            "accent"
+        ],
+    )
+    outer.pack(
+        fill="both",
+        expand=True,
+        padx=1,
+        pady=1,
+    )
+
+    titlebar = ctk.CTkFrame(
+        outer,
+        height=50,
+        fg_color=SIDEBAR,
+        corner_radius=16,
+    )
+    titlebar.pack(
+        fill="x",
+        padx=5,
+        pady=(5, 0),
+    )
+    titlebar.pack_propagate(
+        False
+    )
+
+    # Small logo / state mark.
+    icon_box = ctk.CTkLabel(
+        titlebar,
+        text=style["icon"],
+        width=30,
+        height=30,
+        corner_radius=9,
+        fg_color=style[
+            "accent"
+        ],
+        text_color="#FFFFFF",
+        font=ctk.CTkFont(
+            size=16,
+            weight="bold",
+        ),
+    )
+    icon_box.pack(
+        side="left",
+        padx=(12, 9),
+        pady=10,
+    )
+
+    title_label = ctk.CTkLabel(
+        titlebar,
+        text=title,
+        text_color=TEXT,
+        font=ctk.CTkFont(
+            size=14,
+            weight="bold",
+        ),
+        anchor="w",
+    )
+    title_label.pack(
+        side="left",
+        fill="x",
+        expand=True,
+        pady=10,
+    )
+
+    result = {
+        "value": False
+        if question
+        else True
+    }
+
+    def close_with(value):
+        result["value"] = value
+
+        try:
+            popup.grab_release()
+        except Exception:
+            pass
+
+        try:
+            popup.destroy()
+        except Exception:
+            pass
+
+    close_button = ctk.CTkButton(
+        titlebar,
+        text="×",
+        width=34,
+        height=30,
+        corner_radius=9,
+        fg_color="transparent",
+        hover_color="#3A2026",
+        text_color=MUTED,
+        font=ctk.CTkFont(
+            size=20,
+            weight="bold",
+        ),
+        command=lambda:
+            close_with(False),
+    )
+    close_button.pack(
+        side="right",
+        padx=10,
+        pady=10,
+    )
+
+    body = ctk.CTkFrame(
+        outer,
+        fg_color="transparent",
+    )
+    body.pack(
+        fill="both",
+        expand=True,
+        padx=22,
+        pady=(20, 8),
+    )
+
+    message_box = ctk.CTkFrame(
+        body,
+        fg_color=SURFACE,
+        corner_radius=13,
+        border_width=1,
+        border_color=BORDER,
+    )
+    message_box.pack(
+        fill="both",
+        expand=True,
+    )
+
+    ctk.CTkLabel(
+        message_box,
+        text=message,
+        text_color=TEXT,
+        justify="left",
+        anchor="nw",
+        wraplength=width - 86,
+        font=ctk.CTkFont(
+            size=13,
+        ),
+    ).pack(
+        fill="both",
+        expand=True,
+        padx=18,
+        pady=17,
+    )
+
+    footer = ctk.CTkFrame(
+        outer,
+        fg_color="transparent",
+    )
+    footer.pack(
+        fill="x",
+        padx=22,
+        pady=(4, 18),
+    )
+
+    ctk.CTkLabel(
+        footer,
+        text=self.t(
+            "v510_popup_hint"
+        ),
+        text_color=MUTED,
+        font=ctk.CTkFont(
+            size=9,
+        ),
+    ).pack(
+        side="left"
+    )
+
+    if question:
+        no_button = ctk.CTkButton(
+            footer,
+            text=self.t(
+                "v510_no"
+            ),
+            width=94,
+            height=38,
+            corner_radius=10,
+            fg_color=SURFACE_3,
+            hover_color="#2B3749",
+            command=lambda:
+                close_with(False),
+        )
+        no_button.pack(
+            side="right"
+        )
+
+        yes_button = ctk.CTkButton(
+            footer,
+            text=self.t(
+                "v510_yes"
+            ),
+            width=94,
+            height=38,
+            corner_radius=10,
+            fg_color=style[
+                "accent"
+            ],
+            hover_color=self.accent_hover,
+            command=lambda:
+                close_with(True),
+        )
+        yes_button.pack(
+            side="right",
+            padx=(0, 8),
+        )
+    else:
+        yes_button = ctk.CTkButton(
+            footer,
+            text=self.t(
+                "v510_ok"
+            ),
+            width=104,
+            height=38,
+            corner_radius=10,
+            fg_color=style[
+                "accent"
+            ],
+            hover_color=self.accent_hover,
+            command=lambda:
+                close_with(True),
+        )
+        yes_button.pack(
+            side="right"
+        )
+
+    # Drag custom popup by its title bar.
+    drag = {
+        "x": 0,
+        "y": 0,
+    }
+
+    def drag_start(event):
+        drag["x"] = event.x_root
+        drag["y"] = event.y_root
+
+    def drag_move(event):
+        try:
+            dx = (
+                event.x_root
+                - drag["x"]
+            )
+            dy = (
+                event.y_root
+                - drag["y"]
+            )
+
+            x = (
+                popup.winfo_x()
+                + dx
+            )
+            y = (
+                popup.winfo_y()
+                + dy
+            )
+
+            popup.geometry(
+                f"+{x}+{y}"
+            )
+
+            drag["x"] = event.x_root
+            drag["y"] = event.y_root
+        except Exception:
+            pass
+
+    for widget in (
+        titlebar,
+        title_label,
+        icon_box,
+    ):
+        widget.bind(
+            "<ButtonPress-1>",
+            drag_start,
+        )
+        widget.bind(
+            "<B1-Motion>",
+            drag_move,
+        )
+
+    popup.bind(
+        "<Escape>",
+        lambda _event:
+            close_with(False),
+    )
+    popup.bind(
+        "<Return>",
+        lambda _event:
+            close_with(True),
+    )
+
+    self.center_popup_v510(
+        popup,
+        width,
+        height,
+    )
+
+    popup.deiconify()
+    popup.lift()
+
+    try:
+        popup.grab_set()
+    except Exception:
+        pass
+
+    try:
+        popup.focus_force()
+    except Exception:
+        pass
+
+    self.animate_popup_v510(
+        popup
+    )
+
+    popup.wait_window()
+
+    return result["value"]
+
+
+def _v510_custom_dialog(
+    self,
+    kind,
+    title,
+    message,
+    question=False,
+):
+    # messagebox calls normally happen on the Tk thread. Keep a safe fallback
+    # for worker threads so they never create Tk widgets directly.
+    if threading.current_thread() is threading.main_thread():
+        return self.dialog_mainthread_v510(
+            kind,
+            title,
+            message,
+            question,
+        )
+
+    done = threading.Event()
+    output = {
+        "value": False
+        if question
+        else True
+    }
+
+    def show():
+        try:
+            output["value"] = (
+                self.dialog_mainthread_v510(
+                    kind,
+                    title,
+                    message,
+                    question,
+                )
+            )
+        finally:
+            done.set()
+
+    self.after(
+        0,
+        show,
+    )
+
+    done.wait(
+        timeout=120
+    )
+
+    return output[
+        "value"
+    ]
+
+
+def _v510_install_dialog_hooks(self):
+    # Existing code can keep using messagebox.*;
+    # all four calls are redirected to OuterClient-styled windows.
+    messagebox.showinfo = (
+        lambda title, message, **_kwargs:
+            self.custom_dialog_v510(
+                "info",
+                title,
+                message,
+                False,
+            )
+    )
+
+    messagebox.showwarning = (
+        lambda title, message, **_kwargs:
+            self.custom_dialog_v510(
+                "warning",
+                title,
+                message,
+                False,
+            )
+    )
+
+    messagebox.showerror = (
+        lambda title, message, **_kwargs:
+            self.custom_dialog_v510(
+                "error",
+                title,
+                message,
+                False,
+            )
+    )
+
+    messagebox.askyesno = (
+        lambda title, message, **_kwargs:
+            self.custom_dialog_v510(
+                "question",
+                title,
+                message,
+                True,
+            )
+    )
+
+
+def _v510_init(self):
+    _V510_INIT_BASE(
+        self
+    )
+
+    self.apply_root_border_v510(
+        True
+    )
+
+    self.bind(
+        "<FocusIn>",
+        self.root_focus_in_v510,
+        add="+",
+    )
+    self.bind(
+        "<FocusOut>",
+        self.root_focus_out_v510,
+        add="+",
+    )
+
+    self.install_dialog_hooks_v510()
+
+
+OuterClient.apply_root_border_v510 = _v510_apply_root_border
+OuterClient.root_focus_in_v510 = _v510_focus_in
+OuterClient.root_focus_out_v510 = _v510_focus_out
+
+OuterClient.center_popup_v510 = _v510_center_popup
+OuterClient.popup_style_v510 = _v510_popup_style
+OuterClient.animate_popup_v510 = _v510_animate_popup
+OuterClient.dialog_mainthread_v510 = _v510_dialog_mainthread
+OuterClient.custom_dialog_v510 = _v510_custom_dialog
+OuterClient.install_dialog_hooks_v510 = _v510_install_dialog_hooks
+
+OuterClient.__init__ = _v510_init
 
 
 
