@@ -1,53 +1,54 @@
-# OuterClient v5.6
+# OuterClient v5.7
 
-## Offline account
-The Microsoft Accounts page now includes an Offline Account card.
+## Desktop shortcut icon
 
-You can:
-- edit the Offline nickname at any time,
-- press Save nickname,
-- press Enter in the nickname field,
-- switch to Offline and immediately edit the nickname.
+This fixes the icon of the **desktop shortcut itself**.
 
-Offline nickname validation:
-- 3–16 characters
-- letters, numbers and `_`
+### Linux / KDE Plasma
+OuterClient now:
+- detects the localized desktop directory with `xdg-user-dir DESKTOP`,
+- installs its icon into the user's `hicolor` icon theme,
+- uses `Icon=outerclient` in the `.desktop` file,
+- creates/updates the application entry in `~/.local/share/applications`,
+- refreshes KDE / desktop icon caches when the required utilities are available.
 
-The sidebar/account card refreshes immediately after saving.
+This also supports Polish desktop folders such as `~/Pulpit`.
 
-## CurseForge API
-The CurseForge API Key field has been removed from Settings.
+### Windows
+The `.lnk` shortcut explicitly uses the packaged:
+`outerclient.ico`
 
-OuterClient no longer reads CurseForge credentials from `~/.outerclient.json`.
+## CurseForge
 
-For public GitHub builds the key is injected at build time from:
+CurseForge now supports the same main content tabs as Modrinth:
+- Mods
+- Resource packs
+- Shaders
+- Datapacks
+- Modpacks
 
-`GitHub Actions Secret: CURSEFORGE_API_KEY`
+The search uses Minecraft CurseForge classes for each content type.
 
-The secret itself is NOT stored in:
-- outerclient.py
-- build-binaries.yml
-- the repository
+Every CurseForge result also has an `⌄` button next to Install.
+It loads recent compatible CurseForge files and lets the user install a specific version.
 
-### One-time GitHub setup
-Repository:
-Settings → Secrets and variables → Actions → New repository secret
+### Installation destinations
+- Mods → `mods/`
+- Resource packs → `resourcepacks/`
+- Shaders → `shaderpacks/`
+- Datapacks → selected world's `datapacks/`
+- Modpacks → create a new OuterClient profile
 
-Name:
-`CURSEFORGE_API_KEY`
-
-Paste your CurseForge key as the value.
-
-Then run:
-`Build and Release OuterClient 5.6`
-
-The workflow creates a temporary `outerclient_build_secrets.py`,
-bundles it into AppImage/EXE and does not require the user to enter a key.
-
-For local source development you may instead set:
-`OUTERCLIENT_CURSEFORGE_API_KEY`
+CurseForge modpacks parse `manifest.json`, create a profile using the pack's Minecraft
+version and primary mod loader, download listed projects and apply the pack overrides.
 
 ## Build
+GitHub Actions:
+`Build and Release OuterClient 5.7`
+
 Expected assets:
-- `OuterClient-v5.6-x86_64.AppImage`
-- `OuterClient-v5.6.exe`
+- `OuterClient-v5.7-x86_64.AppImage`
+- `OuterClient-v5.7.exe`
+
+The CurseForge key is still injected through the GitHub Actions secret:
+`CURSEFORGE_API_KEY`

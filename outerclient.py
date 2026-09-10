@@ -37,7 +37,7 @@ except Exception:
 
 
 APP_NAME = "OuterClient"
-APP_VERSION = "5.6"
+APP_VERSION = "5.7"
 CONFIG_PATH = Path.home() / ".outerclient.json"
 REDIRECT_URI = "http://localhost:8765/callback"
 MICROSOFT_CLIENT_ID = "fb14d1c4-7d14-4a35-99a7-3f921f7a1e77"
@@ -402,6 +402,20 @@ TEXTS = {
         "v56_switch_offline": "Użyj trybu Offline",
         "v56_curseforge_builtin": "CurseForge API jest wbudowane w tę kompilację OuterClient.",
         "v56_curseforge_not_built": "CurseForge API nie jest skonfigurowane w tej kompilacji. Dodaj GitHub Actions Secret CURSEFORGE_API_KEY i zbuduj launcher ponownie.",
+        "v57_cf_resources": "Resource packi z CurseForge",
+        "v57_cf_shaders": "Shadery z CurseForge",
+        "v57_cf_datapacks": "Datapacki z CurseForge",
+        "v57_cf_modpacks": "Modpacki z CurseForge",
+        "v57_cf_versions": "Wersje CurseForge",
+        "v57_cf_loading_versions": "Ładowanie wersji z CurseForge…",
+        "v57_cf_no_version": "Brak zgodnej wersji CurseForge.",
+        "v57_cf_modpack_manifest": "Nie znaleziono poprawnego manifest.json w modpacku CurseForge.",
+        "v57_cf_modpack_installed": "Modpack CurseForge {title} utworzył profil {profile}.",
+        "v57_shortcut_icon_fixed": "Ikona skrótu na pulpicie została odświeżona.",
+        "v57_shortcut_icon_desc": "Linux/KDE używa teraz ikony OuterClient z lokalnego motywu ikon. Windows używa pliku outerclient.ico.",
+        "v57_release": "Release",
+        "v57_beta": "Beta",
+        "v57_alpha": "Alpha",
         "v5_change_profile": "Zmień profil",
         "v5_previous": "Poprzedni",
         "v5_next": "Następny",
@@ -773,6 +787,20 @@ TEXTS = {
         "v56_switch_offline": "Use Offline mode",
         "v56_curseforge_builtin": "CurseForge API is built into this OuterClient build.",
         "v56_curseforge_not_built": "CurseForge API is not configured in this build. Add the GitHub Actions secret CURSEFORGE_API_KEY and rebuild the launcher.",
+        "v57_cf_resources": "CurseForge resource packs",
+        "v57_cf_shaders": "CurseForge shaders",
+        "v57_cf_datapacks": "CurseForge datapacks",
+        "v57_cf_modpacks": "CurseForge modpacks",
+        "v57_cf_versions": "CurseForge versions",
+        "v57_cf_loading_versions": "Loading CurseForge versions…",
+        "v57_cf_no_version": "No compatible CurseForge version was found.",
+        "v57_cf_modpack_manifest": "A valid manifest.json was not found in the CurseForge modpack.",
+        "v57_cf_modpack_installed": "CurseForge modpack {title} created profile {profile}.",
+        "v57_shortcut_icon_fixed": "The desktop shortcut icon was refreshed.",
+        "v57_shortcut_icon_desc": "Linux/KDE now uses the OuterClient icon from the local icon theme. Windows uses outerclient.ico.",
+        "v57_release": "Release",
+        "v57_beta": "Beta",
+        "v57_alpha": "Alpha",
         "v5_change_profile": "Change profile",
         "v5_previous": "Previous",
         "v5_next": "Next",
@@ -1163,7 +1191,7 @@ class OuterClient(ctk.CTk):
                 try:
                     import ctypes
                     ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(
-                        "OuterClient.Launcher.5.6"
+                        "OuterClient.Launcher.5.7"
                     )
                 except Exception:
                     pass
@@ -7000,6 +7028,8 @@ def _v5_process_events(self):
                 if request_id==self.modrinth_request_generation: self.render_modrinth_results(category,hits)
             elif kind=="modrinth_versions":
                 self.render_modrinth_version_panel(value)
+            elif kind=="curseforge_versions":
+                self.render_curseforge_version_panel(value)
             elif kind=="project_icon_pil":
                 widget,pil,url=value
                 try:
@@ -19745,6 +19775,2662 @@ OuterClient.open_account_manager = _v56_show_accounts_page
 
 def _v5_startup_tasks(self):
     return _v56_startup_tasks(self)
+
+
+
+# ============================================================
+# OuterClient 5.7 — desktop icon + full CurseForge categories
+# ============================================================
+
+CF_CLASS_IDS_V57 = {
+    "Mody": 6,
+    "Resource packi": 12,
+    "Shadery": 6552,
+    "Datapacki": 6945,
+    "Modpacki": 4471,
+}
+
+CF_DESTINATIONS_V57 = {
+    "Mody": "mods",
+    "Resource packi": "resourcepacks",
+    "Shadery": "shaderpacks",
+}
+
+
+def _v57_desktop_dir(self):
+    if sys.platform.startswith("win"):
+        return (
+            Path(
+                os.environ.get(
+                    "USERPROFILE",
+                    str(Path.home()),
+                )
+            )
+            / "Desktop"
+        )
+
+    # Respect localized XDG folders, e.g. ~/Pulpit on a Polish KDE install.
+    try:
+        result = subprocess.run(
+            ["xdg-user-dir", "DESKTOP"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+            text=True,
+            timeout=4,
+        )
+        value = result.stdout.strip()
+
+        if value:
+            return Path(value)
+    except Exception:
+        pass
+
+    for candidate in (
+        Path.home() / "Pulpit",
+        Path.home() / "Desktop",
+    ):
+        if candidate.exists():
+            return candidate
+
+    return Path.home() / "Desktop"
+
+
+def _v57_install_linux_icon_theme(self):
+    source = asset_path(
+        "assets",
+        "outerclient-logo.png",
+    )
+
+    if not Path(source).exists():
+        raise RuntimeError(
+            "Brak assets/outerclient-logo.png"
+        )
+
+    icon_root = (
+        Path.home()
+        / ".local"
+        / "share"
+        / "icons"
+        / "hicolor"
+    )
+
+    original = Image.open(
+        source
+    ).convert("RGBA")
+
+    written = []
+
+    for size in (
+        48,
+        64,
+        128,
+        256,
+        512,
+    ):
+        target_dir = (
+            icon_root
+            / f"{size}x{size}"
+            / "apps"
+        )
+        target_dir.mkdir(
+            parents=True,
+            exist_ok=True,
+        )
+
+        target = (
+            target_dir
+            / "outerclient.png"
+        )
+
+        image = original.copy()
+        image.thumbnail(
+            (size, size),
+            Image.Resampling.LANCZOS,
+        )
+
+        canvas = Image.new(
+            "RGBA",
+            (size, size),
+            (0, 0, 0, 0),
+        )
+
+        x = (
+            size - image.width
+        ) // 2
+        y = (
+            size - image.height
+        ) // 2
+
+        canvas.alpha_composite(
+            image,
+            (x, y),
+        )
+        canvas.save(
+            target,
+            "PNG",
+        )
+
+        written.append(
+            target
+        )
+
+    # A direct fallback copy is useful for desktop environments that do not
+    # immediately refresh their icon-theme index.
+    fallback = (
+        Path.home()
+        / ".local"
+        / "share"
+        / "icons"
+        / "outerclient.png"
+    )
+    fallback.parent.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+    shutil.copy2(
+        source,
+        fallback,
+    )
+
+    return written
+
+
+def _v57_refresh_linux_desktop_cache(self):
+    commands = []
+
+    if shutil.which(
+        "update-desktop-database"
+    ):
+        commands.append([
+            "update-desktop-database",
+            str(
+                Path.home()
+                / ".local"
+                / "share"
+                / "applications"
+            ),
+        ])
+
+    if shutil.which(
+        "gtk-update-icon-cache"
+    ):
+        commands.append([
+            "gtk-update-icon-cache",
+            "-f",
+            "-t",
+            str(
+                Path.home()
+                / ".local"
+                / "share"
+                / "icons"
+                / "hicolor"
+            ),
+        ])
+
+    if shutil.which(
+        "kbuildsycoca6"
+    ):
+        commands.append([
+            "kbuildsycoca6",
+            "--noincremental",
+        ])
+    elif shutil.which(
+        "kbuildsycoca5"
+    ):
+        commands.append([
+            "kbuildsycoca5",
+            "--noincremental",
+        ])
+
+    for command in commands:
+        try:
+            subprocess.run(
+                command,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                timeout=15,
+            )
+        except Exception:
+            pass
+
+
+def _v57_write_shortcut(self):
+    root = self.managed_install_dir()
+    root.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+
+    target = self.managed_executable()
+    current = self.current_outerclient_package()
+
+    if current is not None:
+        try:
+            same = (
+                current.resolve()
+                == target.resolve()
+            )
+        except Exception:
+            same = False
+
+        if not same:
+            temp = target.with_suffix(
+                target.suffix + ".new"
+            )
+            shutil.copy2(
+                current,
+                temp,
+            )
+
+            if not sys.platform.startswith(
+                "win"
+            ):
+                os.chmod(
+                    temp,
+                    0o755,
+                )
+
+            os.replace(
+                temp,
+                target,
+            )
+
+    if not target.exists():
+        raise RuntimeError(
+            "Uruchom tę funkcję z AppImage lub EXE."
+        )
+
+    if sys.platform.startswith(
+        "win"
+    ):
+        icons = self.copy_shortcut_assets_v55()
+        desktop = self.desktop_directory_v57()
+        desktop.mkdir(
+            parents=True,
+            exist_ok=True,
+        )
+
+        shortcut = (
+            desktop
+            / "OuterClient.lnk"
+        )
+
+        target_q = str(
+            target
+        ).replace(
+            "'",
+            "''",
+        )
+        shortcut_q = str(
+            shortcut
+        ).replace(
+            "'",
+            "''",
+        )
+        root_q = str(
+            root
+        ).replace(
+            "'",
+            "''",
+        )
+        icon_q = str(
+            icons["ico"]
+        ).replace(
+            "'",
+            "''",
+        )
+
+        powershell = (
+            "$ws=New-Object -ComObject WScript.Shell;"
+            f"$s=$ws.CreateShortcut('{shortcut_q}');"
+            f"$s.TargetPath='{target_q}';"
+            f"$s.WorkingDirectory='{root_q}';"
+            f"$s.IconLocation='{icon_q},0';"
+            "$s.Description='OuterClient Minecraft Launcher';"
+            "$s.Save();"
+        )
+
+        subprocess.run(
+            [
+                "powershell",
+                "-NoProfile",
+                "-ExecutionPolicy",
+                "Bypass",
+                "-Command",
+                powershell,
+            ],
+            check=True,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+
+        try:
+            subprocess.run(
+                [
+                    "ie4uinit.exe",
+                    "-show",
+                ],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                timeout=5,
+            )
+        except Exception:
+            pass
+
+    else:
+        self.install_linux_icon_theme_v57()
+
+        desktop = self.desktop_directory_v57()
+        desktop.mkdir(
+            parents=True,
+            exist_ok=True,
+        )
+
+        applications = (
+            Path.home()
+            / ".local"
+            / "share"
+            / "applications"
+        )
+        applications.mkdir(
+            parents=True,
+            exist_ok=True,
+        )
+
+        content = f"""[Desktop Entry]
+Type=Application
+Version=1.0
+Name=OuterClient
+Comment=OuterClient Minecraft Launcher
+Exec={target}
+TryExec={target}
+Icon=outerclient
+Categories=Game;
+Terminal=false
+StartupNotify=true
+StartupWMClass=OuterClient
+X-KDE-StartupNotify=true
+"""
+
+        app_entry = (
+            applications
+            / "outerclient.desktop"
+        )
+        desktop_entry = (
+            desktop
+            / "OuterClient.desktop"
+        )
+
+        app_entry.write_text(
+            content,
+            encoding="utf-8",
+        )
+        desktop_entry.write_text(
+            content,
+            encoding="utf-8",
+        )
+
+        os.chmod(
+            app_entry,
+            0o755,
+        )
+        os.chmod(
+            desktop_entry,
+            0o755,
+        )
+        os.chmod(
+            target,
+            0o755,
+        )
+
+        # Mark the desktop launcher trusted where supported.
+        if shutil.which("gio"):
+            try:
+                subprocess.run(
+                    [
+                        "gio",
+                        "set",
+                        str(
+                            desktop_entry
+                        ),
+                        "metadata::trusted",
+                        "true",
+                    ],
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                    timeout=5,
+                )
+            except Exception:
+                pass
+
+        self.refresh_linux_desktop_cache_v57()
+
+    self.cfg[
+        "desktop_shortcut"
+    ] = True
+    self.cfg[
+        "managed_version"
+    ] = APP_VERSION
+
+    save_config(
+        self.cfg
+    )
+
+    self.events.put(
+        (
+            "status",
+            self.t(
+                "v57_shortcut_icon_fixed"
+            ),
+        )
+    )
+
+    return True
+
+
+def _v57_remove_shortcut(self):
+    try:
+        desktop = self.desktop_directory_v57()
+
+        if sys.platform.startswith(
+            "win"
+        ):
+            (
+                desktop
+                / "OuterClient.lnk"
+            ).unlink(
+                missing_ok=True
+            )
+        else:
+            (
+                desktop
+                / "OuterClient.desktop"
+            ).unlink(
+                missing_ok=True
+            )
+
+            (
+                Path.home()
+                / ".local"
+                / "share"
+                / "applications"
+                / "outerclient.desktop"
+            ).unlink(
+                missing_ok=True
+            )
+
+            self.refresh_linux_desktop_cache_v57()
+
+        self.cfg[
+            "desktop_shortcut"
+        ] = False
+        save_config(
+            self.cfg
+        )
+
+        self.set_status(
+            self.t(
+                "v54_shortcut_removed"
+            )
+        )
+
+    except Exception as exc:
+        messagebox.showerror(
+            "OuterClient",
+            str(exc),
+        )
+
+
+# ---------------- CurseForge categories ----------------
+
+def _v57_cf_class_id(
+    self,
+    category,
+):
+    return CF_CLASS_IDS_V57.get(
+        category,
+        6,
+    )
+
+
+def _v57_switch_content_source(
+    self,
+    source,
+):
+    self.content_source = source
+
+    for name, button in (
+        self.source_buttons.items()
+    ):
+        active = (
+            name == source
+        )
+
+        button.configure(
+            fg_color=(
+                self.accent
+                if active
+                else SURFACE
+            ),
+            hover_color=(
+                self.accent_hover
+                if active
+                else SURFACE_3
+            ),
+            border_color=(
+                self.accent
+                if active
+                else BORDER
+            ),
+        )
+
+    # All content tabs are available on both sources.
+    for button in (
+        self.modrinth_tab_buttons.values()
+    ):
+        button.configure(
+            state="normal"
+        )
+
+    self.modrinth_subtitle.configure(
+        text=self.modrinth_category_subtitle(
+            self.modrinth_category
+        )
+    )
+
+    self.update_modrinth_target_ui()
+    self.search_modrinth()
+
+
+def _v57_switch_content_tab(
+    self,
+    name,
+):
+    self.modrinth_category = name
+
+    if hasattr(
+        self,
+        "modrinth_query",
+    ):
+        self.modrinth_query.set(
+            ""
+        )
+
+    self.modrinth_subtitle.configure(
+        text=self.modrinth_category_subtitle(
+            name
+        )
+    )
+
+    for tab_name, button in (
+        self.modrinth_tab_buttons.items()
+    ):
+        active = (
+            tab_name == name
+        )
+
+        button.configure(
+            state="normal",
+            fg_color=(
+                self.accent
+                if active
+                else SURFACE
+            ),
+            hover_color=(
+                self.accent_hover
+                if active
+                else SURFACE_3
+            ),
+            border_color=(
+                self.accent
+                if active
+                else BORDER
+            ),
+        )
+
+    self.update_modrinth_target_ui()
+    self.search_modrinth()
+
+
+def _v57_fetch_curseforge(
+    self,
+    query,
+    request_id,
+    cache_key,
+):
+    try:
+        headers = self.curseforge_headers()
+
+        if not headers:
+            self.events.put(
+                (
+                    "curseforge_error",
+                    self.t(
+                        "curseforge_key_missing"
+                    ),
+                )
+            )
+            return
+
+        category = (
+            cache_key[1]
+            if len(cache_key) > 1
+            else self.modrinth_category
+        )
+
+        class_id = self.curseforge_class_id_v57(
+            category
+        )
+
+        profile_name = (
+            self.modrinth_profile.get()
+            if hasattr(
+                self,
+                "modrinth_profile",
+            )
+            else self.cfg.get(
+                "selected"
+            )
+        )
+
+        profile = self.cfg[
+            "profiles"
+        ].get(
+            profile_name,
+            {},
+        )
+
+        params = {
+            "gameId": 432,
+            "classId": class_id,
+            "pageSize": 24,
+            "sortField": 2,
+            "sortOrder": "desc",
+        }
+
+        # Modpacks create a new profile, so do not tie their search to
+        # the currently selected profile.
+        if (
+            category != "Modpacki"
+            and profile.get(
+                "version"
+            )
+        ):
+            params[
+                "gameVersion"
+            ] = profile[
+                "version"
+            ]
+
+        # Loader filtering only makes sense for actual mods.
+        if category == "Mody":
+            loader_type = (
+                self.curseforge_loader_type(
+                    profile.get(
+                        "loader",
+                        "Vanilla",
+                    )
+                )
+            )
+
+            if loader_type:
+                params[
+                    "modLoaderType"
+                ] = loader_type
+
+        if query:
+            params[
+                "searchFilter"
+            ] = query
+
+        response = requests.get(
+            "https://api.curseforge.com/v1/mods/search",
+            params=params,
+            headers=headers,
+            timeout=25,
+        )
+        response.raise_for_status()
+
+        hits = []
+
+        for mod in response.json().get(
+            "data",
+            [],
+        ):
+            authors = (
+                mod.get("authors")
+                or []
+            )
+            logo = (
+                mod.get("logo")
+                or {}
+            )
+
+            hits.append({
+                "_source": "curseforge",
+                "_category": category,
+                "cf_class_id":
+                    mod.get(
+                        "classId",
+                        class_id,
+                    ),
+                "cf_mod_id":
+                    mod.get("id"),
+                "title":
+                    mod.get("name")
+                    or mod.get("slug")
+                    or self.t(
+                        "unnamed"
+                    ),
+                "slug":
+                    mod.get("slug")
+                    or "",
+                "author":
+                    authors[0].get(
+                        "name"
+                    )
+                    if authors
+                    else self.t(
+                        "unknown_author"
+                    ),
+                "description":
+                    mod.get("summary")
+                    or self.t(
+                        "no_description"
+                    ),
+                "downloads":
+                    mod.get(
+                        "downloadCount",
+                        0,
+                    ),
+                "icon_url":
+                    logo.get(
+                        "thumbnailUrl"
+                    )
+                    or logo.get(
+                        "url"
+                    ),
+                "website_url":
+                    (
+                        mod.get(
+                            "links"
+                        )
+                        or {}
+                    ).get(
+                        "websiteUrl"
+                    ),
+                "allowModDistribution":
+                    mod.get(
+                        "allowModDistribution"
+                    ),
+                "isAvailable":
+                    mod.get(
+                        "isAvailable",
+                        False,
+                    ),
+            })
+
+        self.modrinth_search_cache[
+            cache_key
+        ] = (
+            time.time(),
+            hits,
+        )
+
+        self.events.put(
+            (
+                "modrinth_fast_results",
+                (
+                    request_id,
+                    category,
+                    hits,
+                ),
+            )
+        )
+
+    except Exception as exc:
+        self.events.put(
+            (
+                "curseforge_error",
+                str(exc),
+            )
+        )
+
+
+def _v57_cf_get_file(
+    self,
+    mod_id,
+    file_id,
+):
+    response = requests.get(
+        (
+            "https://api.curseforge.com/v1/"
+            f"mods/{mod_id}/files/{file_id}"
+        ),
+        headers=self.curseforge_headers(),
+        timeout=25,
+    )
+    response.raise_for_status()
+    return (
+        response.json().get(
+            "data",
+            {},
+        )
+    )
+
+
+def _v57_cf_files(
+    self,
+    mod_id,
+    category,
+    mc_version=None,
+    loader=None,
+):
+    params = {
+        "pageSize": 50,
+    }
+
+    if (
+        category != "Modpacki"
+        and mc_version
+    ):
+        params[
+            "gameVersion"
+        ] = mc_version
+
+    if (
+        category == "Mody"
+        and loader
+    ):
+        loader_type = (
+            self.curseforge_loader_type(
+                loader
+            )
+        )
+
+        if loader_type:
+            params[
+                "modLoaderType"
+            ] = loader_type
+
+    response = requests.get(
+        (
+            "https://api.curseforge.com/v1/"
+            f"mods/{mod_id}/files"
+        ),
+        headers=self.curseforge_headers(),
+        params=params,
+        timeout=25,
+    )
+    response.raise_for_status()
+
+    files = [
+        item
+        for item in (
+            response.json().get(
+                "data",
+                [],
+            )
+        )
+        if item.get(
+            "isAvailable",
+            True,
+        )
+    ]
+
+    release_rank = {
+        1: 3,
+        2: 2,
+        3: 1,
+    }
+
+    files.sort(
+        key=lambda item: (
+            release_rank.get(
+                item.get(
+                    "releaseType"
+                ),
+                0,
+            ),
+            str(
+                item.get(
+                    "fileDate",
+                    "",
+                )
+            ),
+        ),
+        reverse=True,
+    )
+
+    return files
+
+
+def _v57_fetch_cf_versions(
+    self,
+    panel,
+    hit,
+    category,
+    install_button,
+):
+    try:
+        profile_name = (
+            self.modrinth_profile.get()
+            if hasattr(
+                self,
+                "modrinth_profile",
+            )
+            else self.cfg.get(
+                "selected"
+            )
+        )
+
+        profile = self.cfg[
+            "profiles"
+        ].get(
+            profile_name,
+            {},
+        )
+
+        files = self.curseforge_files_v57(
+            hit.get(
+                "cf_mod_id"
+            ),
+            category,
+            (
+                None
+                if category
+                == "Modpacki"
+                else profile.get(
+                    "version"
+                )
+            ),
+            (
+                profile.get(
+                    "loader"
+                )
+                if category
+                == "Mody"
+                else None
+            ),
+        )
+
+        self.events.put(
+            (
+                "curseforge_versions",
+                (
+                    panel,
+                    hit,
+                    category,
+                    install_button,
+                    files[:12],
+                ),
+            )
+        )
+
+    except Exception as exc:
+        self.events.put(
+            (
+                "curseforge_versions",
+                (
+                    panel,
+                    hit,
+                    category,
+                    install_button,
+                    [],
+                    str(exc),
+                ),
+            )
+        )
+
+
+def _v57_render_cf_versions(
+    self,
+    payload,
+):
+    (
+        panel,
+        hit,
+        category,
+        install_button,
+        files,
+        *rest
+    ) = payload
+
+    try:
+        if not panel.winfo_exists():
+            return
+    except Exception:
+        return
+
+    for child in panel.winfo_children():
+        child.destroy()
+
+    error = (
+        rest[0]
+        if rest
+        else None
+    )
+
+    if error:
+        ctk.CTkLabel(
+            panel,
+            text=error,
+            text_color="#FF9DAA",
+            justify="left",
+        ).pack(
+            anchor="w",
+            padx=14,
+            pady=12,
+        )
+        return
+
+    if not files:
+        ctk.CTkLabel(
+            panel,
+            text=self.t(
+                "v57_cf_no_version"
+            ),
+            text_color=MUTED,
+        ).pack(
+            anchor="w",
+            padx=14,
+            pady=12,
+        )
+        return
+
+    ctk.CTkLabel(
+        panel,
+        text=self.t(
+            "v57_cf_versions"
+        ),
+        text_color=MUTED,
+        font=ctk.CTkFont(
+            size=10,
+            weight="bold",
+        ),
+    ).pack(
+        anchor="w",
+        padx=14,
+        pady=(11, 6),
+    )
+
+    wrap = ctk.CTkFrame(
+        panel,
+        fg_color="transparent",
+    )
+    wrap.pack(
+        fill="x",
+        padx=10,
+        pady=(0, 10),
+    )
+
+    type_names = {
+        1: self.t(
+            "v57_release"
+        ),
+        2: self.t(
+            "v57_beta"
+        ),
+        3: self.t(
+            "v57_alpha"
+        ),
+    }
+
+    for index, file_info in enumerate(
+        files
+    ):
+        name = (
+            file_info.get(
+                "displayName"
+            )
+            or file_info.get(
+                "fileName"
+            )
+            or "?"
+        )
+
+        date = str(
+            file_info.get(
+                "fileDate"
+            )
+            or ""
+        )[:10]
+
+        release = type_names.get(
+            file_info.get(
+                "releaseType"
+            ),
+            "",
+        )
+
+        versions = [
+            value
+            for value in (
+                file_info.get(
+                    "gameVersions"
+                )
+                or []
+            )
+            if re.match(
+                r"^\d",
+                str(value),
+            )
+        ][:3]
+
+        suffix = (
+            " • "
+            + ", ".join(
+                map(str, versions)
+            )
+            if versions
+            else ""
+        )
+
+        text = (
+            f"{name}  •  "
+            f"{release}  •  "
+            f"{date}{suffix}"
+        )
+
+        ctk.CTkButton(
+            wrap,
+            text=text,
+            height=34,
+            anchor="w",
+            fg_color=(
+                self.accent
+                if index == 0
+                else SURFACE_3
+            ),
+            hover_color=self.accent_hover,
+            command=lambda f=file_info: (
+                panel.destroy(),
+                self.enqueue_curseforge_install(
+                    hit,
+                    install_button,
+                    category,
+                    selected_file=f,
+                ),
+            ),
+        ).pack(
+            fill="x",
+            pady=2,
+        )
+
+
+def _v57_toggle_cf_versions(
+    self,
+    card,
+    hit,
+    category,
+    install_button,
+):
+    old = getattr(
+        card,
+        "_outerclient_cf_versions",
+        None,
+    )
+
+    if old is not None:
+        try:
+            if old.winfo_exists():
+                old.destroy()
+                card._outerclient_cf_versions = None
+                return
+        except Exception:
+            pass
+
+    panel = ctk.CTkFrame(
+        card,
+        fg_color=SURFACE_2,
+        corner_radius=11,
+    )
+    panel.grid(
+        row=3,
+        column=0,
+        columnspan=3,
+        sticky="ew",
+        padx=14,
+        pady=(0, 14),
+    )
+
+    card._outerclient_cf_versions = panel
+
+    ctk.CTkLabel(
+        panel,
+        text=self.t(
+            "v57_cf_loading_versions"
+        ),
+        text_color=MUTED,
+    ).pack(
+        anchor="w",
+        padx=14,
+        pady=12,
+    )
+
+    self.run_bg(
+        lambda:
+            self.fetch_curseforge_versions_v57(
+                panel,
+                hit,
+                category,
+                install_button,
+            )
+    )
+
+
+def _v57_content_card(
+    self,
+    row,
+    hit,
+    category,
+):
+    card = self.card(
+        self.modrinth_results
+    )
+    card.grid(
+        row=row,
+        column=0,
+        sticky="ew",
+        padx=8,
+        pady=6,
+    )
+    card.grid_columnconfigure(
+        1,
+        weight=1,
+    )
+
+    icon = ctk.CTkLabel(
+        card,
+        text="◇",
+        width=64,
+        height=64,
+        corner_radius=13,
+        fg_color=SURFACE_2,
+        text_color=MUTED,
+        font=ctk.CTkFont(
+            size=23,
+            weight="bold",
+        ),
+    )
+    icon.grid(
+        row=0,
+        column=0,
+        rowspan=3,
+        padx=(15, 13),
+        pady=15,
+    )
+
+    if hit.get(
+        "icon_url"
+    ):
+        self.run_bg(
+            lambda u=hit[
+                "icon_url"
+            ], w=icon:
+                self.fetch_project_icon(
+                    u,
+                    w,
+                )
+        )
+
+    title = (
+        hit.get("title")
+        or hit.get("slug")
+        or self.t(
+            "unnamed"
+        )
+    )
+    author = (
+        hit.get("author")
+        or self.t(
+            "unknown_author"
+        )
+    )
+    desc = (
+        hit.get("description")
+        or self.t(
+            "no_description"
+        )
+    )
+
+    downloads = hit.get(
+        "downloads",
+        0,
+    )
+
+    ctk.CTkLabel(
+        card,
+        text=title,
+        text_color=TEXT,
+        anchor="w",
+        font=ctk.CTkFont(
+            size=16,
+            weight="bold",
+        ),
+    ).grid(
+        row=0,
+        column=1,
+        sticky="sw",
+        pady=(13, 0),
+    )
+
+    ctk.CTkLabel(
+        card,
+        text=(
+            f"{author}  •  "
+            + self.t(
+                "downloads",
+                count=f"{downloads:,}".replace(
+                    ",",
+                    " ",
+                ),
+            )
+        ),
+        text_color=MUTED,
+        anchor="w",
+        font=ctk.CTkFont(
+            size=11,
+        ),
+    ).grid(
+        row=1,
+        column=1,
+        sticky="w",
+        pady=(2, 0),
+    )
+
+    ctk.CTkLabel(
+        card,
+        text=desc,
+        text_color="#A8B3C2",
+        anchor="w",
+        justify="left",
+        wraplength=570,
+    ).grid(
+        row=2,
+        column=1,
+        sticky="nw",
+        pady=(4, 13),
+    )
+
+    actions = ctk.CTkFrame(
+        card,
+        fg_color="transparent",
+    )
+    actions.grid(
+        row=0,
+        column=2,
+        rowspan=3,
+        padx=14,
+    )
+
+    install_row = ctk.CTkFrame(
+        actions,
+        fg_color="transparent",
+    )
+    install_row.pack(
+        pady=(0, 5),
+    )
+
+    install = ctk.CTkButton(
+        install_row,
+        text=(
+            self.t(
+                "install_pack"
+            )
+            if category
+            == "Modpacki"
+            else self.t(
+                "install"
+            )
+        ),
+        width=92,
+        height=36,
+        fg_color=self.accent,
+        hover_color=self.accent_hover,
+    )
+    install.pack(
+        side="left"
+    )
+
+    if hit.get(
+        "_source"
+    ) == "curseforge":
+        install.configure(
+            command=lambda h=hit, b=install, c=category:
+                self.enqueue_curseforge_install(
+                    h,
+                    b,
+                    c,
+                )
+        )
+
+        ctk.CTkButton(
+            install_row,
+            text="⌄",
+            width=32,
+            height=36,
+            fg_color=self.accent,
+            hover_color=self.accent_hover,
+            command=lambda c=card, h=hit, cat=category, b=install:
+                self.toggle_curseforge_versions_v57(
+                    c,
+                    h,
+                    cat,
+                    b,
+                ),
+        ).pack(
+            side="left",
+            padx=(3, 0),
+        )
+
+    else:
+        install.configure(
+            command=lambda h=hit, c=category, b=install:
+                self.enqueue_modrinth_install(
+                    h,
+                    c,
+                    b,
+                )
+        )
+
+        if category != "Modpacki":
+            ctk.CTkButton(
+                install_row,
+                text="⌄",
+                width=32,
+                height=36,
+                fg_color=self.accent,
+                hover_color=self.accent_hover,
+                command=lambda c=card, h=hit, cat=category, b=install:
+                    self.toggle_modrinth_versions(
+                        c,
+                        h,
+                        cat,
+                        b,
+                    ),
+            ).pack(
+                side="left",
+                padx=(3, 0),
+            )
+
+    ctk.CTkButton(
+        actions,
+        text=self.t(
+            "v54_details"
+        ),
+        width=127,
+        height=34,
+        fg_color=SURFACE_3,
+        hover_color=self.accent,
+        command=lambda h=hit, c=category:
+            self.show_project_details(
+                h,
+                c,
+            ),
+    ).pack(
+        pady=(0, 5),
+    )
+
+    ctk.CTkButton(
+        actions,
+        text=(
+            "★"
+            if self.is_favorite(
+                hit
+            )
+            else "☆"
+        ),
+        width=127,
+        height=32,
+        fg_color=SURFACE_3,
+        hover_color=self.accent,
+        command=lambda h=hit, c=category:
+            self.toggle_favorite(
+                h,
+                c,
+            ),
+    ).pack()
+
+
+# ---------------- CurseForge installs ----------------
+
+def _v57_enqueue_cf(
+    self,
+    hit,
+    button,
+    category=None,
+    selected_file=None,
+):
+    category = (
+        category
+        or hit.get(
+            "_category"
+        )
+        or self.modrinth_category
+        or "Mody"
+    )
+
+    profile_name = None
+    world_dir = None
+
+    if category != "Modpacki":
+        profile_name = (
+            self.modrinth_profile.get()
+        )
+
+        if profile_name not in self.cfg[
+            "profiles"
+        ]:
+            messagebox.showwarning(
+                "CurseForge",
+                self.t(
+                    "choose_profile_warning"
+                ),
+            )
+            return
+
+    if category == "Datapacki":
+        saves = (
+            self.profile_instance_dir(
+                profile_name
+            )
+            / "saves"
+        )
+
+        if not saves.exists():
+            messagebox.showinfo(
+                self.t(
+                    "datapack"
+                ),
+                self.t(
+                    "create_world_first"
+                ),
+            )
+            return
+
+        selected = filedialog.askdirectory(
+            title=self.t(
+                "choose_world"
+            ),
+            initialdir=str(
+                saves
+            ),
+        )
+
+        if not selected:
+            return
+
+        world_dir = Path(
+            selected
+        )
+
+    if not hit.get(
+        "isAvailable",
+        False,
+    ):
+        messagebox.showerror(
+            "CurseForge",
+            self.t(
+                "curseforge_unavailable"
+            ),
+        )
+        return
+
+    if hit.get(
+        "allowModDistribution"
+    ) is False:
+        messagebox.showerror(
+            "CurseForge",
+            self.t(
+                "curseforge_distribution_blocked"
+            ),
+        )
+        return
+
+    title = (
+        hit.get("title")
+        or hit.get("slug")
+        or self.t(
+            "project"
+        )
+    )
+
+    button.configure(
+        text=self.t(
+            "queued"
+        ),
+        state="disabled",
+    )
+
+    self.download_queue.put({
+        "source": "curseforge",
+        "hit": dict(hit),
+        "category": category,
+        "profile_name": profile_name,
+        "button": button,
+        "world_dir": world_dir,
+        "title": title,
+        "selected_cf_file":
+            selected_file,
+    })
+
+    self.events.put(
+        (
+            "download_bar",
+            {
+                "text":
+                    self.t(
+                        "queued_title",
+                        title=title,
+                    ),
+                "progress":
+                    self.download_progress_var.get(),
+                "queue":
+                    self.download_queue.qsize(),
+                "remaining": None,
+            },
+        )
+    )
+
+    start_worker = False
+
+    with self.download_worker_lock:
+        if not self.download_worker_running:
+            self.download_worker_running = True
+            start_worker = True
+
+    if start_worker:
+        self.run_bg(
+            self.download_queue_worker
+        )
+
+
+def _v57_cf_dependency_plan(
+    self,
+    mod_id,
+    mc_version,
+    loader,
+    seen,
+    selected_file=None,
+):
+    if mod_id in seen:
+        return []
+
+    seen.add(
+        mod_id
+    )
+
+    mod = self.curseforge_get_mod(
+        mod_id
+    )
+
+    if not mod.get(
+        "isAvailable",
+        False,
+    ):
+        raise RuntimeError(
+            self.t(
+                "curseforge_unavailable"
+            )
+        )
+
+    if mod.get(
+        "allowModDistribution"
+    ) is False:
+        raise RuntimeError(
+            self.t(
+                "curseforge_distribution_blocked"
+            )
+        )
+
+    if selected_file is None:
+        files = self.curseforge_files_v57(
+            mod_id,
+            "Mody",
+            mc_version,
+            loader,
+        )
+
+        if not files:
+            raise RuntimeError(
+                self.t(
+                    "curseforge_no_file"
+                )
+            )
+
+        file_info = files[0]
+    else:
+        file_info = selected_file
+
+    plan = []
+
+    for dep in (
+        file_info.get(
+            "dependencies"
+        )
+        or []
+    ):
+        # 3 = required dependency.
+        if dep.get(
+            "relationType"
+        ) != 3:
+            continue
+
+        dep_id = dep.get(
+            "modId"
+        )
+
+        if not dep_id:
+            continue
+
+        plan.extend(
+            self.resolve_curseforge_plan_v57(
+                dep_id,
+                mc_version,
+                loader,
+                seen,
+            )
+        )
+
+    plan.append(
+        (
+            mod,
+            file_info,
+        )
+    )
+
+    return plan
+
+
+def _v57_cf_destination(
+    self,
+    profile_name,
+    category,
+    world_dir=None,
+):
+    if category == "Datapacki":
+        return (
+            Path(
+                world_dir
+            )
+            / "datapacks"
+        )
+
+    folder = CF_DESTINATIONS_V57.get(
+        category
+    )
+
+    if not folder:
+        raise RuntimeError(
+            f"Unsupported CurseForge category: {category}"
+        )
+
+    return (
+        self.profile_instance_dir(
+            profile_name
+        )
+        / folder
+    )
+
+
+def _v57_install_cf_content(
+    self,
+    job,
+):
+    category = job.get(
+        "category",
+        "Mody",
+    )
+
+    if category == "Modpacki":
+        return self.install_curseforge_modpack_v57(
+            job
+        )
+
+    profile_name = job[
+        "profile_name"
+    ]
+    profile = self.cfg[
+        "profiles"
+    ][profile_name]
+
+    hit = job[
+        "hit"
+    ]
+
+    mod_id = hit.get(
+        "cf_mod_id"
+    )
+
+    selected_file = job.get(
+        "selected_cf_file"
+    )
+
+    if category == "Mody":
+        plan = self.resolve_curseforge_plan_v57(
+            mod_id,
+            profile[
+                "version"
+            ],
+            profile[
+                "loader"
+            ],
+            set(),
+            selected_file,
+        )
+    else:
+        mod = self.curseforge_get_mod(
+            mod_id
+        )
+
+        if mod.get(
+            "allowModDistribution"
+        ) is False:
+            raise RuntimeError(
+                self.t(
+                    "curseforge_distribution_blocked"
+                )
+            )
+
+        if selected_file is None:
+            files = self.curseforge_files_v57(
+                mod_id,
+                category,
+                profile[
+                    "version"
+                ],
+                None,
+            )
+
+            if not files:
+                raise RuntimeError(
+                    self.t(
+                        "curseforge_no_file"
+                    )
+                )
+
+            selected_file = files[
+                0
+            ]
+
+        plan = [
+            (
+                mod,
+                selected_file,
+            )
+        ]
+
+    destination = self.curseforge_destination_v57(
+        profile_name,
+        category,
+        job.get(
+            "world_dir"
+        ),
+    )
+    destination.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+
+    total = max(
+        1,
+        len(plan),
+    )
+
+    for index, (
+        mod,
+        file_info,
+    ) in enumerate(
+        plan
+    ):
+        url = self.curseforge_download_url(
+            mod[
+                "id"
+            ],
+            file_info,
+        )
+
+        if not url:
+            raise RuntimeError(
+                self.t(
+                    "curseforge_no_file"
+                )
+            )
+
+        filename = (
+            file_info.get(
+                "fileName"
+            )
+            or f"{mod['id']}.zip"
+        )
+
+        target = (
+            destination
+            / filename
+        )
+
+        def progress(
+            ratio,
+            _filename,
+            pos=index,
+            count=total,
+            title=mod.get(
+                "name",
+                filename,
+            ),
+        ):
+            self.queue_bar_event(
+                (
+                    f"CurseForge • "
+                    f"{title} • "
+                    f"{filename}"
+                ),
+                (
+                    pos + ratio
+                )
+                / count,
+                count
+                - pos
+                - (
+                    1
+                    if ratio >= 1
+                    else 0
+                ),
+            )
+
+        self.stream_download(
+            url,
+            target,
+            self.curseforge_hashes(
+                file_info
+            ),
+            progress,
+        )
+
+        self.record_installed_content(
+            profile_name,
+            target,
+            {
+                "source":
+                    "CurseForge",
+                "cf_mod_id":
+                    mod.get(
+                        "id"
+                    ),
+                "file_id":
+                    file_info.get(
+                        "id"
+                    ),
+                "version_number":
+                    file_info.get(
+                        "displayName"
+                    )
+                    or file_info.get(
+                        "fileName"
+                    ),
+                "title":
+                    mod.get(
+                        "name"
+                    )
+                    or hit.get(
+                        "title"
+                    )
+                    or target.stem,
+                "author":
+                    (
+                        (
+                            mod.get(
+                                "authors"
+                            )
+                            or [{}]
+                        )[0].get(
+                            "name",
+                            "",
+                        )
+                    ),
+                "icon_url":
+                    (
+                        mod.get(
+                            "logo"
+                        )
+                        or {}
+                    ).get(
+                        "thumbnailUrl"
+                    )
+                    or hit.get(
+                        "icon_url"
+                    ),
+                "website_url":
+                    (
+                        mod.get(
+                            "links"
+                        )
+                        or {}
+                    ).get(
+                        "websiteUrl"
+                    )
+                    or hit.get(
+                        "website_url"
+                    ),
+                "category":
+                    category,
+            },
+        )
+
+    self.events.put(
+        (
+            "modrinth_done",
+            (
+                job[
+                    "button"
+                ],
+                job[
+                    "title"
+                ],
+                profile_name,
+                len(
+                    plan
+                ),
+            ),
+        )
+    )
+
+
+def _v57_parse_cf_loader(
+    self,
+    manifest,
+):
+    minecraft = (
+        manifest.get(
+            "minecraft"
+        )
+        or {}
+    )
+
+    mc_version = minecraft.get(
+        "version"
+    )
+
+    loaders = minecraft.get(
+        "modLoaders"
+    ) or []
+
+    primary = next(
+        (
+            item
+            for item in loaders
+            if item.get(
+                "primary"
+            )
+        ),
+        loaders[0]
+        if loaders
+        else None,
+    )
+
+    loader = "Vanilla"
+    loader_version = None
+
+    if primary:
+        loader_id = str(
+            primary.get(
+                "id",
+                "",
+            )
+        )
+
+        lowered = loader_id.casefold()
+
+        mappings = (
+            (
+                "fabric-",
+                "Fabric",
+            ),
+            (
+                "forge-",
+                "Forge",
+            ),
+            (
+                "neoforge-",
+                "NeoForge",
+            ),
+            (
+                "quilt-",
+                "Quilt",
+            ),
+        )
+
+        for prefix, name in mappings:
+            if lowered.startswith(
+                prefix
+            ):
+                loader = name
+                loader_version = (
+                    loader_id[
+                        len(
+                            prefix
+                        ):
+                    ]
+                )
+                break
+
+    return (
+        mc_version,
+        loader,
+        loader_version,
+    )
+
+
+def _v57_extract_cf_overrides(
+    self,
+    archive,
+    instance,
+    override_dir,
+):
+    prefix = str(
+        override_dir
+        or "overrides"
+    ).strip(
+        "/\\"
+    )
+
+    if not prefix:
+        return 0
+
+    prefix = (
+        prefix.replace(
+            "\\",
+            "/",
+        ).rstrip(
+            "/"
+        )
+        + "/"
+    )
+
+    count = 0
+
+    for member in archive.infolist():
+        name = member.filename.replace(
+            "\\",
+            "/",
+        )
+
+        if (
+            member.is_dir()
+            or not name.startswith(
+                prefix
+            )
+        ):
+            continue
+
+        relative = name[
+            len(prefix):
+        ]
+
+        if not relative:
+            continue
+
+        target = safe_child(
+            instance,
+            relative,
+        )
+        target.parent.mkdir(
+            parents=True,
+            exist_ok=True,
+        )
+
+        with archive.open(
+            member,
+            "r",
+        ) as source, target.open(
+            "wb"
+        ) as output:
+            shutil.copyfileobj(
+                source,
+                output,
+            )
+
+        count += 1
+
+    return count
+
+
+def _v57_install_cf_modpack(
+    self,
+    job,
+):
+    hit = job[
+        "hit"
+    ]
+    mod_id = hit.get(
+        "cf_mod_id"
+    )
+
+    selected = job.get(
+        "selected_cf_file"
+    )
+
+    if selected is None:
+        files = self.curseforge_files_v57(
+            mod_id,
+            "Modpacki",
+            None,
+            None,
+        )
+
+        if not files:
+            raise RuntimeError(
+                self.t(
+                    "curseforge_no_file"
+                )
+            )
+
+        selected = files[
+            0
+        ]
+
+    url = self.curseforge_download_url(
+        mod_id,
+        selected,
+    )
+
+    if not url:
+        raise RuntimeError(
+            self.t(
+                "curseforge_no_file"
+            )
+        )
+
+    with tempfile.TemporaryDirectory(
+        prefix="outerclient-cfpack-"
+    ) as temp_dir:
+        temp_dir = Path(
+            temp_dir
+        )
+
+        archive_path = (
+            temp_dir
+            / (
+                selected.get(
+                    "fileName"
+                )
+                or "modpack.zip"
+            )
+        )
+
+        self.stream_download(
+            url,
+            archive_path,
+            self.curseforge_hashes(
+                selected
+            ),
+            lambda ratio, filename:
+                self.queue_bar_event(
+                    (
+                        f"CurseForge • "
+                        f"{job['title']} • "
+                        f"{filename}"
+                    ),
+                    ratio * 0.15,
+                    None,
+                ),
+        )
+
+        with zipfile.ZipFile(
+            archive_path,
+            "r",
+        ) as archive:
+            try:
+                manifest = json.loads(
+                    archive.read(
+                        "manifest.json"
+                    ).decode(
+                        "utf-8",
+                        errors="replace",
+                    )
+                )
+            except Exception as exc:
+                raise RuntimeError(
+                    self.t(
+                        "v57_cf_modpack_manifest"
+                    )
+                ) from exc
+
+            mc_version, loader, loader_version = (
+                self.parse_curseforge_modpack_loader_v57(
+                    manifest
+                )
+            )
+
+            if not mc_version:
+                raise RuntimeError(
+                    self.t(
+                        "modpack_no_mc_version"
+                    )
+                )
+
+            profile_name = (
+                self.unique_profile_name(
+                    hit.get(
+                        "title"
+                    )
+                    or manifest.get(
+                        "name"
+                    )
+                    or "CurseForge Pack"
+                )
+            )
+
+            self.cfg[
+                "profiles"
+            ][profile_name] = {
+                "version":
+                    mc_version,
+                "loader":
+                    loader,
+                "loader_version":
+                    loader_version,
+                "preset":
+                    "Balanced",
+                "ram":
+                    0,
+            }
+            self.cfg[
+                "selected"
+            ] = profile_name
+            save_config(
+                self.cfg
+            )
+
+            instance = (
+                self.profile_instance_dir(
+                    profile_name
+                )
+            )
+            instance.mkdir(
+                parents=True,
+                exist_ok=True,
+            )
+
+            if hit.get(
+                "icon_url"
+            ):
+                self.save_profile_icon_from_url(
+                    profile_name,
+                    hit[
+                        "icon_url"
+                    ],
+                )
+            else:
+                self.ensure_default_profile_icon(
+                    profile_name
+                )
+
+            entries = (
+                manifest.get(
+                    "files"
+                )
+                or []
+            )
+
+            total = max(
+                1,
+                len(entries),
+            )
+
+            for index, entry in enumerate(
+                entries
+            ):
+                project_id = entry.get(
+                    "projectID"
+                )
+                file_id = entry.get(
+                    "fileID"
+                )
+
+                if not project_id or not file_id:
+                    continue
+
+                mod = self.curseforge_get_mod(
+                    project_id
+                )
+
+                if (
+                    mod.get(
+                        "allowModDistribution"
+                    )
+                    is False
+                ):
+                    if entry.get(
+                        "required",
+                        True,
+                    ):
+                        raise RuntimeError(
+                            (
+                                mod.get(
+                                    "name"
+                                )
+                                or str(
+                                    project_id
+                                )
+                            )
+                            + ": "
+                            + self.t(
+                                "curseforge_distribution_blocked"
+                            )
+                        )
+                    continue
+
+                file_info = self.curseforge_get_file_v57(
+                    project_id,
+                    file_id,
+                )
+
+                download = self.curseforge_download_url(
+                    project_id,
+                    file_info,
+                )
+
+                if not download:
+                    if entry.get(
+                        "required",
+                        True,
+                    ):
+                        raise RuntimeError(
+                            self.t(
+                                "curseforge_no_file"
+                            )
+                        )
+                    continue
+
+                class_id = mod.get(
+                    "classId",
+                    6,
+                )
+
+                folder = {
+                    6: "mods",
+                    12: "resourcepacks",
+                    6552: "shaderpacks",
+                }.get(
+                    class_id,
+                    "mods",
+                )
+
+                destination = (
+                    instance
+                    / folder
+                )
+                destination.mkdir(
+                    parents=True,
+                    exist_ok=True,
+                )
+
+                filename = (
+                    file_info.get(
+                        "fileName"
+                    )
+                    or f"{project_id}-{file_id}.jar"
+                )
+
+                target = (
+                    destination
+                    / filename
+                )
+
+                def progress(
+                    ratio,
+                    _filename,
+                    pos=index,
+                    count=total,
+                    title=mod.get(
+                        "name",
+                        filename,
+                    ),
+                ):
+                    self.queue_bar_event(
+                        (
+                            f"CurseForge Pack • "
+                            f"{title}"
+                        ),
+                        0.15
+                        + 0.75
+                        * (
+                            (
+                                pos
+                                + ratio
+                            )
+                            / count
+                        ),
+                        count
+                        - pos
+                        - (
+                            1
+                            if ratio >= 1
+                            else 0
+                        ),
+                    )
+
+                self.stream_download(
+                    download,
+                    target,
+                    self.curseforge_hashes(
+                        file_info
+                    ),
+                    progress,
+                )
+
+                self.record_installed_content(
+                    profile_name,
+                    target,
+                    {
+                        "source":
+                            "CurseForge",
+                        "cf_mod_id":
+                            project_id,
+                        "file_id":
+                            file_id,
+                        "version_number":
+                            file_info.get(
+                                "displayName"
+                            )
+                            or file_info.get(
+                                "fileName"
+                            ),
+                        "title":
+                            mod.get(
+                                "name"
+                            )
+                            or target.stem,
+                        "category":
+                            (
+                                "Mody"
+                                if folder
+                                == "mods"
+                                else (
+                                    "Resource packi"
+                                    if folder
+                                    == "resourcepacks"
+                                    else "Shadery"
+                                )
+                            ),
+                        "website_url":
+                            (
+                                mod.get(
+                                    "links"
+                                )
+                                or {}
+                            ).get(
+                                "websiteUrl"
+                            ),
+                    },
+                )
+
+            self.extract_curseforge_overrides_v57(
+                archive,
+                instance,
+                manifest.get(
+                    "overrides",
+                    "overrides",
+                ),
+            )
+
+    self.queue_bar_event(
+        (
+            f"CurseForge Pack • "
+            f"{job['title']}"
+        ),
+        1.0,
+        0,
+    )
+
+    self.events.put(
+        (
+            "modpack_done",
+            (
+                job[
+                    "button"
+                ],
+                job[
+                    "title"
+                ],
+                profile_name,
+                len(
+                    entries
+                ),
+            ),
+        )
+    )
+
+
+# Bind 5.7.
+OuterClient.desktop_directory_v57 = _v57_desktop_dir
+OuterClient.install_linux_icon_theme_v57 = _v57_install_linux_icon_theme
+OuterClient.refresh_linux_desktop_cache_v57 = _v57_refresh_linux_desktop_cache
+OuterClient.write_outerclient_shortcut = _v57_write_shortcut
+OuterClient.remove_desktop_shortcut = _v57_remove_shortcut
+
+OuterClient.curseforge_class_id_v57 = _v57_cf_class_id
+OuterClient.switch_content_source = _v57_switch_content_source
+OuterClient.switch_modrinth_tab = _v57_switch_content_tab
+OuterClient.fetch_curseforge_mods_fast = _v57_fetch_curseforge
+
+OuterClient.curseforge_get_file_v57 = _v57_cf_get_file
+OuterClient.curseforge_files_v57 = _v57_cf_files
+OuterClient.fetch_curseforge_versions_v57 = _v57_fetch_cf_versions
+OuterClient.render_curseforge_version_panel = _v57_render_cf_versions
+OuterClient.toggle_curseforge_versions_v57 = _v57_toggle_cf_versions
+OuterClient.modrinth_card = _v57_content_card
+
+OuterClient.enqueue_curseforge_install = _v57_enqueue_cf
+OuterClient.resolve_curseforge_plan_v57 = _v57_cf_dependency_plan
+OuterClient.curseforge_destination_v57 = _v57_cf_destination
+OuterClient.install_curseforge_job = _v57_install_cf_content
+
+OuterClient.parse_curseforge_modpack_loader_v57 = _v57_parse_cf_loader
+OuterClient.extract_curseforge_overrides_v57 = _v57_extract_cf_overrides
+OuterClient.install_curseforge_modpack_v57 = _v57_install_cf_modpack
 
 
 
