@@ -38,7 +38,7 @@ except Exception:
 
 
 APP_NAME = "OuterClient"
-APP_VERSION = "6.3"
+APP_VERSION = "6.3.1"
 CONFIG_PATH = Path.home() / ".outerclient.json"
 REDIRECT_URI = "http://localhost:8765/callback"
 MICROSOFT_CLIENT_ID = "fb14d1c4-7d14-4a35-99a7-3f921f7a1e77"
@@ -590,6 +590,14 @@ TEXTS = {
         "v63_manager_empty": "Brak elementów w tej kategorii.",
         "v63_snapshot_creating": "Tworzenie snapshotu profilu…",
         "v63_snapshot_created": "Utworzono snapshot: {name}",
+        "v631_whats_new_eyebrow": "OUTERCLIENT 6.3.1",
+        "v631_whats_new_title": "OuterClient 6.3.1",
+        "v631_whats_new_date": "Wrzesień 2026",
+        "v631_change_titlebar": "Naprawiono podwójny pasek okna na Linuxie/KDE — customowy pasek nie jest już dublowany przez dekorację systemową.",
+        "v631_change_explore_profile": "Naprawiono wybór profilu w „Instaluj na profilu” — rozwijana lista jest prawdziwym overlayem nad interfejsem.",
+        "v631_change_windows_console": "Minecraft na Windowsie uruchamia się bez wyskakującego okna terminala.",
+        "v631_change_settings": "Usunięto pole Discord Application ID z ustawień ogólnych.",
+        "v631_change_taskbar_card": "Panel „Pasek zadań / dock” ma stały wiersz i przewija się normalnie zamiast nakładać się na pozostałe ustawienia.",
         "v58_update_checking": "Sprawdzanie aktualizacji OuterClient…",
         "v58_update_failed": "Nie udało się sprawdzić aktualizacji: {error}",
         "v58_latest": "Masz najnowszą wersję OuterClient ({version}).",
@@ -1159,6 +1167,14 @@ TEXTS = {
         "v63_manager_empty": "There are no items in this category.",
         "v63_snapshot_creating": "Creating profile snapshot…",
         "v63_snapshot_created": "Created snapshot: {name}",
+        "v631_whats_new_eyebrow": "OUTERCLIENT 6.3.1",
+        "v631_whats_new_title": "OuterClient 6.3.1",
+        "v631_whats_new_date": "September 2026",
+        "v631_change_titlebar": "Fixed the duplicated Linux/KDE title bar — the custom bar is no longer stacked under native decorations.",
+        "v631_change_explore_profile": "Fixed the Install to profile selector — the profile list is now a real overlay above the interface.",
+        "v631_change_windows_console": "Minecraft now launches on Windows without opening a terminal window.",
+        "v631_change_settings": "Removed the raw Discord Application ID field from General Settings.",
+        "v631_change_taskbar_card": "The Taskbar / dock card now has a fixed layout row and scrolls normally instead of overlapping other settings.",
         "v5_change_profile": "Change profile",
         "v5_previous": "Previous",
         "v5_next": "Next",
@@ -1549,7 +1565,7 @@ class OuterClient(ctk.CTk):
                 try:
                     import ctypes
                     ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(
-                        "OuterClient.Launcher.6.3"
+                        "OuterClient.Launcher.6.3.1"
                     )
                 except Exception:
                     pass
@@ -7134,12 +7150,8 @@ def _v5_delete_managed(self, entry):
 def _v5_show_settings(self):
     self.settings_auto_java=ctk.BooleanVar(value=bool(self.cfg.get("auto_java",True)))
     self.settings_auto_updates=ctk.BooleanVar(value=bool(self.cfg.get("auto_check_updates",True)))
-    self.settings_discord=ctk.StringVar(value=self.cfg.get("discord_client_id",""))
     _V49_SHOW_SETTINGS(self)
-    # Discord ID belongs to advanced options.
-    if hasattr(self,"advanced_client_frame"):
-        self.settings_field(self.advanced_client_frame,1,self.t("v5_discord_id"),self.settings_discord)
-        self.toggle_advanced_settings_ui()
+    # Discord Application ID is intentionally not exposed in General Settings.
     pages=self.content.winfo_children(); page=pages[0] if pages else None
     if page is None: return
     tools=self.card(page); tools.grid(row=4,column=0,sticky="ew",padx=36,pady=(0,16)); tools.grid_columnconfigure(0,weight=1)
@@ -19134,15 +19146,34 @@ def _v55_launch_installed(
         pass
 
     creationflags = 0
+    startupinfo = None
 
     if sys.platform.startswith(
         "win"
     ):
-        creationflags = getattr(
-            subprocess,
-            "CREATE_NEW_PROCESS_GROUP",
-            0,
+        creationflags = (
+            getattr(
+                subprocess,
+                "CREATE_NEW_PROCESS_GROUP",
+                0,
+            )
+            | getattr(
+                subprocess,
+                "CREATE_NO_WINDOW",
+                0x08000000,
+            )
         )
+
+        try:
+            startupinfo = subprocess.STARTUPINFO()
+            startupinfo.dwFlags |= getattr(
+                subprocess,
+                "STARTF_USESHOWWINDOW",
+                1,
+            )
+            startupinfo.wShowWindow = 0
+        except Exception:
+            startupinfo = None
 
     process = subprocess.Popen(
         command,
@@ -19152,6 +19183,7 @@ def _v55_launch_installed(
         env=env,
         shell=False,
         creationflags=creationflags,
+        startupinfo=startupinfo,
     )
 
     self.minecraft_process = process
@@ -31585,7 +31617,7 @@ def _v63_fix2_set_active_page(self, page):
         except Exception:
             pass
 
-    return _V63_FIX2_SET_ACTIVE_PAGE_BASE(self, page)
+    return _v63_fix2_set_active_page(self, page)
 
 
 def _v63_fix2_render_modrinth_results(self, category, hits):
@@ -31620,6 +31652,582 @@ def _v63_fix2_render_modrinth_page(self):
 OuterClient.set_active_page = _v63_fix2_set_active_page
 OuterClient.render_modrinth_results = _v63_fix2_render_modrinth_results
 OuterClient.render_modrinth_page = _v63_fix2_render_modrinth_page
+
+
+
+# ============================================================
+# OuterClient 6.3.1
+# - one managed custom title bar on Linux/KDE
+# - working Explore target profile overlay
+# - no Discord Application ID in General Settings
+# - non-overlapping taskbar/dock settings card
+# - hidden Windows Minecraft console
+# ============================================================
+
+_V631_SHOW_SETTINGS_BASE = OuterClient.show_settings
+_V631_SAVE_SETTINGS_BASE = OuterClient.save_settings
+_V631_INIT_BASE = OuterClient.__init__
+_V631_WHATS_NEW_BASE = OuterClient.show_whats_new_v61
+
+
+def _v631_show_settings(self):
+    # The old Discord field is no longer created by _v5_show_settings.
+    _V631_SHOW_SETTINGS_BASE(self)
+
+    # Defensive cleanup for configs/UI created by an older path.
+    try:
+        delattr(self, "settings_discord")
+    except Exception:
+        pass
+
+
+def _v631_save_settings(self):
+    _V631_SAVE_SETTINGS_BASE(self)
+
+    # Do not keep a user-editable raw Discord Application ID anymore.
+    if "discord_client_id" in self.cfg:
+        self.cfg.pop("discord_client_id", None)
+        save_config(self.cfg)
+
+
+def _v631_show_system_tools(self):
+    # Build Java Manager / updates / shortcut using the last stable base.
+    # The page returned by self.page() is scrollable.
+    _V63_SYSTEM_TOOLS_BASE(self)
+
+    pages = self.content.winfo_children()
+    page = pages[0] if pages else None
+    if page is None:
+        return
+
+    # IMPORTANT: base cards occupy rows 2, 3 and 4.
+    # Do not inspect CTkScrollableFrame.winfo_children() to guess the next row:
+    # its internal canvas can make that calculation unreliable and caused the
+    # taskbar card to overlap the shortcut card.
+    card = self.card(page, 14)
+    card.grid(
+        row=5,
+        column=0,
+        sticky="ew",
+        padx=36,
+        pady=(0, 24),
+    )
+
+    ctk.CTkLabel(
+        card,
+        text=self.t("v62_taskbar_title"),
+        text_color=TEXT,
+        font=ctk.CTkFont(size=19, weight="bold"),
+    ).pack(anchor="w", padx=20, pady=(16, 3))
+
+    ctk.CTkLabel(
+        card,
+        text=self.t("v62_taskbar_desc"),
+        text_color=MUTED,
+        anchor="w",
+        justify="left",
+        wraplength=850,
+    ).pack(anchor="w", padx=20, pady=(0, 12))
+
+    buttons = ctk.CTkFrame(card, fg_color="transparent")
+    buttons.pack(fill="x", padx=20, pady=(0, 16))
+
+    ctk.CTkButton(
+        buttons,
+        text=self.t("v62_taskbar_add"),
+        fg_color=self.accent,
+        hover_color=self.accent_hover,
+        command=self.start_taskbar_pin_v63,
+    ).pack(side="left")
+
+    ctk.CTkButton(
+        buttons,
+        text=self.t("v62_taskbar_open_apps"),
+        fg_color=SURFACE_3,
+        hover_color=self.accent,
+        command=self.open_app_location_v62,
+    ).pack(side="left", padx=8)
+
+    # Lazy Java scan from v5.8 behavior.
+    if not self.java_installations:
+        self.run_bg(self.detect_java_installations)
+
+
+def _v631_destroy_explore_overlay(self):
+    overlay = getattr(self, "explore_overlay_v631", None)
+    if overlay is not None:
+        try:
+            overlay.destroy()
+        except Exception:
+            pass
+    self.explore_overlay_v631 = None
+
+
+def _v631_close_explore_overlay(self):
+    overlay = getattr(self, "explore_overlay_v631", None)
+    if overlay is None:
+        return
+    try:
+        overlay.place_forget()
+    except Exception:
+        pass
+
+
+def _v631_build_explore_target(self):
+    target = getattr(self, "modrinth_target_card", None)
+
+    if target is None:
+        old = getattr(self, "modrinth_profile_button", None)
+        if old is not None:
+            target = old.master
+
+    if target is None:
+        old_label = getattr(self, "modrinth_target_label", None)
+        if old_label is not None:
+            target = old_label.master
+
+    if target is None:
+        self.write_log("Explore target card not found")
+        return
+
+    # Remove previous per-page overlay so no invisible root child survives.
+    self.destroy_explore_overlay_v631()
+
+    for child in list(target.winfo_children()):
+        try:
+            child.destroy()
+        except Exception:
+            pass
+
+    self.modrinth_target_card = target
+
+    self.modrinth_target_label = ctk.CTkLabel(
+        target,
+        text=self.t("install_on_profile"),
+        text_color=MUTED,
+        font=ctk.CTkFont(size=9, weight="bold"),
+    )
+    self.modrinth_target_label.pack(anchor="w", padx=12, pady=(9, 4))
+
+    self.explore_target_button_v63 = ctk.CTkButton(
+        target,
+        text="",
+        image=None,
+        compound="left",
+        anchor="w",
+        height=62,
+        corner_radius=11,
+        fg_color=SURFACE_2,
+        hover_color=SURFACE_3,
+        border_width=1,
+        border_color=BORDER,
+        command=self.toggle_explore_target_menu_v631,
+    )
+    self.explore_target_button_v63.pack(
+        fill="x",
+        padx=10,
+        pady=(0, 10),
+    )
+
+    self.modrinth_profile_button = self.explore_target_button_v63
+
+    # Parent the popup to the ROOT, not the scrolling content frame.
+    # This makes it a true overlay and prevents clipping / non-clickable menus.
+    self.explore_overlay_v631 = ctk.CTkFrame(
+        self,
+        fg_color=SURFACE,
+        corner_radius=11,
+        border_width=1,
+        border_color=self.accent,
+    )
+
+    self.refresh_explore_target_v63()
+
+
+def _v631_toggle_explore_overlay(self):
+    if getattr(self, "active_page", None) != "modrinth":
+        return
+
+    if self.modrinth_category == "Modpacki":
+        return
+
+    overlay = getattr(self, "explore_overlay_v631", None)
+    target = getattr(self, "modrinth_target_card", None)
+
+    if overlay is None or target is None:
+        return
+
+    try:
+        if overlay.winfo_ismapped():
+            self.close_explore_overlay_v631()
+            return
+    except Exception:
+        pass
+
+    for child in list(overlay.winfo_children()):
+        try:
+            child.destroy()
+        except Exception:
+            pass
+
+    profiles = self.cfg.get("profiles", {})
+    current = self.modrinth_profile.get()
+
+    for profile_name, profile in profiles.items():
+        image = self.profile_icon_ctk(profile_name, 32)
+        active = profile_name == current
+
+        button = ctk.CTkButton(
+            overlay,
+            text=(
+                f"{'✓  ' if active else ''}"
+                f"{profile_name}\n"
+                f"Minecraft {profile.get('version','?')} • {profile.get('loader','?')}"
+            ),
+            image=image,
+            compound="left",
+            anchor="w",
+            height=56,
+            corner_radius=9,
+            fg_color=self.accent if active else SURFACE_2,
+            hover_color=self.accent_hover if active else SURFACE_3,
+            border_width=1,
+            border_color=self.accent if active else BORDER,
+            command=lambda n=profile_name: self.select_explore_profile_v631(n),
+        )
+        button._outerclient_image_v631 = image
+        button.pack(fill="x", padx=7, pady=(7, 0))
+
+    ctk.CTkLabel(
+        overlay,
+        text=self.t("v61_explore_target_hint"),
+        text_color=MUTED,
+        font=ctk.CTkFont(size=9),
+    ).pack(anchor="w", padx=11, pady=(7, 9))
+
+    self.update_idletasks()
+
+    try:
+        x = target.winfo_rootx() - self.winfo_rootx()
+        y = target.winfo_rooty() - self.winfo_rooty() + target.winfo_height() + 4
+        width = max(250, target.winfo_width())
+
+        overlay.place(x=x, y=y, width=width)
+        overlay.lift()
+        overlay.tkraise()
+    except Exception as exc:
+        self.write_log("Explore profile overlay: " + str(exc))
+
+
+def _v631_select_explore_profile(self, profile_name):
+    if profile_name not in self.cfg.get("profiles", {}):
+        return
+
+    old = self.modrinth_profile.get()
+    self.modrinth_profile.set(profile_name)
+    self.refresh_explore_target_v63()
+    self.close_explore_overlay_v631()
+
+    if old != profile_name:
+        # Results depend on MC version/loader compatibility.
+        self.search_modrinth()
+
+
+def _v631_set_active_page(self, page):
+    previous = getattr(self, "active_page", None)
+
+    if previous == "modrinth" and page != "modrinth":
+        self.close_explore_overlay_v631()
+
+    return _V63_FIX2_SET_ACTIVE_PAGE_BASE(self, page)
+
+
+def _v631_apply_motif_no_decorations(self):
+    if not sys.platform.startswith("linux") or not shutil.which("xprop"):
+        return False
+
+    applied = False
+
+    for window_id in self.x11_window_ids_v63():
+        try:
+            result = subprocess.run(
+                [
+                    "xprop",
+                    "-id",
+                    window_id,
+                    "-f",
+                    "_MOTIF_WM_HINTS",
+                    "32c",
+                    "-set",
+                    "_MOTIF_WM_HINTS",
+                    "2, 0, 0, 0, 0",
+                ],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                timeout=2,
+            )
+            applied = applied or result.returncode == 0
+        except Exception:
+            pass
+
+    return applied
+
+
+def _v631_finish_linux_custom_bar(self):
+    try:
+        self.deiconify()
+    except Exception:
+        pass
+
+    try:
+        self.update_idletasks()
+    except Exception:
+        pass
+
+    # The WM may create a new frame on remap; apply the hint once more.
+    self.apply_motif_no_decorations_v631()
+    self.apply_window_identity_v63()
+    self.show_custom_titlebar_layout_v63()
+    self.set_topmost_false_v63()
+
+    self._linux_titlebar_remap_v631 = False
+    self._linux_titlebar_ready_v631 = True
+
+
+def _v631_apply_linux_window_mode(self, force=False):
+    if not sys.platform.startswith("linux"):
+        return _V62_LINUX_MANAGED_BASE(self, force)
+
+    self.set_topmost_false_v63()
+
+    if getattr(self, "_linux_titlebar_remap_v631", False):
+        return
+
+    # Keep the window WM-managed. We remove only decorations through Motif
+    # hints, so taskbar/dock, Alt+Tab and normal focus still work.
+    try:
+        self.overrideredirect(False)
+    except Exception:
+        pass
+
+    try:
+        self.update_idletasks()
+    except Exception:
+        pass
+
+    if not shutil.which("xprop"):
+        # Pure Wayland Tk without an X11/XWayland window cannot use Motif
+        # hints reliably. Use ONE native titlebar rather than duplicate bars.
+        self.show_native_titlebar_layout_v63()
+        self.apply_window_identity_v63()
+        return
+
+    applied = self.apply_motif_no_decorations_v631()
+    self.apply_window_identity_v63()
+
+    if not applied:
+        self.show_native_titlebar_layout_v63()
+        return
+
+    # KWin may read Motif hints only when mapping the client. Remap ONCE.
+    if force or not getattr(self, "_linux_titlebar_ready_v631", False):
+        self._linux_titlebar_remap_v631 = True
+
+        try:
+            self.withdraw()
+        except Exception:
+            pass
+
+        self.after(25, self.finish_linux_custom_bar_v631)
+    else:
+        self.show_custom_titlebar_layout_v63()
+
+
+def _v631_linux_map(self, event=None):
+    if not sys.platform.startswith("linux"):
+        return _V63_WINDOW_MAP_BASE(self, event)
+
+    if event is not None and getattr(event, "widget", None) is not self:
+        return
+
+    self.set_topmost_false_v63()
+
+    if getattr(self, "_linux_titlebar_remap_v631", False):
+        return
+
+    if not shutil.which("xprop"):
+        self.show_native_titlebar_layout_v63()
+        return
+
+    # Restore Motif decorations state after minimize/restore, without
+    # repeatedly withdrawing the window on every Map event.
+    self.after(
+        45,
+        lambda: (
+            self.apply_motif_no_decorations_v631(),
+            self.apply_window_identity_v63(),
+            self.show_custom_titlebar_layout_v63(),
+            self.set_topmost_false_v63(),
+        ),
+    )
+
+
+def _v631_show_whats_new(self, mark_seen=True):
+    self.set_active_page("whats_new")
+    self.clear_content()
+
+    outer = ctk.CTkScrollableFrame(
+        self.content,
+        fg_color=BG,
+        corner_radius=0,
+        scrollbar_button_color=SURFACE_3,
+        scrollbar_button_hover_color=BORDER,
+    )
+    outer.grid(row=0, column=0, sticky="nsew")
+    outer.grid_columnconfigure(0, weight=1)
+
+    self.page_header(
+        outer,
+        self.t("v631_whats_new_eyebrow"),
+        self.t("v61_whats_new_title"),
+        self.t("v61_whats_new_subtitle"),
+    )
+
+    self._whats_new_state_v63 = {
+        "header": self.t("v61_whats_new_title"),
+        "versions": ["6.3.1", "6.3", "6.2", "6.1", "6.0"],
+        "current": "6.3.1",
+    }
+
+    self.release_card_v63(
+        outer,
+        1,
+        self.t("v61_current_version"),
+        self.t("v631_whats_new_title"),
+        self.t("v631_whats_new_date"),
+        [
+            self.t("v631_change_titlebar"),
+            self.t("v631_change_explore_profile"),
+            self.t("v631_change_windows_console"),
+            self.t("v631_change_settings"),
+            self.t("v631_change_taskbar_card"),
+        ],
+        current=True,
+    )
+
+    self.release_card_v63(
+        outer,
+        2,
+        self.t("v61_previous_version"),
+        self.t("v63_whats_new_63_title"),
+        self.t("v63_whats_new_63_date"),
+        [
+            self.t("v63_change_changelog"),
+            self.t("v63_change_dashboard"),
+            self.t("v63_change_manager"),
+            self.t("v63_change_runtime"),
+            self.t("v63_change_explore"),
+            self.t("v63_change_window"),
+            self.t("v63_change_taskbar"),
+        ],
+    )
+
+    self.release_card_v63(
+        outer,
+        3,
+        self.t("v63_older_version"),
+        self.t("v62_whats_new_62_title"),
+        self.t("v62_whats_new_62_date"),
+        [
+            self.t("v62_change_performance"),
+            self.t("v62_change_library"),
+            self.t("v62_change_explore"),
+            self.t("v62_change_target_fix"),
+            self.t("v62_change_window"),
+            self.t("v62_change_taskbar"),
+            self.t("v62_change_changelog"),
+        ],
+    )
+
+    self.release_card_v63(
+        outer,
+        4,
+        self.t("v63_older_version"),
+        self.t("v61_whats_new_61_title"),
+        self.t("v61_whats_new_61_date"),
+        [
+            self.t("v61_change_changelog"),
+            self.t("v61_change_explore"),
+            self.t("v61_change_target"),
+            self.t("v61_change_diagnostics"),
+            self.t("v61_change_window"),
+        ],
+    )
+
+    self.release_card_v63(
+        outer,
+        5,
+        self.t("v63_older_version"),
+        self.t("v61_whats_new_60_title"),
+        self.t("v61_whats_new_60_date"),
+        [
+            self.t("v61_change_60_dashboard"),
+            self.t("v61_change_60_health"),
+            self.t("v61_change_60_snapshots"),
+            self.t("v61_change_60_library"),
+            self.t("v61_change_60_diag"),
+        ],
+    )
+
+    if mark_seen:
+        self.mark_whats_new_seen_v62()
+
+
+def _v631_init(self):
+    self._linux_titlebar_ready_v631 = False
+    self._linux_titlebar_remap_v631 = False
+
+    _V631_INIT_BASE(self)
+
+    # Remove any legacy raw Discord ID from persisted settings.
+    if self.cfg.pop("discord_client_id", None) is not None:
+        save_config(self.cfg)
+
+    self.set_topmost_false_v63()
+
+    if sys.platform.startswith("linux"):
+        self.after(90, lambda: self.apply_linux_window_mode_v631(force=True))
+        self.after(420, lambda: self.apply_linux_window_mode_v631(force=False))
+
+
+OuterClient.show_settings = _v631_show_settings
+OuterClient.save_settings = _v631_save_settings
+OuterClient.show_system_tools_settings = _v631_show_system_tools
+
+OuterClient.destroy_explore_overlay_v631 = _v631_destroy_explore_overlay
+OuterClient.close_explore_overlay_v631 = _v631_close_explore_overlay
+OuterClient.build_explore_target_v61 = _v631_build_explore_target
+OuterClient.toggle_explore_target_menu_v631 = _v631_toggle_explore_overlay
+OuterClient.toggle_explore_target_menu_v63 = _v631_toggle_explore_overlay
+OuterClient.toggle_explore_target_menu_v61 = _v631_toggle_explore_overlay
+OuterClient.select_explore_profile_v631 = _v631_select_explore_profile
+OuterClient.select_explore_profile_v63 = _v631_select_explore_profile
+OuterClient.select_explore_profile_v61 = _v631_select_explore_profile
+OuterClient.close_explore_target_menu_v61 = _v631_close_explore_overlay
+OuterClient.set_active_page = _v631_set_active_page
+
+OuterClient.apply_motif_no_decorations_v631 = _v631_apply_motif_no_decorations
+OuterClient.finish_linux_custom_bar_v631 = _v631_finish_linux_custom_bar
+OuterClient.apply_linux_window_mode_v631 = _v631_apply_linux_window_mode
+OuterClient.apply_linux_window_mode_v63 = _v631_apply_linux_window_mode
+OuterClient.apply_linux_titlebar_v62 = _v631_apply_linux_window_mode
+OuterClient.apply_linux_managed_titlebar_v61 = _v631_apply_linux_window_mode
+OuterClient.apply_borderless_once_v5103 = _v631_apply_linux_window_mode
+OuterClient.force_borderless_v5102 = _v631_apply_linux_window_mode
+OuterClient.custom_on_map_v5101 = _v631_linux_map
+
+OuterClient.show_whats_new_v61 = _v631_show_whats_new
+OuterClient.__init__ = _v631_init
 
 
 
