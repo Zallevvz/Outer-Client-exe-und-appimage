@@ -52,7 +52,7 @@ Icon=outerclient
 Categories=Game;
 Terminal=false
 StartupNotify=true
-StartupWMClass=OuterClient
+StartupWMClass=Outerclient
 X-KDE-StartupNotify=true
 X-AppImage-Version=6.3
 EOF

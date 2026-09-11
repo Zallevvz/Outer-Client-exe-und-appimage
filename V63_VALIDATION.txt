@@ -39,3 +39,9 @@ NOTE
 Full packaged GUI execution with real third-party dependencies is additionally
 covered by the GitHub Actions Xvfb smoke test when Build and Release OuterClient
 6.3 is run.
+
+FIX1
+- GitHub Linux smoke-test false failure identified: Tk normalizes className='OuterClient' to winfo_class() == 'Outerclient' on X11.
+- Smoke-test now compares case-insensitively.
+- StartupWMClass updated to Outerclient to match the actual Tk/X11 class.
+- GitHub workflow prints the actual Tk window class for diagnostics.

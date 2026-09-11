@@ -22,7 +22,7 @@ Path=$DIR
 Icon=$DIR/assets/outerclient-logo.png
 Terminal=false
 Categories=Game;
-StartupWMClass=OuterClient
+StartupWMClass=Outerclient
 EOF
 
 chmod +x "$HOME/.local/share/applications/outerclient.desktop"

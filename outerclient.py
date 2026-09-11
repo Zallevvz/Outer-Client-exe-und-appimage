@@ -15350,7 +15350,7 @@ Exec={target}
 Icon={logo}
 Categories=Game;
 Terminal=false
-StartupWMClass=OuterClient
+StartupWMClass=Outerclient
 """
         desktop_file.write_text(content, encoding="utf-8")
         application_file.write_text(content, encoding="utf-8")
@@ -18082,7 +18082,7 @@ Exec={target}
 Icon={icons["png"]}
 Categories=Game;
 Terminal=false
-StartupWMClass=OuterClient
+StartupWMClass=Outerclient
 """
 
         desktop_file.write_text(
@@ -20516,7 +20516,7 @@ Icon=outerclient
 Categories=Game;
 Terminal=false
 StartupNotify=true
-StartupWMClass=OuterClient
+StartupWMClass=Outerclient
 X-KDE-StartupNotify=true
 """
 
@@ -23423,7 +23423,7 @@ Icon=outerclient
 Categories=Game;
 Terminal=false
 StartupNotify=true
-StartupWMClass=OuterClient
+StartupWMClass=Outerclient
 X-KDE-StartupNotify=true
 """
 
@@ -23439,7 +23439,7 @@ Icon={icon_file}
 Categories=Game;
 Terminal=false
 StartupNotify=true
-StartupWMClass=OuterClient
+StartupWMClass=Outerclient
 X-KDE-StartupNotify=true
 """
 
@@ -29068,7 +29068,7 @@ Icon=outerclient
 Categories=Game;
 Terminal=false
 StartupNotify=true
-StartupWMClass=OuterClient
+StartupWMClass=Outerclient
 X-KDE-StartupNotify=true
 """,
         encoding="utf-8",
@@ -31176,7 +31176,7 @@ Icon=outerclient
 Categories=Game;
 Terminal=false
 StartupNotify=true
-StartupWMClass=OuterClient
+StartupWMClass=Outerclient
 X-KDE-StartupNotify=true
 """
 

@@ -8,6 +8,6 @@ Icon=REPLACE_WITH_ABSOLUTE_PATH/assets/outerclient-logo.png
 Terminal=false
 Categories=Game;
 StartupNotify=true
-StartupWMClass=OuterClient
+StartupWMClass=Outerclient
 X-KDE-StartupNotify=true
 X-AppImage-Version=6.3
