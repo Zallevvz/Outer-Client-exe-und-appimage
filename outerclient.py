@@ -29528,6 +29528,15 @@ def _v63_show_whats_new(self, mark_seen=True):
         self.t("v61_whats_new_subtitle"),
     )
 
+    # Stable logical representation used by diagnostics/smoke tests.
+    # CTkScrollableFrame keeps some children behind an internal canvas,
+    # so recursively counting Tk labels is not a reliable page-structure test.
+    self._whats_new_state_v63 = {
+        "header": self.t("v61_whats_new_title"),
+        "versions": ["6.3", "6.2", "6.1", "6.0"],
+        "current": "6.3",
+    }
+
     self.release_card_v63(
         outer,
         1,
@@ -30759,9 +30768,20 @@ def _v63_close_explore_overlay(self):
 
 
 def _v63_refresh_explore_target(self):
+    # This method can be called by delayed after() callbacks.
+    # Never touch Explore widgets after the user has left the page.
+    if getattr(self, "active_page", None) != "modrinth":
+        return
+
     button = getattr(self, "explore_target_button_v63", None)
     label = getattr(self, "modrinth_target_label", None)
     if button is None or label is None:
+        return
+
+    try:
+        if not button.winfo_exists() or not label.winfo_exists():
+            return
+    except Exception:
         return
 
     if self.modrinth_category == "Modpacki":
@@ -30877,9 +30897,9 @@ def _v63_build_explore_target(self):
         border_color=self.accent,
     )
 
+    # Render immediately. No delayed widget callbacks are needed here;
+    # delayed callbacks could outlive the Explore page.
     self.refresh_explore_target_v63()
-    self.after(60, self.refresh_explore_target_v63)
-    self.after(180, self.refresh_explore_target_v63)
 
 
 def _v63_select_explore_profile(self, profile_name):
@@ -31518,6 +31538,88 @@ def _v63_update_all_async(self, profile_name):
 OuterClient.snapshot_worker_v63 = _v63_snapshot_worker
 OuterClient.start_profile_snapshot_v63 = _v63_start_snapshot
 OuterClient.update_all_content = _v63_update_all_async
+
+
+
+# ============================================================
+# OuterClient 6.3 FIX2
+# Page-lifetime protection for Explore / Modrinth async results
+# ============================================================
+
+_V63_FIX2_SET_ACTIVE_PAGE_BASE = OuterClient.set_active_page
+_V63_FIX2_RENDER_RESULTS_BASE = OuterClient.render_modrinth_results
+_V63_FIX2_RENDER_PAGE_BASE = OuterClient.render_modrinth_page
+
+
+def _v63_fix2_widget_alive(widget):
+    if widget is None:
+        return False
+
+    try:
+        return bool(widget.winfo_exists())
+    except Exception:
+        return False
+
+
+def _v63_fix2_set_active_page(self, page):
+    previous = getattr(self, "active_page", None)
+
+    if previous == "modrinth" and page != "modrinth":
+        # Invalidate every request that was started on the old Explore page.
+        try:
+            self.modrinth_request_generation += 1
+        except Exception:
+            pass
+
+        # Cancel a pending search debounce, if one exists.
+        debounce = getattr(self, "modrinth_debounce_id", None)
+        if debounce:
+            try:
+                self.after_cancel(debounce)
+            except Exception:
+                pass
+            self.modrinth_debounce_id = None
+
+        try:
+            self.close_explore_overlay_v63()
+        except Exception:
+            pass
+
+    return _V63_FIX2_SET_ACTIVE_PAGE_BASE(self, page)
+
+
+def _v63_fix2_render_modrinth_results(self, category, hits):
+    # Async HTTP results are allowed to finish, but they must be ignored
+    # when the user has already left Explore.
+    if getattr(self, "active_page", None) != "modrinth":
+        return
+
+    results = getattr(self, "modrinth_results", None)
+    if not _v63_fix2_widget_alive(results):
+        return
+
+    return _V63_FIX2_RENDER_RESULTS_BASE(self, category, hits)
+
+
+def _v63_fix2_render_modrinth_page(self):
+    if getattr(self, "active_page", None) != "modrinth":
+        return
+
+    results = getattr(self, "modrinth_results", None)
+    if not _v63_fix2_widget_alive(results):
+        return
+
+    try:
+        return _V63_FIX2_RENDER_PAGE_BASE(self)
+    except tkinter.TclError:
+        # The page may have been destroyed between an event being dequeued
+        # and the render call. Treat that result as stale instead of crashing.
+        return
+
+
+OuterClient.set_active_page = _v63_fix2_set_active_page
+OuterClient.render_modrinth_results = _v63_fix2_render_modrinth_results
+OuterClient.render_modrinth_page = _v63_fix2_render_modrinth_page
 
 
 

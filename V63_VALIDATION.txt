@@ -45,3 +45,11 @@ FIX1
 - Smoke-test now compares case-insensitively.
 - StartupWMClass updated to Outerclient to match the actual Tk/X11 class.
 - GitHub workflow prints the actual Tk window class for diagnostics.
+
+FIX2
+- Fixed real stale-widget bug in Explore: delayed callbacks no longer touch destroyed widgets.
+- Removed redundant 60ms/180ms Explore refresh callbacks.
+- Leaving Explore invalidates Modrinth request generation and cancels debounce.
+- Late Modrinth result/page rendering is ignored if Explore is no longer active.
+- Fixed bad What's New smoke assertion caused by CTkScrollableFrame internal canvas hierarchy.
+- Smoke test now captures Tk callback exceptions and explicitly tests stale Explore results.
