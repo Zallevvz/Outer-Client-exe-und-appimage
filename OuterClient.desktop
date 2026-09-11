@@ -1,9 +1,13 @@
 [Desktop Entry]
 Type=Application
-Name=OuterClient 6.2
+Name=OuterClient
 Comment=OuterClient Minecraft Launcher
 Exec=REPLACE_WITH_ABSOLUTE_PATH/run_outerclient.sh
 Path=REPLACE_WITH_ABSOLUTE_PATH
+Icon=REPLACE_WITH_ABSOLUTE_PATH/assets/outerclient-logo.png
 Terminal=false
 Categories=Game;
-X-AppImage-Version=6.2
+StartupNotify=true
+StartupWMClass=OuterClient
+X-KDE-StartupNotify=true
+X-AppImage-Version=6.3

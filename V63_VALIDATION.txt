@@ -1,0 +1,41 @@
+OuterClient 6.3 — validation report
+
+SOURCE / STATIC
+- Python compile: OK
+- AST parse: OK
+- APP_VERSION: 6.3
+- PL/EN translation key parity: OK
+- all literal translation lookups exist in PL + EN: OK
+- final v6.3 method bindings: OK
+- stale content_metadata_path bug: removed
+- shell script syntax (bash -n): OK
+- workflow YAML parse: OK
+- AppImage / EXE artifact names: 6.3
+
+REGRESSION FIXES VERIFIED IN SOURCE
+- What's New rebuilt as one page: present
+- What's New persistent seen-version state: present
+- Dashboard profile switching uses generation-checked background data: present
+- Manage Profile scans in background and renders in batches: present
+- Manage Profile cache/signature path: present
+- Java runtime repair callback/progress + runtime verification: present
+- Explore selected-profile target fallback: present
+- Explore dropdown overlay uses place() and does not shift layout: present
+- Linux topmost is explicitly disabled: present
+- X11/KDE custom titlebar decoration-removal path: present
+- stable WM_CLASS / StartupWMClass OuterClient: present
+- stable ~/.local/share/applications/outerclient.desktop path: present
+- KDE pin path removes stale /tmp/.mount_* OuterClient launchers: present
+- GitHub Actions Linux regression smoke test: present
+- GitHub Actions Windows import/build smoke path: preserved
+
+UNIT-LIKE TESTS RUN DURING PREPARATION
+- What's New once-per-version logic: PASS
+- Explore target fallback renders profile/version/loader: PASS
+- Java runtime repair executes progress callbacks and verifies Java: PASS
+- KDE stable desktop entry avoids /tmp/.mount_* path: PASS
+
+NOTE
+Full packaged GUI execution with real third-party dependencies is additionally
+covered by the GitHub Actions Xvfb smoke test when Build and Release OuterClient
+6.3 is run.

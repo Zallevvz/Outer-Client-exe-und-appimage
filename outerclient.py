@@ -38,7 +38,7 @@ except Exception:
 
 
 APP_NAME = "OuterClient"
-APP_VERSION = "6.2"
+APP_VERSION = "6.3"
 CONFIG_PATH = Path.home() / ".outerclient.json"
 REDIRECT_URI = "http://localhost:8765/callback"
 MICROSOFT_CLIENT_ID = "fb14d1c4-7d14-4a35-99a7-3f921f7a1e77"
@@ -449,7 +449,7 @@ TEXTS = {
         "v5102_titlebar_fixed": "Customowy pasek OuterClient jest aktywny.",
         "v5103_titlebar_stable": "Customowy pasek działa bez ponownego mapowania okna.",
         "nav_library": "Biblioteka",
-        "v6_dashboard": "PULPIT 6.0",
+        "v6_dashboard": "PULPIT",
         "v6_dashboard_subtitle": "Profil, stan gry, aktualizacje i statystyki w jednym miejscu.",
         "v6_quick_profiles": "SZYBKIE PROFILE",
         "v6_health": "STAN PROFILU",
@@ -564,6 +564,32 @@ TEXTS = {
         "v62_taskbar_error": "Nie udało się przygotować wpisu paska zadań: {error}",
         "v62_native_titlebar_wayland": "Na Wayland używany jest pojedynczy natywny pasek systemu, aby zachować poprawną minimalizację i pasek zadań.",
         "v62_cache_ready": "Gotowe z cache",
+        "v63_whats_new_eyebrow": "OUTERCLIENT 6.3",
+        "v63_whats_new_63_title": "OuterClient 6.3",
+        "v63_whats_new_63_date": "Wrzesień 2026",
+        "v63_older_version": "STARSZA WERSJA",
+        "v63_change_changelog": "Przebudowana strona „Co nowego?” — jeden nagłówek i poprawna kolejność wersji bez zduplikowanej strony 6.1.",
+        "v63_change_dashboard": "Zmiana profilu na pulpicie jest odporna na błędy i cięższe dane są ładowane w tle bez znikania kart.",
+        "v63_change_manager": "Zarządzaj profilem używa cache, skanuje pliki poza wątkiem UI i renderuje listę partiami.",
+        "v63_change_runtime": "Naprawiono pobieranie runtime Minecrafta — jest rzeczywisty postęp, weryfikacja Javy i czytelny błąd.",
+        "v63_change_explore": "Naprawiono pustą kartę „Instaluj na profilu”; profil jest renderowany bezpośrednio w stabilnym przycisku z ikoną.",
+        "v63_change_window": "Poprawiono identyfikację okna KDE/X11, customowy pasek i normalne zachowanie minimalizacji/Alt+Tab bez always-on-top.",
+        "v63_change_taskbar": "Przypinanie KDE używa stałego outerclient.desktop i nigdy nie zapisuje tymczasowej ścieżki /tmp/.mount_*.",
+        "v63_home_loading": "Ładowanie danych profilu…",
+        "v63_manager_loading": "Ładowanie zawartości profilu…",
+        "v63_manager_health_loading": "Sprawdzanie stanu profilu…",
+        "v63_runtime_starting": "Przygotowywanie runtime Minecrafta…",
+        "v63_runtime_status": "Java Runtime • {status}",
+        "v63_runtime_done": "Runtime Minecrafta jest gotowy dla profilu {profile}.",
+        "v63_runtime_missing_after_install": "Instalacja zakończyła się, ale nie znaleziono pliku wykonywalnego Javy.",
+        "v63_runtime_error": "Nie udało się pobrać / naprawić runtime: {error}",
+        "v63_taskbar_preparing": "Przygotowywanie stałego wpisu OuterClient…",
+        "v63_taskbar_stable": "Utworzono stały wpis OuterClient. Przypięcie nie używa już tymczasowego katalogu AppImage.",
+        "v63_taskbar_pin_manual": "Stały wpis jest gotowy. Jeśli Plasma nie przypięła go automatycznie, kliknij prawym przyciskiem ikonę OuterClient na pasku i wybierz „Przypnij do menedżera zadań”.",
+        "v63_manager_cached": "Zawartość wczytana z cache.",
+        "v63_manager_empty": "Brak elementów w tej kategorii.",
+        "v63_snapshot_creating": "Tworzenie snapshotu profilu…",
+        "v63_snapshot_created": "Utworzono snapshot: {name}",
         "v58_update_checking": "Sprawdzanie aktualizacji OuterClient…",
         "v58_update_failed": "Nie udało się sprawdzić aktualizacji: {error}",
         "v58_latest": "Masz najnowszą wersję OuterClient ({version}).",
@@ -992,7 +1018,7 @@ TEXTS = {
         "v5102_titlebar_fixed": "The OuterClient custom title bar is active.",
         "v5103_titlebar_stable": "The custom title bar now works without repeated window remapping.",
         "nav_library": "Library",
-        "v6_dashboard": "DASHBOARD 6.0",
+        "v6_dashboard": "DASHBOARD",
         "v6_dashboard_subtitle": "Profile, game health, updates and statistics in one place.",
         "v6_quick_profiles": "QUICK PROFILES",
         "v6_health": "PROFILE HEALTH",
@@ -1107,6 +1133,32 @@ TEXTS = {
         "v62_taskbar_error": "Could not prepare taskbar integration: {error}",
         "v62_native_titlebar_wayland": "On Wayland a single native system title bar is used to preserve correct minimize and taskbar behavior.",
         "v62_cache_ready": "Ready from cache",
+        "v63_whats_new_eyebrow": "OUTERCLIENT 6.3",
+        "v63_whats_new_63_title": "OuterClient 6.3",
+        "v63_whats_new_63_date": "September 2026",
+        "v63_older_version": "OLDER VERSION",
+        "v63_change_changelog": "Rebuilt What's New from scratch — one page header and correctly ordered releases without the duplicated 6.1 page.",
+        "v63_change_dashboard": "Dashboard profile switching is resilient and heavier profile data loads in the background without blank cards.",
+        "v63_change_manager": "Manage Profile now caches content, scans files off the UI thread and renders lists in batches.",
+        "v63_change_runtime": "Fixed Minecraft runtime repair — real progress, Java verification and visible errors.",
+        "v63_change_explore": "Fixed blank Install to profile cards; the selected profile is rendered directly in a stable icon button.",
+        "v63_change_window": "Improved KDE/X11 window identity, custom title bar and normal minimize/Alt-Tab behavior without always-on-top.",
+        "v63_change_taskbar": "KDE pinning now uses a stable outerclient.desktop entry and never stores a temporary /tmp/.mount_* AppImage path.",
+        "v63_home_loading": "Loading profile data…",
+        "v63_manager_loading": "Loading profile content…",
+        "v63_manager_health_loading": "Checking profile health…",
+        "v63_runtime_starting": "Preparing Minecraft runtime…",
+        "v63_runtime_status": "Java Runtime • {status}",
+        "v63_runtime_done": "Minecraft runtime is ready for profile {profile}.",
+        "v63_runtime_missing_after_install": "Installation completed but the Java executable could not be found.",
+        "v63_runtime_error": "Could not download / repair runtime: {error}",
+        "v63_taskbar_preparing": "Preparing the stable OuterClient application entry…",
+        "v63_taskbar_stable": "Created a stable OuterClient entry. Pinning no longer uses a temporary AppImage mount path.",
+        "v63_taskbar_pin_manual": "The stable entry is ready. If Plasma did not pin it automatically, right-click the OuterClient taskbar icon and choose the pin option.",
+        "v63_manager_cached": "Content loaded from cache.",
+        "v63_manager_empty": "There are no items in this category.",
+        "v63_snapshot_creating": "Creating profile snapshot…",
+        "v63_snapshot_created": "Created snapshot: {name}",
         "v5_change_profile": "Change profile",
         "v5_previous": "Previous",
         "v5_next": "Next",
@@ -1442,7 +1494,7 @@ class ReusableHTTPServer(HTTPServer):
 
 class OuterClient(ctk.CTk):
     def __init__(self):
-        super().__init__()
+        super().__init__(className="OuterClient")
         ctk.set_appearance_mode("dark")
 
         self.cfg = load_config()
@@ -1497,7 +1549,7 @@ class OuterClient(ctk.CTk):
                 try:
                     import ctypes
                     ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(
-                        "OuterClient.Launcher.6.2"
+                        "OuterClient.Launcher.6.3"
                     )
                 except Exception:
                     pass
@@ -28385,7 +28437,7 @@ def _v62_library_signature(self):
                 entry.extend([folder_name, 0, 0])
 
         try:
-            meta = self.content_metadata_path(profile_name)
+            meta = self.content_manifest_path(profile_name)
             stat = meta.stat()
             entry.extend(["metadata", stat.st_mtime_ns, stat.st_size])
         except Exception:
@@ -29141,7 +29193,7 @@ def _v62_add_taskbar(self):
             self.linux_application_entry_v62()
 
             if "kde" in os.environ.get("XDG_CURRENT_DESKTOP", "").lower():
-                pinned = self.try_pin_kde_v62()
+                pinned = self.try_pin_kde_v63()
 
         if pinned:
             messagebox.showinfo(
@@ -29319,6 +29371,2153 @@ OuterClient.open_app_location_v62 = _v62_open_app_location
 OuterClient.show_system_tools_settings = _v62_show_system_tools
 
 OuterClient.__init__ = _v62_init
+
+
+
+# ============================================================
+# OuterClient 6.3
+# - clean What's New page
+# - resilient async Dashboard
+# - async cached Manage Profile
+# - real Java runtime repair/progress
+# - robust Explore target card
+# - stable KDE taskbar identity/pinning
+# - managed custom Linux titlebar, never topmost
+# ============================================================
+
+_V63_INIT_BASE = OuterClient.__init__
+_V63_SYSTEM_TOOLS_BASE = _V62_SHOW_SYSTEM_TOOLS_BASE
+_V63_DELETE_MANAGED_BASE = OuterClient.delete_managed_content
+_V63_WINDOW_MAP_BASE = OuterClient.custom_on_map_v5101
+_V63_WINDOW_MINIMIZE_BASE = OuterClient.custom_minimize_v5101
+
+# Dedicated UI-result queue. Workers never touch Tk widgets directly.
+# (The existing download/events queue remains intact.)
+def _v63_poll_results(self):
+    try:
+        while True:
+            kind, payload = self._async_results_v63.get_nowait()
+
+            if kind == "home_ready":
+                generation, profile_name, data = payload
+                if (
+                    generation == self._home_generation_v63
+                    and self.active_page == "home"
+                    and self.cfg.get("selected") == profile_name
+                ):
+                    self.apply_home_data_v63(profile_name, data)
+
+            elif kind == "manager_entries":
+                generation, profile_name, category, signature, entries = payload
+                if generation != self._manager_generation_v63:
+                    continue
+                self._manager_cache_v63[(profile_name, category)] = {
+                    "signature": signature,
+                    "entries": entries,
+                }
+                if (
+                    getattr(self, "manage_profile_name", None) == profile_name
+                    and getattr(self, "manage_category", None) == category
+                    and getattr(self, "active_page", None) == "profiles"
+                ):
+                    self.render_manager_entries_v63(entries)
+
+            elif kind == "manager_health":
+                generation, profile_name, data = payload
+                if (
+                    generation == self._manager_generation_v63
+                    and getattr(self, "manage_profile_name", None) == profile_name
+                    and getattr(self, "active_page", None) == "profiles"
+                ):
+                    self.apply_manager_health_v63(data)
+
+            elif kind == "taskbar_result":
+                ok, pinned, message = payload
+                if ok:
+                    self.set_status(self.t("v63_taskbar_stable"))
+                    messagebox.showinfo(
+                        self.t("v62_taskbar_title"),
+                        (
+                            self.t("v62_taskbar_pinned")
+                            if pinned
+                            else self.t("v63_taskbar_pin_manual")
+                        ),
+                    )
+                    self.after(80, lambda: self.apply_window_identity_v63())
+                else:
+                    messagebox.showerror(
+                        self.t("v62_taskbar_title"),
+                        message,
+                    )
+
+    except queue.Empty:
+        pass
+    except Exception as exc:
+        try:
+            self.write_log("6.3 UI result poll: " + str(exc))
+        except Exception:
+            pass
+    finally:
+        try:
+            self.after(80, self.poll_results_v63)
+        except Exception:
+            pass
+
+
+# ---------------- What's New: rebuilt from scratch ----------------
+
+def _v63_release_card(self, parent, row, badge, title, date_text, changes, current=False):
+    card = self.card(parent, 14)
+    card.grid(row=row, column=0, sticky="ew", padx=36, pady=(0, 14))
+    card.grid_columnconfigure(0, weight=1)
+
+    head = ctk.CTkFrame(card, fg_color="transparent")
+    head.grid(row=0, column=0, sticky="ew", padx=18, pady=(16, 8))
+    head.grid_columnconfigure(0, weight=1)
+
+    left = ctk.CTkFrame(head, fg_color="transparent")
+    left.grid(row=0, column=0, sticky="w")
+
+    ctk.CTkLabel(
+        left,
+        text=badge,
+        text_color=self.secondary if current else MUTED,
+        font=ctk.CTkFont(size=9, weight="bold"),
+    ).pack(anchor="w")
+
+    ctk.CTkLabel(
+        left,
+        text=title,
+        text_color=TEXT,
+        font=ctk.CTkFont(size=20, weight="bold"),
+    ).pack(anchor="w", pady=(2, 0))
+
+    ctk.CTkLabel(
+        head,
+        text=date_text,
+        text_color=MUTED,
+        font=ctk.CTkFont(size=10),
+    ).grid(row=0, column=1, sticky="e")
+
+    items = ctk.CTkFrame(card, fg_color="transparent")
+    items.grid(row=1, column=0, sticky="ew", padx=18, pady=(0, 16))
+    items.grid_columnconfigure(0, weight=1)
+
+    for idx, change in enumerate(changes):
+        self.whats_new_change_row_v61(items, change, idx)
+
+
+def _v63_show_whats_new(self, mark_seen=True):
+    self.set_active_page("whats_new")
+    self.clear_content()
+
+    outer = ctk.CTkScrollableFrame(
+        self.content,
+        fg_color=BG,
+        corner_radius=0,
+        scrollbar_button_color=SURFACE_3,
+        scrollbar_button_hover_color=BORDER,
+    )
+    outer.grid(row=0, column=0, sticky="nsew")
+    outer.grid_columnconfigure(0, weight=1)
+
+    self.page_header(
+        outer,
+        self.t("v63_whats_new_eyebrow"),
+        self.t("v61_whats_new_title"),
+        self.t("v61_whats_new_subtitle"),
+    )
+
+    self.release_card_v63(
+        outer,
+        1,
+        self.t("v61_current_version"),
+        self.t("v63_whats_new_63_title"),
+        self.t("v63_whats_new_63_date"),
+        [
+            self.t("v63_change_changelog"),
+            self.t("v63_change_dashboard"),
+            self.t("v63_change_manager"),
+            self.t("v63_change_runtime"),
+            self.t("v63_change_explore"),
+            self.t("v63_change_window"),
+            self.t("v63_change_taskbar"),
+        ],
+        current=True,
+    )
+
+    self.release_card_v63(
+        outer,
+        2,
+        self.t("v61_previous_version"),
+        self.t("v62_whats_new_62_title"),
+        self.t("v62_whats_new_62_date"),
+        [
+            self.t("v62_change_performance"),
+            self.t("v62_change_library"),
+            self.t("v62_change_explore"),
+            self.t("v62_change_target_fix"),
+            self.t("v62_change_window"),
+            self.t("v62_change_taskbar"),
+            self.t("v62_change_changelog"),
+        ],
+    )
+
+    self.release_card_v63(
+        outer,
+        3,
+        self.t("v63_older_version"),
+        self.t("v61_whats_new_61_title"),
+        self.t("v61_whats_new_61_date"),
+        [
+            self.t("v61_change_changelog"),
+            self.t("v61_change_explore"),
+            self.t("v61_change_target"),
+            self.t("v61_change_diagnostics"),
+            self.t("v61_change_window"),
+        ],
+    )
+
+    self.release_card_v63(
+        outer,
+        4,
+        self.t("v63_older_version"),
+        self.t("v61_whats_new_60_title"),
+        self.t("v61_whats_new_60_date"),
+        [
+            self.t("v61_change_60_dashboard"),
+            self.t("v61_change_60_health"),
+            self.t("v61_change_60_snapshots"),
+            self.t("v61_change_60_library"),
+            self.t("v61_change_60_diag"),
+        ],
+    )
+
+    note = ctk.CTkFrame(
+        outer,
+        fg_color=SURFACE,
+        corner_radius=12,
+        border_width=1,
+        border_color=BORDER,
+    )
+    note.grid(row=5, column=0, sticky="ew", padx=36, pady=(0, 30))
+
+    ctk.CTkLabel(
+        note,
+        text="✦",
+        text_color=self.accent,
+        font=ctk.CTkFont(size=18, weight="bold"),
+    ).pack(side="left", padx=(16, 10), pady=14)
+
+    ctk.CTkLabel(
+        note,
+        text=self.t("v61_seen_note"),
+        text_color=MUTED,
+        anchor="w",
+        justify="left",
+        wraplength=820,
+    ).pack(side="left", fill="x", expand=True, padx=(0, 16), pady=14)
+
+    if mark_seen:
+        self.mark_whats_new_seen_v62()
+
+
+# ---------------- Dashboard: fast skeleton + background data ----------------
+
+def _v63_home_worker(self, generation, profile_name):
+    data = {}
+    errors = []
+
+    def safe(name, func, fallback):
+        try:
+            data[name] = func()
+        except Exception as exc:
+            data[name] = fallback
+            errors.append(f"{name}: {exc}")
+
+    safe(
+        "content_stats",
+        lambda: self.profile_content_stats(profile_name),
+        {"mods": 0, "resources": 0, "shaders": 0, "worlds": 0},
+    )
+    safe(
+        "play_stats",
+        lambda: dict(self.profile_play_stats_v6(profile_name)),
+        {"launches": 0, "seconds": 0, "last_played": 0, "last_exit_code": None},
+    )
+    safe(
+        "health",
+        lambda: self.profile_health_report_v6(profile_name),
+        {
+            "score": 0,
+            "status": "warning",
+            "errors": 0,
+            "warnings": 1,
+            "items": [
+                {
+                    "level": "warning",
+                    "component": "game",
+                    "text": self.t("v63_home_loading"),
+                }
+            ],
+        },
+    )
+    safe("recommended", lambda: self.recommended_profile_ram_v6(profile_name), 4096)
+    safe(
+        "updates",
+        lambda: sum(1 for key in self.profile_update_cache if key[0] == profile_name),
+        0,
+    )
+
+    data["errors_internal"] = errors
+    self._async_results_v63.put(("home_ready", (generation, profile_name, data)))
+
+
+def _v63_apply_home_data(self, profile_name, data):
+    widgets = getattr(self, "_home_widgets_v63", {})
+    if not widgets:
+        return
+
+    health = data.get("health") or {}
+    health_status = health.get("status", "warning")
+    health_color = self.health_color_v6(health_status)
+
+    try:
+        widgets["health_status"].configure(
+            text=(
+                f"●  {self.health_title_v6(health_status)}  •  "
+                f"{self.t('v6_health_score', score=health.get('score', 0))}"
+            ),
+            text_color=health_color,
+        )
+        widgets["recommended"].configure(
+            text=self.t(
+                "v6_recommended_ram",
+                value=data.get("recommended", 4096),
+            )
+        )
+        widgets["health_summary"].configure(
+            text=self.t(
+                "v6_profile_health_summary",
+                errors=health.get("errors", 0),
+                warnings=health.get("warnings", 0),
+            ),
+            text_color=health_color,
+        )
+
+        issue_box = widgets["issue_box"]
+        for child in issue_box.winfo_children():
+            child.destroy()
+
+        visible = [
+            item for item in health.get("items", [])
+            if item.get("level") != "ok"
+        ][:4]
+
+        if not visible:
+            visible = [
+                {
+                    "level": "ok",
+                    "text": self.t("v6_health_good"),
+                }
+            ]
+
+        for idx, item in enumerate(visible):
+            level = item.get("level", "ok")
+            color = self.health_color_v6(
+                "bad" if level == "error"
+                else ("warning" if level == "warning" else "good")
+            )
+            ctk.CTkLabel(
+                issue_box,
+                text="●  " + str(item.get("text", "")),
+                text_color=color,
+                anchor="w",
+                justify="left",
+            ).pack(
+                fill="x",
+                padx=14,
+                pady=(10 if idx == 0 else 3, 10 if idx == len(visible) - 1 else 3),
+            )
+
+        play = data.get("play_stats") or {}
+        widgets["activity"]["playtime"].configure(
+            text=self.format_duration_v6(play.get("seconds", 0))
+        )
+        widgets["activity"]["launches"].configure(
+            text=str(play.get("launches", 0))
+        )
+        widgets["activity"]["last"].configure(
+            text=self.format_last_played_v6(play.get("last_played", 0))
+        )
+        widgets["activity"]["updates"].configure(
+            text=str(data.get("updates", 0))
+        )
+
+        stats = data.get("content_stats") or {}
+        for key in ("mods", "resources", "shaders", "worlds"):
+            widgets["content"][key].configure(text=str(stats.get(key, 0)))
+
+    except Exception as exc:
+        self.write_log("Dashboard apply failed: " + str(exc))
+
+
+def _v63_select_home_profile(self, name):
+    if name not in self.cfg.get("profiles", {}):
+        return
+
+    self.cfg["selected"] = name
+    try:
+        self.modrinth_profile.set(name)
+    except Exception:
+        pass
+
+    save_config(self.cfg)
+    self.show_home()
+
+
+def _v63_show_home(self):
+    self.set_active_page("home")
+    self.clear_content()
+
+    self._home_generation_v63 += 1
+    generation = self._home_generation_v63
+
+    page = self.page()
+    self.page_header(
+        page,
+        self.t("v6_dashboard"),
+        self.t("home_title"),
+        self.t("v6_dashboard_subtitle"),
+    )
+
+    try:
+        name, profile = self.selected_profile_data()
+    except Exception:
+        names = list(self.cfg.get("profiles", {}))
+        if not names:
+            return
+        name = names[0]
+        self.cfg["selected"] = name
+        profile = self.cfg["profiles"][name]
+
+    ram = self.profile_ram(name)
+
+    quick = self.card(page, 12)
+    quick.grid(row=1, column=0, sticky="ew", padx=36, pady=(0, 12))
+
+    ctk.CTkLabel(
+        quick,
+        text=self.t("v6_quick_profiles"),
+        text_color=MUTED,
+        font=ctk.CTkFont(size=10, weight="bold"),
+    ).pack(anchor="w", padx=16, pady=(12, 7))
+
+    quick_row = ctk.CTkFrame(quick, fg_color="transparent")
+    quick_row.pack(fill="x", padx=14, pady=(0, 12))
+
+    for profile_name in list(self.cfg["profiles"].keys())[:6]:
+        selected = profile_name == name
+        icon = self.profile_icon_ctk(profile_name, 28)
+
+        button = ctk.CTkButton(
+            quick_row,
+            text=profile_name,
+            image=icon,
+            compound="left",
+            height=38,
+            corner_radius=10,
+            fg_color=self.accent if selected else SURFACE_2,
+            hover_color=self.accent_hover if selected else SURFACE_3,
+            border_width=1,
+            border_color=self.accent if selected else BORDER,
+            command=lambda n=profile_name: self.select_home_profile_v6(n),
+        )
+        button._outerclient_profile_icon = icon
+        button.pack(side="left", padx=(0, 6))
+
+    hero = self.card(page, 18)
+    hero.grid(row=2, column=0, sticky="ew", padx=36, pady=(0, 12))
+    hero.grid_columnconfigure(1, weight=1)
+
+    icon_widget = self.profile_icon_widget(hero, name, 78)
+    icon_widget.grid(row=0, column=0, rowspan=4, padx=(20, 18), pady=20)
+
+    ctk.CTkLabel(
+        hero,
+        text=name,
+        text_color=TEXT,
+        font=ctk.CTkFont(size=25, weight="bold"),
+        anchor="w",
+    ).grid(row=0, column=1, sticky="sw", pady=(19, 0))
+
+    ctk.CTkLabel(
+        hero,
+        text=(
+            f"Minecraft {profile.get('version','?')}  •  "
+            f"{profile.get('loader','?')}  •  {ram} MB RAM"
+        ),
+        text_color=MUTED,
+        anchor="w",
+    ).grid(row=1, column=1, sticky="w", pady=(2, 0))
+
+    health_status = ctk.CTkLabel(
+        hero,
+        text="○  " + self.t("v63_home_loading"),
+        text_color=MUTED,
+        anchor="w",
+        font=ctk.CTkFont(size=12, weight="bold"),
+    )
+    health_status.grid(row=2, column=1, sticky="w", pady=(5, 0))
+
+    recommended_label = ctk.CTkLabel(
+        hero,
+        text=self.t("v63_home_loading"),
+        text_color=MUTED,
+        anchor="w",
+    )
+    recommended_label.grid(row=3, column=1, sticky="nw", pady=(3, 18))
+
+    actions = ctk.CTkFrame(hero, fg_color="transparent")
+    actions.grid(row=0, column=2, rowspan=4, padx=18, pady=18)
+
+    ctk.CTkButton(
+        actions,
+        text=self.t("launch_minecraft"),
+        width=175,
+        height=46,
+        fg_color=self.accent,
+        hover_color=self.accent_hover,
+        font=ctk.CTkFont(size=13, weight="bold"),
+        command=self.launch,
+    ).pack(fill="x", pady=(0, 6))
+
+    self.home_stop_button = ctk.CTkButton(
+        actions,
+        text=self.t("v52_stop_game"),
+        width=175,
+        height=38,
+        fg_color=SURFACE_3,
+        hover_color="#8A3341",
+        text_color=MUTED,
+        state="disabled",
+        command=self.stop_game,
+    )
+    self.home_stop_button.pack(fill="x", pady=(0, 6))
+
+    ctk.CTkButton(
+        actions,
+        text=self.t("v5_manage"),
+        width=175,
+        height=38,
+        fg_color=SURFACE_3,
+        hover_color=self.accent,
+        command=lambda n=name: self.show_profile_manager(n),
+    ).pack(fill="x")
+
+    activity = self.card(page, 14)
+    activity.grid(row=3, column=0, sticky="ew", padx=36, pady=(0, 12))
+
+    ctk.CTkLabel(
+        activity,
+        text=self.t("v6_activity"),
+        text_color=MUTED,
+        font=ctk.CTkFont(size=10, weight="bold"),
+    ).pack(anchor="w", padx=18, pady=(13, 7))
+
+    activity_row = ctk.CTkFrame(activity, fg_color="transparent")
+    activity_row.pack(fill="x", padx=14, pady=(0, 14))
+
+    activity_widgets = {}
+    activity_defs = (
+        ("playtime", self.t("v6_playtime")),
+        ("launches", self.t("v6_launches")),
+        ("last", self.t("v6_last_played")),
+        ("updates", self.t("v6_updates")),
+    )
+    for idx, (key, label) in enumerate(activity_defs):
+        box = ctk.CTkFrame(activity_row, fg_color=SURFACE_2, corner_radius=11)
+        box.pack(
+            side="left",
+            fill="x",
+            expand=True,
+            padx=(0 if idx == 0 else 5, 0),
+        )
+        value_label = ctk.CTkLabel(
+            box,
+            text="…",
+            text_color=TEXT,
+            font=ctk.CTkFont(size=16, weight="bold"),
+        )
+        value_label.pack(pady=(10, 1))
+        ctk.CTkLabel(
+            box,
+            text=label,
+            text_color=MUTED,
+            font=ctk.CTkFont(size=10),
+        ).pack(pady=(0, 10))
+        activity_widgets[key] = value_label
+
+    health_card = self.card(page, 14)
+    health_card.grid(row=4, column=0, sticky="ew", padx=36, pady=(0, 12))
+    health_card.grid_columnconfigure(0, weight=1)
+
+    hhead = ctk.CTkFrame(health_card, fg_color="transparent")
+    hhead.grid(row=0, column=0, sticky="ew", padx=18, pady=(14, 6))
+    hhead.grid_columnconfigure(0, weight=1)
+
+    ctk.CTkLabel(
+        hhead,
+        text=self.t("v6_health"),
+        text_color=MUTED,
+        font=ctk.CTkFont(size=10, weight="bold"),
+    ).grid(row=0, column=0, sticky="w")
+
+    health_summary = ctk.CTkLabel(
+        hhead,
+        text=self.t("v63_home_loading"),
+        text_color=MUTED,
+        font=ctk.CTkFont(size=11, weight="bold"),
+    )
+    health_summary.grid(row=0, column=1, sticky="e")
+
+    issue_box = ctk.CTkFrame(health_card, fg_color=SURFACE_2, corner_radius=11)
+    issue_box.grid(row=1, column=0, sticky="ew", padx=18, pady=(0, 8))
+
+    ctk.CTkLabel(
+        issue_box,
+        text="○  " + self.t("v63_home_loading"),
+        text_color=MUTED,
+        anchor="w",
+    ).pack(fill="x", padx=14, pady=12)
+
+    health_actions = ctk.CTkFrame(health_card, fg_color="transparent")
+    health_actions.grid(row=2, column=0, sticky="ew", padx=18, pady=(2, 15))
+
+    ctk.CTkButton(
+        health_actions,
+        text=self.t("v6_health_details"),
+        height=36,
+        fg_color=SURFACE_3,
+        hover_color=self.accent,
+        command=self.show_diagnostics,
+    ).pack(side="left")
+
+    ctk.CTkButton(
+        health_actions,
+        text=self.t("v6_repair"),
+        height=36,
+        fg_color=SURFACE_3,
+        hover_color=self.accent,
+        command=self.install_profile,
+    ).pack(side="left", padx=7)
+
+    ctk.CTkButton(
+        health_actions,
+        text=self.t("v6_check_updates_short"),
+        height=36,
+        fg_color=SURFACE_3,
+        hover_color=self.accent,
+        command=lambda n=name: self.check_profile_updates(n),
+    ).pack(side="left")
+
+    ctk.CTkButton(
+        health_actions,
+        text=self.t("v6_use_recommended"),
+        height=36,
+        fg_color=SURFACE_3,
+        hover_color=self.accent,
+        command=lambda n=name: self.set_recommended_ram_v6(n),
+    ).pack(side="right")
+
+    contents = self.card(page, 14)
+    contents.grid(row=5, column=0, sticky="ew", padx=36, pady=(0, 16))
+
+    stats_row = ctk.CTkFrame(contents, fg_color="transparent")
+    stats_row.pack(fill="x", padx=14, pady=14)
+
+    content_widgets = {}
+    for idx, (key, text_key) in enumerate(
+        (
+            ("mods", "mods_stat"),
+            ("resources", "resources_stat"),
+            ("shaders", "shaders_stat"),
+            ("worlds", "worlds_stat"),
+        )
+    ):
+        box = ctk.CTkFrame(stats_row, fg_color=SURFACE_2, corner_radius=10)
+        box.pack(
+            side="left",
+            fill="x",
+            expand=True,
+            padx=(0 if idx == 0 else 5, 0),
+        )
+        label = ctk.CTkLabel(
+            box,
+            text="…",
+            text_color=TEXT,
+            font=ctk.CTkFont(size=18, weight="bold"),
+        )
+        label.pack(pady=(9, 0))
+        ctk.CTkLabel(
+            box,
+            text=self.t(text_key),
+            text_color=MUTED,
+            font=ctk.CTkFont(size=10),
+        ).pack(pady=(0, 9))
+        content_widgets[key] = label
+
+    ctk.CTkLabel(
+        page,
+        textvariable=self.status_var,
+        text_color=MUTED,
+    ).grid(row=6, column=0, sticky="w", padx=38, pady=(0, 26))
+
+    self._home_widgets_v63 = {
+        "health_status": health_status,
+        "recommended": recommended_label,
+        "health_summary": health_summary,
+        "issue_box": issue_box,
+        "activity": activity_widgets,
+        "content": content_widgets,
+    }
+
+    self.run_bg(lambda: self.home_worker_v63(generation, name))
+    self.after(250, self.refresh_game_controls)
+
+
+# ---------------- Manage Profile: cache + background scanning ----------------
+
+def _v63_manager_signature(self, profile_name, category):
+    instance = self.profile_instance_dir(profile_name)
+    data = [
+        profile_name,
+        category,
+        self.cfg["profiles"].get(profile_name, {}).get("version"),
+        self.cfg["profiles"].get(profile_name, {}).get("loader"),
+    ]
+
+    metadata = self.content_manifest_path(profile_name)
+    try:
+        st = metadata.stat()
+        data.extend(["meta", st.st_mtime_ns, st.st_size])
+    except Exception:
+        data.extend(["meta", 0, 0])
+
+    mapping = {
+        "mods": instance / "mods",
+        "resources": instance / "resourcepacks",
+        "shaders": instance / "shaderpacks",
+        "datapacks": instance / "saves",
+    }
+    folder = mapping.get(category, instance)
+
+    try:
+        st = folder.stat()
+        data.extend(["folder", st.st_mtime_ns])
+    except Exception:
+        data.extend(["folder", 0])
+
+    # Datapacks live one level deeper (saves/<world>/datapacks), so include
+    # their directory stamps without parsing pack contents.
+    if category == "datapacks" and folder.exists():
+        try:
+            for world in sorted(folder.iterdir(), key=lambda p: p.name.casefold()):
+                dp = world / "datapacks"
+                if not world.is_dir() or not dp.exists():
+                    continue
+                try:
+                    st = dp.stat()
+                    data.extend([world.name, st.st_mtime_ns])
+                except Exception:
+                    pass
+        except Exception:
+            pass
+
+    return tuple(data)
+
+
+def _v63_invalidate_manager_cache(self, profile_name=None, category=None):
+    keys = list(self._manager_cache_v63)
+    for key in keys:
+        p, c = key
+        if profile_name is not None and p != profile_name:
+            continue
+        if category is not None and c != category:
+            continue
+        self._manager_cache_v63.pop(key, None)
+
+
+def _v63_manager_entries_worker(self, generation, profile_name, category, signature):
+    try:
+        entries = self.profile_manage_entries(profile_name, category)
+    except Exception as exc:
+        self.write_log("Manage Profile scan: " + str(exc))
+        entries = []
+
+    self._async_results_v63.put(
+        ("manager_entries", (generation, profile_name, category, signature, entries))
+    )
+
+
+def _v63_manager_health_worker(self, generation, profile_name):
+    try:
+        report = self.profile_health_report_v6(profile_name)
+    except Exception as exc:
+        report = {
+            "status": "warning",
+            "score": 0,
+            "errors": 0,
+            "warnings": 1,
+            "items": [{"level": "warning", "text": str(exc), "component": "game"}],
+        }
+
+    try:
+        snapshots = self.list_profile_snapshots_v6(profile_name)
+        latest = (
+            datetime.fromtimestamp(snapshots[0].stat().st_mtime).strftime("%d.%m %H:%M")
+            if snapshots
+            else self.t("v6_never")
+        )
+    except Exception:
+        snapshots = []
+        latest = self.t("v6_never")
+
+    self._async_results_v63.put(
+        (
+            "manager_health",
+            (
+                generation,
+                profile_name,
+                {
+                    "report": report,
+                    "snapshot_count": len(snapshots),
+                    "snapshot_latest": latest,
+                    "has_snapshot": bool(snapshots),
+                },
+            ),
+        )
+    )
+
+
+def _v63_apply_manager_health(self, data):
+    refs = getattr(self, "_manager_health_widgets_v63", {})
+    if not refs:
+        return
+
+    report = data.get("report") or {}
+    color = self.health_color_v6(report.get("status", "warning"))
+
+    try:
+        refs["dot"].configure(text_color=color)
+        refs["title"].configure(
+            text=(
+                f"{self.health_title_v6(report.get('status','warning'))}  •  "
+                f"{self.t('v6_health_score', score=report.get('score',0))}"
+            )
+        )
+        refs["snapshots"].configure(
+            text=self.t(
+                "v6_snapshot_count",
+                count=data.get("snapshot_count", 0),
+                last=data.get("snapshot_latest", self.t("v6_never")),
+            )
+        )
+        refs["restore"].configure(
+            state="normal" if data.get("has_snapshot") else "disabled"
+        )
+    except Exception:
+        pass
+
+
+def _v63_render_manager_chunk(self, entries, start, token):
+    if token != self._manager_render_token_v63:
+        return
+
+    if not hasattr(self, "manage_list"):
+        return
+
+    stop = min(len(entries), start + 18)
+
+    for row in range(start, stop):
+        entry = entries[row]
+        card = self.card(self.manage_list, 12)
+        card.grid(row=row, column=0, sticky="ew", pady=5)
+        card.grid_columnconfigure(1, weight=1)
+
+        meta = entry.get("meta") or {}
+
+        icon = ctk.CTkLabel(
+            card,
+            text="◇",
+            width=48,
+            height=48,
+            corner_radius=10,
+            fg_color=SURFACE_2,
+            text_color=MUTED,
+            font=ctk.CTkFont(size=18, weight="bold"),
+        )
+        icon.grid(row=0, column=0, rowspan=2, padx=(13, 10), pady=10)
+
+        if meta.get("icon_url"):
+            self.run_bg(
+                lambda u=meta.get("icon_url"), w=icon: self.fetch_project_icon(u, w)
+            )
+
+        ctk.CTkLabel(
+            card,
+            text=entry.get("name", ""),
+            text_color=TEXT,
+            anchor="w",
+            font=ctk.CTkFont(size=14, weight="bold"),
+        ).grid(row=0, column=1, sticky="sw", pady=(10, 0))
+
+        detail = entry.get("detail", "")
+        if meta.get("author"):
+            detail = f"{meta['author']} • {detail}"
+
+        ctk.CTkLabel(
+            card,
+            text=detail,
+            text_color=MUTED,
+            anchor="w",
+            font=ctk.CTkFont(size=10),
+        ).grid(row=1, column=1, sticky="nw", pady=(2, 10))
+
+        column = 2
+        update = self.profile_update_cache.get(
+            (self.manage_profile_name, entry.get("rel"))
+        )
+
+        if update:
+            ctk.CTkButton(
+                card,
+                text=self.t("v5_update"),
+                width=82,
+                height=32,
+                fg_color=self.accent,
+                hover_color=self.accent_hover,
+                command=lambda e=entry: self.update_managed_content(
+                    self.manage_profile_name, e
+                ),
+            ).grid(row=0, column=column, rowspan=2, padx=(5, 5))
+            column += 1
+
+        if self.manage_category == "mods" and entry.get("url"):
+            ctk.CTkButton(
+                card,
+                text=self.t("v55_mod_page"),
+                width=96,
+                height=32,
+                fg_color=SURFACE_3,
+                hover_color=self.accent,
+                command=lambda u=entry.get("url"): self.open_external_url(u),
+            ).grid(row=0, column=column, rowspan=2, padx=(5, 5))
+            column += 1
+
+        ctk.CTkButton(
+            card,
+            text=self.t("manage_delete"),
+            width=80,
+            height=32,
+            fg_color="#3B2028",
+            hover_color="#512933",
+            text_color="#FFB7C0",
+            command=lambda e=entry: self.delete_managed_content(e),
+        ).grid(row=0, column=column, rowspan=2, padx=(5, 13))
+
+    if stop < len(entries):
+        self.after(
+            12,
+            lambda: self.render_manager_chunk_v63(entries, stop, token),
+        )
+
+
+def _v63_render_manager_entries(self, entries):
+    if not hasattr(self, "manage_list"):
+        return
+
+    for child in self.manage_list.winfo_children():
+        child.destroy()
+
+    self._manager_render_token_v63 += 1
+    token = self._manager_render_token_v63
+
+    if not entries:
+        ctk.CTkLabel(
+            self.manage_list,
+            text=self.t("v63_manager_empty"),
+            text_color=MUTED,
+        ).grid(row=0, column=0, sticky="w", padx=14, pady=18)
+        return
+
+    self.render_manager_chunk_v63(entries, 0, token)
+
+
+def _v63_render_manage_file_list(self, force=False):
+    if not hasattr(self, "manage_list"):
+        return
+
+    profile_name = getattr(self, "manage_profile_name", None)
+    category = getattr(self, "manage_category", "mods")
+    if profile_name not in self.cfg.get("profiles", {}):
+        return
+
+    signature = self.manager_signature_v63(profile_name, category)
+    cached = self._manager_cache_v63.get((profile_name, category))
+
+    if (
+        not force
+        and cached
+        and cached.get("signature") == signature
+    ):
+        self.render_manager_entries_v63(cached.get("entries", []))
+        return
+
+    for child in self.manage_list.winfo_children():
+        child.destroy()
+
+    ctk.CTkLabel(
+        self.manage_list,
+        text="○  " + self.t("v63_manager_loading"),
+        text_color=MUTED,
+    ).grid(row=0, column=0, sticky="w", padx=14, pady=18)
+
+    generation = self._manager_generation_v63
+    self.run_bg(
+        lambda: self.manager_entries_worker_v63(
+            generation,
+            profile_name,
+            category,
+            signature,
+        )
+    )
+
+
+def _v63_manage_category_changed(self, category):
+    self.manage_category = category
+
+    for key, button in getattr(self, "manage_category_buttons", {}).items():
+        selected = key == category
+        button.configure(
+            fg_color=self.accent if selected else SURFACE,
+            hover_color=self.accent_hover if selected else SURFACE_3,
+            border_color=self.accent if selected else BORDER,
+        )
+
+    self.render_manage_file_list()
+
+
+def _v63_refresh_profile_manager(self):
+    self.render_manage_file_list(force=True)
+
+
+def _v63_delete_managed(self, entry):
+    path = Path(entry["path"])
+    if not messagebox.askyesno(
+        self.t("manage_delete_title"),
+        self.t("manage_delete_confirm", name=entry.get("name", path.name)),
+    ):
+        return
+
+    try:
+        if path.is_dir():
+            shutil.rmtree(path)
+        else:
+            path.unlink(missing_ok=True)
+
+        profile_name = getattr(self, "manage_profile_name", None)
+        rel = entry.get("rel")
+
+        if profile_name and rel:
+            metadata = self.load_content_metadata(profile_name)
+            metadata.pop(rel, None)
+            self.save_content_metadata(profile_name, metadata)
+
+        self.invalidate_manager_cache_v63(profile_name)
+        self.invalidate_library_cache_v62()
+        self.set_status(
+            self.t("manage_deleted", name=entry.get("name", path.name))
+        )
+        self.render_manage_file_list(force=True)
+
+    except Exception as exc:
+        messagebox.showerror("OuterClient", str(exc))
+
+
+def _v63_show_profile_manager(self, profile_name):
+    if profile_name not in self.cfg.get("profiles", {}):
+        return
+
+    self.set_active_page("profiles")
+    self.clear_content()
+
+    self._manager_generation_v63 += 1
+    generation = self._manager_generation_v63
+
+    self.manage_profile_name = profile_name
+    self.manage_category = getattr(self, "manage_category", "mods")
+    profile = self.cfg["profiles"][profile_name]
+
+    outer = ctk.CTkFrame(self.content, fg_color=BG, corner_radius=0)
+    outer.grid(row=0, column=0, sticky="nsew")
+    outer.grid_columnconfigure(0, weight=1)
+    outer.grid_rowconfigure(5, weight=1)
+
+    top = ctk.CTkFrame(outer, fg_color="transparent")
+    top.grid(row=0, column=0, sticky="ew", padx=28, pady=(20, 8))
+    top.grid_columnconfigure(2, weight=1)
+
+    ctk.CTkButton(
+        top,
+        text=self.t("back_to_profiles"),
+        width=100,
+        height=36,
+        fg_color=SURFACE_3,
+        hover_color="#2B3749",
+        command=self.show_profiles,
+    ).grid(row=0, column=0, rowspan=2, padx=(0, 12))
+
+    icon = self.profile_icon_widget(top, profile_name, 54)
+    icon.grid(row=0, column=1, rowspan=2, sticky="w", padx=(0, 12))
+
+    title_box = ctk.CTkFrame(top, fg_color="transparent")
+    title_box.grid(row=0, column=2, rowspan=2, sticky="w")
+
+    ctk.CTkLabel(
+        title_box,
+        text=self.t("manage_for_profile", name=profile_name),
+        text_color=TEXT,
+        font=ctk.CTkFont(size=26, weight="bold"),
+    ).pack(anchor="w")
+
+    ctk.CTkLabel(
+        title_box,
+        text=(
+            f"Minecraft {profile.get('version','?')} • "
+            f"{profile.get('loader','?')} • "
+            f"{self.profile_ram(profile_name)} MB"
+        ),
+        text_color=MUTED,
+    ).pack(anchor="w")
+
+    ctk.CTkButton(
+        top,
+        text=self.t("v52_change_icon"),
+        width=110,
+        height=36,
+        fg_color=SURFACE_3,
+        hover_color=self.accent,
+        command=lambda: self.choose_profile_icon(profile_name),
+    ).grid(row=0, column=3, rowspan=2, padx=(12, 0))
+
+    strip = self.card(outer, 12)
+    strip.grid(row=1, column=0, sticky="ew", padx=28, pady=(2, 8))
+    strip.grid_columnconfigure(1, weight=1)
+
+    dot = ctk.CTkLabel(
+        strip,
+        text="●",
+        text_color=MUTED,
+        font=ctk.CTkFont(size=22),
+    )
+    dot.grid(row=0, column=0, rowspan=2, padx=(16, 12), pady=12)
+
+    health_title = ctk.CTkLabel(
+        strip,
+        text=self.t("v63_manager_health_loading"),
+        text_color=TEXT,
+        font=ctk.CTkFont(size=14, weight="bold"),
+        anchor="w",
+    )
+    health_title.grid(row=0, column=1, sticky="sw", pady=(11, 0))
+
+    snapshot_label = ctk.CTkLabel(
+        strip,
+        text=self.t("v63_home_loading"),
+        text_color=MUTED,
+        anchor="w",
+    )
+    snapshot_label.grid(row=1, column=1, sticky="nw", pady=(1, 11))
+
+    ctk.CTkButton(
+        strip,
+        text=self.t("v6_snapshot_create"),
+        width=120,
+        height=34,
+        fg_color=SURFACE_3,
+        hover_color=self.accent,
+        command=lambda: self.start_profile_snapshot_v63(profile_name),
+    ).grid(row=0, column=2, rowspan=2, padx=(8, 5))
+
+    restore_button = ctk.CTkButton(
+        strip,
+        text=self.t("v6_snapshot_restore"),
+        width=120,
+        height=34,
+        fg_color=SURFACE_3,
+        hover_color=self.accent,
+        state="disabled",
+        command=lambda: self.restore_profile_snapshot_v6(profile_name),
+    )
+    restore_button.grid(row=0, column=3, rowspan=2, padx=(0, 15))
+
+    self._manager_health_widgets_v63 = {
+        "dot": dot,
+        "title": health_title,
+        "snapshots": snapshot_label,
+        "restore": restore_button,
+    }
+
+    categories = ctk.CTkFrame(outer, fg_color="transparent")
+    categories.grid(row=2, column=0, sticky="ew", padx=28, pady=(0, 7))
+    self.manage_category_buttons = {}
+
+    for key, text_key in (
+        ("mods", "manage_mods"),
+        ("resources", "manage_resources"),
+        ("shaders", "manage_shaders"),
+        ("datapacks", "manage_datapacks"),
+    ):
+        active = key == self.manage_category
+        button = ctk.CTkButton(
+            categories,
+            text=self.t(text_key),
+            height=36,
+            fg_color=self.accent if active else SURFACE,
+            border_width=1,
+            border_color=self.accent if active else BORDER,
+            hover_color=self.accent_hover if active else SURFACE_3,
+            command=lambda value=key: self.manage_category_changed(value),
+        )
+        button.pack(side="left", padx=(0, 6))
+        self.manage_category_buttons[key] = button
+
+    actions = ctk.CTkFrame(outer, fg_color="transparent")
+    actions.grid(row=3, column=0, sticky="ew", padx=28, pady=(0, 7))
+
+    for text, command in (
+        (self.t("v5_backup"), lambda: self.backup_profile(profile_name)),
+        (self.t("v5_restore"), lambda: self.restore_profile_backup(profile_name)),
+        (self.t("v5_scan"), lambda: self.scan_profile_metadata(profile_name)),
+        (self.t("v5_check_updates"), lambda: self.check_profile_updates(profile_name)),
+        (self.t("v5_update_all"), lambda: self.update_all_content(profile_name)),
+    ):
+        ctk.CTkButton(
+            actions,
+            text=text,
+            height=34,
+            fg_color=SURFACE_3,
+            hover_color=self.accent,
+            command=command,
+        ).pack(side="left", padx=(0, 6))
+
+    ctk.CTkLabel(
+        outer,
+        text=self.t("v52_mods_auto"),
+        text_color=MUTED,
+        anchor="w",
+    ).grid(row=4, column=0, sticky="w", padx=30, pady=(0, 6))
+
+    self.manage_list = ctk.CTkScrollableFrame(
+        outer,
+        fg_color=BG,
+        corner_radius=0,
+        scrollbar_button_color=SURFACE_3,
+        scrollbar_button_hover_color=BORDER,
+    )
+    self.manage_list.grid(
+        row=5,
+        column=0,
+        sticky="nsew",
+        padx=20,
+        pady=(0, 12),
+    )
+    self.manage_list.grid_columnconfigure(0, weight=1)
+
+    # No automatic network metadata scan on page open in 6.3.
+    # Local list appears immediately from cache/background filesystem scan.
+    self.render_manage_file_list()
+    self.run_bg(lambda: self.manager_health_worker_v63(generation, profile_name))
+
+
+# ---------------- Java Runtime: real callback/progress + verification ----------------
+
+def _v63_download_runtime_worker(self, profile_name):
+    try:
+        profile = self.cfg["profiles"][profile_name]
+        instance = self.profile_instance_dir(profile_name)
+        instance.mkdir(parents=True, exist_ok=True)
+
+        progress = {"max": 1.0, "value": 0.0, "status": self.t("v63_runtime_starting")}
+
+        def set_status(value):
+            progress["status"] = str(value or self.t("v63_runtime_starting"))
+            self.events.put(
+                ("status", self.t("v63_runtime_status", status=progress["status"]))
+            )
+            ratio = (
+                progress["value"] / progress["max"]
+                if progress["max"] > 0
+                else 0.0
+            )
+            self.queue_bar_event(
+                self.t("v63_runtime_status", status=progress["status"]),
+                min(0.98, max(0.01, ratio)),
+                None,
+            )
+
+        def set_max(value):
+            try:
+                progress["max"] = max(1.0, float(value))
+            except Exception:
+                progress["max"] = 1.0
+
+        def set_progress(value):
+            try:
+                progress["value"] = float(value)
+            except Exception:
+                progress["value"] = 0.0
+            ratio = progress["value"] / max(1.0, progress["max"])
+            self.queue_bar_event(
+                self.t("v63_runtime_status", status=progress["status"]),
+                min(0.98, max(0.01, ratio)),
+                None,
+            )
+
+        callback = {
+            "setStatus": set_status,
+            "setMax": set_max,
+            "setProgress": set_progress,
+        }
+
+        self.queue_bar_event(self.t("v63_runtime_starting"), 0.01, None)
+
+        minecraft_launcher_lib.install.install_minecraft_version(
+            profile["version"],
+            str(instance),
+            callback=callback,
+        )
+
+        info = minecraft_launcher_lib.runtime.get_version_runtime_information(
+            profile["version"],
+            str(instance),
+        )
+
+        if info and info.get("name"):
+            executable = minecraft_launcher_lib.runtime.get_executable_path(
+                info["name"],
+                str(instance),
+            )
+
+            if not executable:
+                set_status("Install Java runtime")
+                minecraft_launcher_lib.runtime.install_jvm_runtime(
+                    info["name"],
+                    str(instance),
+                    callback=callback,
+                )
+
+        runtime = self.vanilla_runtime_for_profile(
+            profile["version"],
+            instance,
+        )
+
+        if not runtime or not runtime.get("path") or not Path(runtime["path"]).exists():
+            raise RuntimeError(self.t("v63_runtime_missing_after_install"))
+
+        self.queue_bar_event(
+            self.t("v63_runtime_done", profile=profile_name),
+            1.0,
+            0,
+        )
+        self.events.put(("java_runtime_ready", profile_name))
+        self.events.put(
+            ("status", self.t("v63_runtime_done", profile=profile_name))
+        )
+
+    except Exception as exc:
+        self.queue_bar_event(
+            self.t("v63_runtime_error", error=exc),
+            1.0,
+            0,
+        )
+        self.events.put(
+            ("error", self.t("v63_runtime_error", error=exc))
+        )
+
+
+# ---------------- Explore: stable direct target card + overlay ----------------
+
+def _v63_close_explore_overlay(self):
+    overlay = getattr(self, "explore_overlay_v63", None)
+    if overlay is not None:
+        try:
+            overlay.place_forget()
+        except Exception:
+            pass
+
+
+def _v63_refresh_explore_target(self):
+    button = getattr(self, "explore_target_button_v63", None)
+    label = getattr(self, "modrinth_target_label", None)
+    if button is None or label is None:
+        return
+
+    if self.modrinth_category == "Modpacki":
+        label.configure(text=self.t("modpack_new_profile"))
+        image = self.outerclient_logo_ctk_v61(38)
+        self._explore_target_image_v63 = image
+        button.configure(
+            text=(
+                f"{self.t('v61_new_profile_target')}\n"
+                f"{self.t('v61_new_profile_target_meta')}"
+            ),
+            image=image,
+            state="disabled",
+        )
+        self.close_explore_overlay_v63()
+        return
+
+    label.configure(text=self.t("install_on_profile"))
+
+    profiles = self.cfg.get("profiles", {})
+    name = self.modrinth_profile.get()
+
+    if name not in profiles:
+        name = self.cfg.get("selected")
+    if name not in profiles and profiles:
+        name = next(iter(profiles))
+
+    if not name or name not in profiles:
+        button.configure(
+            text=self.t("choose_profile_warning"),
+            image=None,
+            state="disabled",
+        )
+        return
+
+    self.modrinth_profile.set(name)
+    profile = profiles[name]
+
+    image = self.profile_icon_ctk(name, 38)
+    self._explore_target_image_v63 = image
+
+    button.configure(
+        text=(
+            f"{name}\n"
+            f"Minecraft {profile.get('version','?')} • {profile.get('loader','?')}     ⌄"
+        ),
+        image=image,
+        state="normal",
+    )
+
+
+def _v63_build_explore_target(self):
+    target = getattr(self, "modrinth_target_card", None)
+
+    if target is None:
+        old = getattr(self, "modrinth_profile_button", None)
+        if old is not None:
+            target = old.master
+
+    if target is None:
+        old_label = getattr(self, "modrinth_target_label", None)
+        if old_label is not None:
+            target = old_label.master
+
+    if target is None:
+        self.write_log("Explore target card not found")
+        return
+
+    for child in list(target.winfo_children()):
+        try:
+            child.destroy()
+        except Exception:
+            pass
+
+    self.modrinth_target_card = target
+
+    self.modrinth_target_label = ctk.CTkLabel(
+        target,
+        text=self.t("install_on_profile"),
+        text_color=MUTED,
+        font=ctk.CTkFont(size=9, weight="bold"),
+    )
+    self.modrinth_target_label.pack(anchor="w", padx=12, pady=(9, 4))
+
+    self.explore_target_button_v63 = ctk.CTkButton(
+        target,
+        text="",
+        image=None,
+        compound="left",
+        anchor="w",
+        height=62,
+        corner_radius=11,
+        fg_color=SURFACE_2,
+        hover_color=SURFACE_3,
+        border_width=1,
+        border_color=BORDER,
+        command=self.toggle_explore_target_menu_v63,
+    )
+    self.explore_target_button_v63.pack(
+        fill="x",
+        padx=10,
+        pady=(0, 10),
+    )
+
+    # Compatibility for old code that checks the button attribute.
+    self.modrinth_profile_button = self.explore_target_button_v63
+
+    self.explore_overlay_v63 = ctk.CTkFrame(
+        self.content,
+        fg_color=SURFACE,
+        corner_radius=11,
+        border_width=1,
+        border_color=self.accent,
+    )
+
+    self.refresh_explore_target_v63()
+    self.after(60, self.refresh_explore_target_v63)
+    self.after(180, self.refresh_explore_target_v63)
+
+
+def _v63_select_explore_profile(self, profile_name):
+    if profile_name not in self.cfg.get("profiles", {}):
+        return
+
+    old = self.modrinth_profile.get()
+    self.modrinth_profile.set(profile_name)
+    self.refresh_explore_target_v63()
+    self.close_explore_overlay_v63()
+
+    if old != profile_name:
+        self.search_modrinth()
+
+
+def _v63_toggle_explore_overlay(self):
+    if self.modrinth_category == "Modpacki":
+        return
+
+    overlay = getattr(self, "explore_overlay_v63", None)
+    target = getattr(self, "modrinth_target_card", None)
+    if overlay is None or target is None:
+        return
+
+    try:
+        if overlay.winfo_ismapped():
+            self.close_explore_overlay_v63()
+            return
+    except Exception:
+        pass
+
+    for child in overlay.winfo_children():
+        child.destroy()
+
+    current = self.modrinth_profile.get()
+
+    for profile_name, profile in self.cfg.get("profiles", {}).items():
+        image = self.profile_icon_ctk(profile_name, 32)
+
+        button = ctk.CTkButton(
+            overlay,
+            text=(
+                f"{'✓  ' if profile_name == current else ''}"
+                f"{profile_name}\n"
+                f"Minecraft {profile.get('version','?')} • {profile.get('loader','?')}"
+            ),
+            image=image,
+            compound="left",
+            anchor="w",
+            height=56,
+            corner_radius=9,
+            fg_color=self.accent if profile_name == current else SURFACE_2,
+            hover_color=self.accent_hover,
+            border_width=1,
+            border_color=self.accent if profile_name == current else BORDER,
+            command=lambda n=profile_name: self.select_explore_profile_v63(n),
+        )
+        button._outerclient_image_v63 = image
+        button.pack(fill="x", padx=7, pady=(7, 0))
+
+    ctk.CTkLabel(
+        overlay,
+        text=self.t("v61_explore_target_hint"),
+        text_color=MUTED,
+        font=ctk.CTkFont(size=9),
+    ).pack(anchor="w", padx=11, pady=(7, 9))
+
+    self.update_idletasks()
+    x = target.winfo_rootx() - self.content.winfo_rootx()
+    y = (
+        target.winfo_rooty()
+        - self.content.winfo_rooty()
+        + target.winfo_height()
+        + 4
+    )
+    width = max(250, target.winfo_width())
+
+    overlay.place(x=x, y=y, width=width)
+    overlay.lift()
+
+
+def _v63_set_explore_target(self, profile_name):
+    if profile_name not in self.cfg.get("profiles", {}):
+        return
+    self.modrinth_profile.set(profile_name)
+    self.refresh_explore_target_v63()
+    self.close_explore_overlay_v63()
+
+
+# ---------------- Linux/KDE window + stable app identity ----------------
+
+def _v63_x11_window_ids(self):
+    ids = []
+
+    try:
+        ids.append(str(int(self.winfo_id())))
+    except Exception:
+        pass
+
+    try:
+        frame = str(self.tk.call("wm", "frame", self._w)).strip()
+        if frame and frame not in ids:
+            ids.append(frame)
+    except Exception:
+        pass
+
+    return ids
+
+
+def _v63_set_topmost_false(self):
+    try:
+        self.attributes("-topmost", False)
+    except Exception:
+        pass
+
+
+def _v63_show_custom_titlebar_layout(self):
+    bar = getattr(self, "_custom_titlebar_v5101", None)
+    if bar is None:
+        return
+
+    try:
+        bar.grid(row=0, column=0, columnspan=2, sticky="ew")
+        self.sidebar.grid_configure(row=1, column=0)
+        self.content.grid_configure(row=1, column=1)
+        self.download_bar.grid_configure(row=2, column=0, columnspan=2)
+
+        self.grid_rowconfigure(0, weight=0, minsize=38)
+        self.grid_rowconfigure(1, weight=1, minsize=0)
+        self.grid_rowconfigure(2, weight=0, minsize=0)
+    except Exception:
+        pass
+
+
+def _v63_show_native_titlebar_layout(self):
+    bar = getattr(self, "_custom_titlebar_v5101", None)
+    if bar is not None:
+        try:
+            bar.grid_remove()
+        except Exception:
+            pass
+
+    try:
+        self.sidebar.grid_configure(row=0, column=0)
+        self.content.grid_configure(row=0, column=1)
+        self.download_bar.grid_configure(row=1, column=0, columnspan=2)
+
+        self.grid_rowconfigure(0, weight=1, minsize=0)
+        self.grid_rowconfigure(1, weight=0, minsize=0)
+        self.grid_rowconfigure(2, weight=0, minsize=0)
+    except Exception:
+        pass
+
+
+def _v63_apply_window_identity(self):
+    if not sys.platform.startswith("linux"):
+        return False
+
+    if not shutil.which("xprop"):
+        return False
+
+    success = False
+
+    for window_id in self.x11_window_ids_v63():
+        try:
+            # KDE accepts either the base desktop file name or a full path.
+            result = subprocess.run(
+                [
+                    "xprop",
+                    "-id",
+                    window_id,
+                    "-f",
+                    "_KDE_NET_WM_DESKTOP_FILE",
+                    "8s",
+                    "-set",
+                    "_KDE_NET_WM_DESKTOP_FILE",
+                    "outerclient.desktop",
+                ],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                timeout=2,
+            )
+            success = success or result.returncode == 0
+        except Exception:
+            pass
+
+    return success
+
+
+def _v63_apply_linux_window_mode(self, force=False):
+    if not sys.platform.startswith("linux"):
+        return _V62_LINUX_MANAGED_BASE(self, force)
+
+    self.set_topmost_false_v63()
+
+    try:
+        self.overrideredirect(False)
+    except Exception:
+        pass
+
+    try:
+        self.update_idletasks()
+    except Exception:
+        pass
+
+    xprop = shutil.which("xprop")
+    decorated_removed = False
+
+    if xprop:
+        for window_id in self.x11_window_ids_v63():
+            try:
+                result = subprocess.run(
+                    [
+                        xprop,
+                        "-id",
+                        window_id,
+                        "-f",
+                        "_MOTIF_WM_HINTS",
+                        "32c",
+                        "-set",
+                        "_MOTIF_WM_HINTS",
+                        "2, 0, 0, 0, 0",
+                    ],
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                    timeout=2,
+                )
+                decorated_removed = decorated_removed or result.returncode == 0
+            except Exception:
+                pass
+
+    self.apply_window_identity_v63()
+
+    if decorated_removed:
+        self.show_custom_titlebar_layout_v63()
+    else:
+        # Pure Wayland/no xprop fallback: one native title bar is safer than
+        # duplicated/unmanaged windows.
+        self.show_native_titlebar_layout_v63()
+
+    self.set_topmost_false_v63()
+
+
+def _v63_window_map(self, event=None):
+    if not sys.platform.startswith("linux"):
+        return _V63_WINDOW_MAP_BASE(self, event)
+
+    if event is not None and getattr(event, "widget", None) is not self:
+        return
+
+    self.after(70, lambda: self.apply_linux_window_mode_v63(force=True))
+
+
+def _v63_minimize(self):
+    self.set_topmost_false_v63()
+
+    if not sys.platform.startswith("linux"):
+        return _V63_WINDOW_MINIMIZE_BASE(self)
+
+    try:
+        self.iconify()
+    except Exception:
+        try:
+            self.state("iconic")
+        except Exception:
+            pass
+
+
+# ---------------- Stable taskbar / dock pin ----------------
+
+def _v63_stable_linux_entry(self):
+    target = self.prepare_stable_executable_v62()
+
+    if not target.exists():
+        raise RuntimeError(
+            "Uruchom OuterClient jako AppImage, aby przygotować stały wpis."
+        )
+
+    # Stable icon, outside /tmp/.mount_*.
+    assets = self.copy_shortcut_assets_v55()
+    applications = Path.home() / ".local" / "share" / "applications"
+    applications.mkdir(parents=True, exist_ok=True)
+
+    desktop = applications / "outerclient.desktop"
+
+    content = f"""[Desktop Entry]
+Type=Application
+Version=1.0
+Name=OuterClient
+Comment=OuterClient Minecraft Launcher
+Exec={target}
+TryExec={target}
+Icon=outerclient
+Categories=Game;
+Terminal=false
+StartupNotify=true
+StartupWMClass=OuterClient
+X-KDE-StartupNotify=true
+"""
+
+    if "/tmp/.mount_" in content:
+        raise RuntimeError("Temporary AppImage mount path detected")
+
+    desktop.write_text(content, encoding="utf-8")
+    os.chmod(desktop, 0o755)
+    os.chmod(target, 0o755)
+
+    # Ensure icon theme copy is present.
+    try:
+        self.install_linux_icon_theme_v57()
+    except Exception:
+        pass
+
+    for command in (
+        ["update-desktop-database", str(applications)],
+        ["kbuildsycoca6", "--noincremental"],
+        ["kbuildsycoca5", "--noincremental"],
+    ):
+        if shutil.which(command[0]):
+            try:
+                subprocess.run(
+                    command,
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                    timeout=12,
+                )
+            except Exception:
+                pass
+
+    return desktop
+
+
+def _v63_try_pin_kde(self):
+    qdbus = shutil.which("qdbus6") or shutil.which("qdbus")
+    if not qdbus:
+        return False
+
+    # Remove stale launchers pointing into AppImage /tmp/.mount_* and add only
+    # the stable applications:outerclient.desktop entry.
+    script = r"""
+var ps = panels();
+for (var i = 0; i < ps.length; ++i) {
+    var ws = ps[i].widgets();
+    for (var j = 0; j < ws.length; ++j) {
+        var w = ws[j];
+        if (w.type == "org.kde.plasma.icontasks" ||
+            w.type == "org.kde.plasma.taskmanager") {
+            w.currentConfigGroup = ["General"];
+            var raw = w.readConfig("launchers", "");
+            var parts = raw.length ? raw.split(",") : [];
+            var clean = [];
+            var target = "applications:outerclient.desktop";
+            for (var k = 0; k < parts.length; ++k) {
+                var item = parts[k];
+                var lower = item.toLowerCase();
+                if (lower.indexOf("/tmp/.mount_") >= 0 &&
+                    lower.indexOf("outerclient") >= 0) {
+                    continue;
+                }
+                if (item == target) {
+                    continue;
+                }
+                if (item.length) clean.push(item);
+            }
+            clean.push(target);
+            w.writeConfig("launchers", clean.join(","));
+        }
+    }
+}
+"""
+
+    for method in (
+        "org.kde.PlasmaShell.evaluateScript",
+        "evaluateScript",
+    ):
+        try:
+            result = subprocess.run(
+                [qdbus, "org.kde.plasmashell", "/PlasmaShell", method, script],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                timeout=8,
+            )
+            if result.returncode == 0:
+                return True
+        except Exception:
+            pass
+
+    return False
+
+
+def _v63_taskbar_worker(self):
+    try:
+        pinned = False
+
+        if sys.platform.startswith("win"):
+            self.write_outerclient_shortcut()
+            shortcut = self.desktop_directory_v57() / "OuterClient.lnk"
+            pinned = self.try_pin_windows_v62(shortcut)
+        else:
+            desktop = self.stable_linux_entry_v63()
+
+            # Verify the actual saved file is stable before touching Plasma.
+            text = desktop.read_text(encoding="utf-8")
+            if "/tmp/.mount_" in text:
+                raise RuntimeError("outerclient.desktop contains a temporary AppImage path")
+
+            if "kde" in os.environ.get("XDG_CURRENT_DESKTOP", "").lower():
+                pinned = self.try_pin_kde_v63()
+
+        self._async_results_v63.put(
+            ("taskbar_result", (True, pinned, self.t("v63_taskbar_stable")))
+        )
+
+    except Exception as exc:
+        self._async_results_v63.put(
+            (
+                "taskbar_result",
+                (
+                    False,
+                    False,
+                    self.t("v62_taskbar_error", error=exc),
+                ),
+            )
+        )
+
+
+def _v63_start_taskbar_pin(self):
+    self.set_status(self.t("v63_taskbar_preparing"))
+    try:
+        self.apply_window_identity_v63()
+    except Exception:
+        pass
+    self.run_bg(self.taskbar_worker_v63)
+
+
+def _v63_show_system_tools(self):
+    # Build the Java/updates page without the buggy 6.2 taskbar card.
+    _V63_SYSTEM_TOOLS_BASE(self)
+
+    pages = self.content.winfo_children()
+    page = pages[0] if pages else None
+    if page is None:
+        return
+
+    rows = []
+    for child in page.winfo_children():
+        try:
+            rows.append(int(child.grid_info().get("row", -1)))
+        except Exception:
+            pass
+
+    row = max(rows) + 1 if rows else 5
+
+    card = self.card(page, 14)
+    card.grid(row=row, column=0, sticky="ew", padx=36, pady=(0, 18))
+
+    ctk.CTkLabel(
+        card,
+        text=self.t("v62_taskbar_title"),
+        text_color=TEXT,
+        font=ctk.CTkFont(size=19, weight="bold"),
+    ).pack(anchor="w", padx=20, pady=(16, 3))
+
+    ctk.CTkLabel(
+        card,
+        text=self.t("v62_taskbar_desc"),
+        text_color=MUTED,
+        anchor="w",
+        justify="left",
+        wraplength=850,
+    ).pack(anchor="w", padx=20, pady=(0, 12))
+
+    buttons = ctk.CTkFrame(card, fg_color="transparent")
+    buttons.pack(fill="x", padx=20, pady=(0, 16))
+
+    ctk.CTkButton(
+        buttons,
+        text=self.t("v62_taskbar_add"),
+        fg_color=self.accent,
+        hover_color=self.accent_hover,
+        command=self.start_taskbar_pin_v63,
+    ).pack(side="left")
+
+    ctk.CTkButton(
+        buttons,
+        text=self.t("v62_taskbar_open_apps"),
+        fg_color=SURFACE_3,
+        hover_color=self.accent,
+        command=self.open_app_location_v62,
+    ).pack(side="left", padx=8)
+
+
+# ---------------- Init ----------------
+
+def _v63_init(self):
+    self._async_results_v63 = queue.Queue()
+    self._icon_executor_v63 = ThreadPoolExecutor(max_workers=4)
+
+    self._home_generation_v63 = 0
+    self._home_widgets_v63 = {}
+
+    self._manager_generation_v63 = 0
+    self._manager_cache_v63 = {}
+    self._manager_render_token_v63 = 0
+    self._manager_health_widgets_v63 = {}
+
+    _V63_INIT_BASE(self)
+
+    # Never behave like an always-on-top tool window.
+    self.set_topmost_false_v63()
+
+    if sys.platform.startswith("linux"):
+        self.after(120, lambda: self.apply_linux_window_mode_v63(force=True))
+        self.after(350, lambda: self.apply_linux_window_mode_v63(force=True))
+        self.after(650, self.apply_window_identity_v63)
+
+    self.after(100, self.poll_results_v63)
+
+
+OuterClient.poll_results_v63 = _v63_poll_results
+
+OuterClient.release_card_v63 = _v63_release_card
+OuterClient.show_whats_new_v61 = _v63_show_whats_new
+
+OuterClient.home_worker_v63 = _v63_home_worker
+OuterClient.apply_home_data_v63 = _v63_apply_home_data
+OuterClient.select_home_profile_v6 = _v63_select_home_profile
+OuterClient.show_home = _v63_show_home
+
+OuterClient.manager_signature_v63 = _v63_manager_signature
+OuterClient.invalidate_manager_cache_v63 = _v63_invalidate_manager_cache
+OuterClient.manager_entries_worker_v63 = _v63_manager_entries_worker
+OuterClient.manager_health_worker_v63 = _v63_manager_health_worker
+OuterClient.apply_manager_health_v63 = _v63_apply_manager_health
+OuterClient.render_manager_chunk_v63 = _v63_render_manager_chunk
+OuterClient.render_manager_entries_v63 = _v63_render_manager_entries
+OuterClient.render_manage_file_list = _v63_render_manage_file_list
+OuterClient.manage_category_changed = _v63_manage_category_changed
+OuterClient.refresh_profile_manager = _v63_refresh_profile_manager
+OuterClient.delete_managed_content = _v63_delete_managed
+OuterClient.show_profile_manager = _v63_show_profile_manager
+
+OuterClient.download_profile_runtime_worker = _v63_download_runtime_worker
+
+OuterClient.close_explore_overlay_v63 = _v63_close_explore_overlay
+OuterClient.refresh_explore_target_v63 = _v63_refresh_explore_target
+OuterClient.build_explore_target_v61 = _v63_build_explore_target
+OuterClient.select_explore_profile_v63 = _v63_select_explore_profile
+OuterClient.toggle_explore_target_menu_v63 = _v63_toggle_explore_overlay
+OuterClient.toggle_explore_target_menu_v61 = _v63_toggle_explore_overlay
+OuterClient.close_explore_target_menu_v61 = _v63_close_explore_overlay
+OuterClient.select_explore_profile_v61 = _v63_select_explore_profile
+OuterClient.update_modrinth_target_ui = _v63_refresh_explore_target
+OuterClient.set_modrinth_target_profile = _v63_set_explore_target
+
+OuterClient.x11_window_ids_v63 = _v63_x11_window_ids
+OuterClient.set_topmost_false_v63 = _v63_set_topmost_false
+OuterClient.show_custom_titlebar_layout_v63 = _v63_show_custom_titlebar_layout
+OuterClient.show_native_titlebar_layout_v63 = _v63_show_native_titlebar_layout
+OuterClient.apply_window_identity_v63 = _v63_apply_window_identity
+OuterClient.apply_linux_window_mode_v63 = _v63_apply_linux_window_mode
+OuterClient.apply_linux_titlebar_v62 = _v63_apply_linux_window_mode
+OuterClient.apply_linux_managed_titlebar_v61 = _v63_apply_linux_window_mode
+OuterClient.apply_borderless_once_v5103 = _v63_apply_linux_window_mode
+OuterClient.force_borderless_v5102 = _v63_apply_linux_window_mode
+OuterClient.custom_on_map_v5101 = _v63_window_map
+OuterClient.custom_minimize_v5101 = _v63_minimize
+
+OuterClient.stable_linux_entry_v63 = _v63_stable_linux_entry
+OuterClient.try_pin_kde_v63 = _v63_try_pin_kde
+OuterClient.taskbar_worker_v63 = _v63_taskbar_worker
+OuterClient.start_taskbar_pin_v63 = _v63_start_taskbar_pin
+OuterClient.show_system_tools_settings = _v63_show_system_tools
+
+OuterClient.__init__ = _v63_init
+
+
+# ---------------- Extra 6.3 non-blocking profile actions ----------------
+
+def _v63_snapshot_worker(self, profile_name):
+    try:
+        snapshot = self.create_profile_snapshot_v6(
+            profile_name,
+            "manual",
+            True,
+        )
+        if snapshot:
+            self.events.put(
+                ("status", self.t("v63_snapshot_created", name=Path(snapshot).name))
+            )
+        generation = self._manager_generation_v63
+        self.manager_health_worker_v63(generation, profile_name)
+    except Exception as exc:
+        self.events.put(("error", f"Snapshot:\n{exc}"))
+
+
+def _v63_start_snapshot(self, profile_name):
+    self.set_status(self.t("v63_snapshot_creating"))
+    self.run_bg(lambda: self.snapshot_worker_v63(profile_name))
+
+
+def _v63_update_all_async(self, profile_name):
+    def worker():
+        try:
+            entries = []
+            for category in ("mods", "resources", "shaders"):
+                entries.extend(self.profile_manage_entries(profile_name, category))
+
+            updates = [
+                entry
+                for entry in entries
+                if (profile_name, entry.get("rel")) in self.profile_update_cache
+            ]
+
+            if not updates:
+                self.events.put(("status", self.t("v5_updates_none")))
+                return
+
+            self.create_profile_snapshot_v6(
+                profile_name,
+                "auto-update-all",
+                True,
+            )
+            self.events.put(("status", self.t("v6_snapshot_auto")))
+            _V6_UPDATE_ALL_WORKER(self, profile_name, updates)
+            self.invalidate_manager_cache_v63(profile_name)
+            self.invalidate_library_cache_v62()
+        except Exception as exc:
+            self.events.put(("error", f"Update:\n{exc}"))
+
+    self.set_status(self.t("v5_check_updates"))
+    self.run_bg(worker)
+
+
+OuterClient.snapshot_worker_v63 = _v63_snapshot_worker
+OuterClient.start_profile_snapshot_v63 = _v63_start_snapshot
+OuterClient.update_all_content = _v63_update_all_async
 
 
 
