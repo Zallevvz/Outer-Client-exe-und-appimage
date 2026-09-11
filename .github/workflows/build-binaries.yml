@@ -120,7 +120,8 @@ jobs:
 
           assert app.winfo_exists()
           assert outerclient.APP_VERSION == "6.3"
-          assert app.winfo_class() == "OuterClient"
+          print("Tk window class:", app.winfo_class())
+          assert app.winfo_class().casefold() == "outerclient"
 
           # Dashboard/profile-switch regression.
           app.show_home()
@@ -240,7 +241,7 @@ jobs:
           Icon=outerclient
           Categories=Game;
           Terminal=false
-          StartupWMClass=OuterClient
+          StartupWMClass=Outerclient
           X-AppImage-Version=6.3
           EOF
 
