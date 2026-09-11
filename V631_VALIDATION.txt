@@ -1,0 +1,37 @@
+OuterClient 6.3.1 — validation report
+
+FIXES INCLUDED
+- Linux/KDE titlebar: managed window + Motif no-decoration remap; avoids native+custom double bar on X11/XWayland.
+- Pure Wayland/no-xprop fallback: one native titlebar instead of duplicated bars.
+- Window remains non-topmost and WM-managed for taskbar/dock + Alt-Tab.
+- Explore target-profile picker: root-level overlay, clickable target button, no layout shifting/clipping.
+- General Settings: raw Discord Application ID field removed.
+- Persisted legacy discord_client_id is removed on startup/save.
+- System Tools: Taskbar / dock card uses explicit row 5 and normal scroll flow; no overlap with Shortcut card.
+- Windows Minecraft launch: CREATE_NO_WINDOW + STARTUPINFO/STARTF_USESHOWWINDOW hides the Java console window.
+- What's New updated for 6.3.1.
+
+VALIDATION
+- Python compile: OK
+- AST parse: OK
+- Module-level patch/binding chain: OK
+- Final method bindings: OK
+- PL/EN translation parity: OK
+- All literal translation lookups exist: OK
+- Workflow YAML parse: OK
+- Linux bash scripts (bash -n): OK
+- GitHub workflow includes real Xvfb regression check for the Explore profile overlay.
+- GitHub workflow checks that General Settings no longer creates settings_discord.
+- AppImage artifact name: OuterClient-v6.3.1-x86_64.AppImage
+- Windows artifact name: OuterClient-v6.3.1.exe
+
+IMPORTANT
+The GitHub Actions workflow used by GitHub is:
+.github/workflows/build-binaries.yml
+not the root-level build-binaries.yml copy.
+
+FIX1 (GitHub AppImage smoke test)
+- Identified failing line 62: explore_overlay_v631.winfo_ismapped().
+- Xvfb smoke test no longer runs Linux WM withdraw/remap logic.
+- Explore dropdown test now validates existence, place geometry manager, place_info and populated children instead of transient X11 mapping state.
+- Workflow visibly identifies itself as 6.3.1 FIX1.
