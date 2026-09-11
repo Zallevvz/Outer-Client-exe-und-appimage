@@ -38,7 +38,7 @@ except Exception:
 
 
 APP_NAME = "OuterClient"
-APP_VERSION = "6.1"
+APP_VERSION = "6.2"
 CONFIG_PATH = Path.home() / ".outerclient.json"
 REDIRECT_URI = "http://localhost:8765/callback"
 MICROSOFT_CLIENT_ID = "fb14d1c4-7d14-4a35-99a7-3f921f7a1e77"
@@ -541,6 +541,29 @@ TEXTS = {
         "v61_explore_target_hint": "Kliknij, aby wybrać profil",
         "v61_new_profile_target": "Nowy profil",
         "v61_new_profile_target_meta": "Modpack utworzy osobny profil",
+        "v62_whats_new_eyebrow": "OUTERCLIENT 6.2",
+        "v62_whats_new_62_title": "OuterClient 6.2",
+        "v62_whats_new_62_date": "Wrzesień 2026",
+        "v62_change_performance": "Duża optymalizacja responsywności — profile i Biblioteka nie blokują już interfejsu podczas cięższych skanów.",
+        "v62_change_library": "Biblioteka używa cache, odświeża indeks w tle i renderuje wyniki partiami.",
+        "v62_change_explore": "Wybór profilu w Eksploruj jest overlayem: rozwija się nad stroną i nie przesuwa reszty interfejsu.",
+        "v62_change_target_fix": "Naprawione puste „Instaluj na profilu” — karta wymusza odświeżenie ikony, nazwy, wersji i loadera.",
+        "v62_change_window": "Naprawione okno na Linuxie/KDE: bez podwójnego paska, z normalnym paskiem zadań i minimalizacją.",
+        "v62_change_taskbar": "Dodano integrację „Dodaj do paska zadań / docka” z trwałym wpisem aplikacji i ikoną.",
+        "v62_change_changelog": "„Co nowego?” zapisuje odczytaną wersję w osobnym stanie i otwiera się automatycznie tylko raz na wersję.",
+        "v62_library_loading": "Indeksowanie Biblioteki w tle…",
+        "v62_library_refreshing": "Odświeżanie Biblioteki…",
+        "v62_profile_health_loading": "Sprawdzanie profilu…",
+        "v62_taskbar_title": "Pasek zadań / dock",
+        "v62_taskbar_desc": "Tworzy trwały wpis OuterClient z poprawną ikoną. Dzięki stałej lokalizacji przypięcie nie znika po aktualizacji.",
+        "v62_taskbar_add": "Dodaj do paska zadań / docka",
+        "v62_taskbar_open_apps": "Otwórz lokalizację aplikacji",
+        "v62_taskbar_ready": "OuterClient został przygotowany do przypięcia do paska zadań / docka.",
+        "v62_taskbar_pinned": "OuterClient został dodany do paska zadań / docka.",
+        "v62_taskbar_manual": "Wpis OuterClient jest gotowy. Jeśli system nie pozwolił przypiąć go automatycznie, kliknij prawym przyciskiem ikonę uruchomionego OuterClient i wybierz przypięcie do paska zadań.",
+        "v62_taskbar_error": "Nie udało się przygotować wpisu paska zadań: {error}",
+        "v62_native_titlebar_wayland": "Na Wayland używany jest pojedynczy natywny pasek systemu, aby zachować poprawną minimalizację i pasek zadań.",
+        "v62_cache_ready": "Gotowe z cache",
         "v58_update_checking": "Sprawdzanie aktualizacji OuterClient…",
         "v58_update_failed": "Nie udało się sprawdzić aktualizacji: {error}",
         "v58_latest": "Masz najnowszą wersję OuterClient ({version}).",
@@ -1061,6 +1084,29 @@ TEXTS = {
         "v61_explore_target_hint": "Click to choose a profile",
         "v61_new_profile_target": "New profile",
         "v61_new_profile_target_meta": "The modpack will create a separate profile",
+        "v62_whats_new_eyebrow": "OUTERCLIENT 6.2",
+        "v62_whats_new_62_title": "OuterClient 6.2",
+        "v62_whats_new_62_date": "September 2026",
+        "v62_change_performance": "Major responsiveness improvements — profile and Library scans no longer block the UI.",
+        "v62_change_library": "Library now uses a cache, refreshes its index in the background and renders results in batches.",
+        "v62_change_explore": "The Explore profile picker is now an overlay: it opens over the page without moving the rest of the interface.",
+        "v62_change_target_fix": "Fixed blank Install to profile cards — icon, name, Minecraft version and loader are forcibly refreshed.",
+        "v62_change_window": "Fixed Linux/KDE window behavior: no duplicate title bar, normal taskbar presence and working minimize.",
+        "v62_change_taskbar": "Added Pin to taskbar / dock integration with a stable application entry and icon.",
+        "v62_change_changelog": "What's New stores its seen version separately and automatically opens only once per release.",
+        "v62_library_loading": "Indexing Library in the background…",
+        "v62_library_refreshing": "Refreshing Library…",
+        "v62_profile_health_loading": "Checking profile…",
+        "v62_taskbar_title": "Taskbar / dock",
+        "v62_taskbar_desc": "Creates a stable OuterClient application entry with the proper icon. The pinned entry remains valid after updates.",
+        "v62_taskbar_add": "Pin to taskbar / dock",
+        "v62_taskbar_open_apps": "Open application location",
+        "v62_taskbar_ready": "OuterClient is ready to be pinned to the taskbar / dock.",
+        "v62_taskbar_pinned": "OuterClient was added to the taskbar / dock.",
+        "v62_taskbar_manual": "The OuterClient application entry is ready. If the system did not allow automatic pinning, right-click the running OuterClient icon and choose the taskbar pin option.",
+        "v62_taskbar_error": "Could not prepare taskbar integration: {error}",
+        "v62_native_titlebar_wayland": "On Wayland a single native system title bar is used to preserve correct minimize and taskbar behavior.",
+        "v62_cache_ready": "Ready from cache",
         "v5_change_profile": "Change profile",
         "v5_previous": "Previous",
         "v5_next": "Next",
@@ -1451,7 +1497,7 @@ class OuterClient(ctk.CTk):
                 try:
                     import ctypes
                     ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(
-                        "OuterClient.Launcher.6.1"
+                        "OuterClient.Launcher.6.2"
                     )
                 except Exception:
                     pass
@@ -28052,6 +28098,1227 @@ OuterClient.custom_minimize_v5101 = _v61_minimize
 
 OuterClient.build_shell = _v61_build_shell
 OuterClient.__init__ = _v61_init
+
+
+
+# ============================================================
+# OuterClient 6.2
+# ============================================================
+
+_V62_SAVE_CONFIG_BASE = save_config
+_V62_INIT_BASE = OuterClient.__init__
+_V62_SHOW_WHATS_NEW_BASE = OuterClient.show_whats_new_v61
+_V62_BUILD_EXPLORE_TARGET_BASE = OuterClient.build_explore_target_v61
+_V62_SHOW_PROFILES_BASE = _V6_SHOW_PROFILES_BASE
+_V62_SHOW_SYSTEM_TOOLS_BASE = OuterClient.show_system_tools_settings
+_V62_LINUX_MANAGED_BASE = OuterClient.apply_linux_managed_titlebar_v61
+_V62_MAP_BASE = OuterClient.custom_on_map_v5101
+_V62_MINIMIZE_BASE = OuterClient.custom_minimize_v5101
+
+_V62_CONFIG_LOCK = threading.RLock()
+_V62_CONFIG_LAST_SERIALIZED = None
+
+
+def _v62_save_config(cfg):
+    global _V62_CONFIG_LAST_SERIALIZED
+
+    serialized = json.dumps(
+        cfg,
+        ensure_ascii=False,
+        indent=2,
+        sort_keys=False,
+    )
+
+    with _V62_CONFIG_LOCK:
+        if serialized == _V62_CONFIG_LAST_SERIALIZED and CONFIG_PATH.exists():
+            return
+
+        temp = CONFIG_PATH.with_suffix(CONFIG_PATH.suffix + ".tmp")
+        temp.write_text(serialized, encoding="utf-8")
+        os.replace(temp, CONFIG_PATH)
+        _V62_CONFIG_LAST_SERIALIZED = serialized
+
+
+save_config = _v62_save_config
+
+
+def _v62_state_path(self):
+    return Path.home() / ".outerclient-state.json"
+
+
+def _v62_load_state(self):
+    path = self.ui_state_path_v62()
+    try:
+        raw = json.loads(path.read_text(encoding="utf-8"))
+        return raw if isinstance(raw, dict) else {}
+    except Exception:
+        return {}
+
+
+def _v62_save_state(self):
+    path = self.ui_state_path_v62()
+    try:
+        temp = path.with_suffix(path.suffix + ".tmp")
+        temp.write_text(
+            json.dumps(self._ui_state_v62, ensure_ascii=False, indent=2),
+            encoding="utf-8",
+        )
+        os.replace(temp, path)
+    except Exception as exc:
+        self.write_log("UI state save failed: " + str(exc))
+
+
+def _v62_mark_whats_new_seen(self):
+    self._ui_state_v62["whats_new_seen_version"] = APP_VERSION
+    self.save_ui_state_v62()
+    self.cfg["whats_new_seen_version"] = APP_VERSION
+
+
+def _v62_show_whats_new(self, mark_seen=True):
+    _V62_SHOW_WHATS_NEW_BASE(self, mark_seen=False)
+
+    try:
+        outer = self.content.winfo_children()[0]
+        existing = list(outer.winfo_children())
+
+        for child in existing:
+            info = child.grid_info()
+            if not info:
+                continue
+            row = int(info.get("row", 0))
+            if row >= 1:
+                child.grid_configure(row=row + 1)
+
+        self.release_card_v61(
+            outer,
+            1,
+            self.t("v62_whats_new_62_title"),
+            self.t("v62_whats_new_62_date"),
+            [
+                self.t("v62_change_performance"),
+                self.t("v62_change_library"),
+                self.t("v62_change_explore"),
+                self.t("v62_change_target_fix"),
+                self.t("v62_change_window"),
+                self.t("v62_change_taskbar"),
+                self.t("v62_change_changelog"),
+            ],
+            current=True,
+        )
+    except Exception as exc:
+        self.write_log("What's New 6.2 card failed: " + str(exc))
+
+    if mark_seen:
+        self.mark_whats_new_seen_v62()
+
+
+def _v62_maybe_show_whats_new(self):
+    seen = self._ui_state_v62.get("whats_new_seen_version", "")
+    if seen == APP_VERSION:
+        return
+
+    if self.microsoft_login_in_progress:
+        self.after(750, self.maybe_show_whats_new_v61)
+        return
+
+    self.mark_whats_new_seen_v62()
+    self.show_whats_new_v61(mark_seen=False)
+
+
+def _v62_poll_async(self):
+    try:
+        while True:
+            kind, value = self._async_results_v62.get_nowait()
+
+            if kind == "library_ready":
+                generation, signature, groups = value
+                if generation != self._library_generation_v62:
+                    continue
+
+                self._library_cache_v62 = groups
+                self._library_cache_signature_v62 = signature
+                self._library_refreshing_v62 = False
+
+                if self.active_page == "library":
+                    self.render_library_cached_v62()
+
+            elif kind == "profile_health_ready":
+                generation, reports = value
+                if generation != self._profiles_generation_v62:
+                    continue
+
+                for profile_name, report in reports.items():
+                    label = self._profile_health_labels_v62.get(profile_name)
+                    if label is None:
+                        continue
+                    try:
+                        if not label.winfo_exists():
+                            continue
+                        color = self.health_color_v6(report["status"])
+                        label.configure(
+                            text=(
+                                f"●  {self.health_title_v6(report['status'])}"
+                                f"  •  {self.t('v6_health_score', score=report['score'])}"
+                            ),
+                            text_color=color,
+                        )
+                    except Exception:
+                        pass
+
+    except queue.Empty:
+        pass
+    except Exception as exc:
+        self.write_log("6.2 async poll: " + str(exc))
+    finally:
+        try:
+            self.after(100, self.poll_async_v62)
+        except Exception:
+            pass
+
+
+def _v62_profile_health_worker(self, generation, profile_names):
+    reports = {}
+    for profile_name in profile_names:
+        try:
+            reports[profile_name] = self.profile_health_report_v6(profile_name)
+        except Exception as exc:
+            reports[profile_name] = {
+                "score": 0,
+                "status": "bad",
+                "errors": 1,
+                "warnings": 0,
+                "items": [
+                    {
+                        "component": "game",
+                        "level": "error",
+                        "text": str(exc),
+                    }
+                ],
+            }
+
+    self._async_results_v62.put(
+        ("profile_health_ready", (generation, reports))
+    )
+
+
+def _v62_show_profiles(self):
+    _V62_SHOW_PROFILES_BASE(self)
+
+    self._profiles_generation_v62 += 1
+    generation = self._profiles_generation_v62
+    self._profile_health_labels_v62 = {}
+
+    try:
+        page = self.content.winfo_children()[0]
+    except Exception:
+        return
+
+    cards = []
+    for child in page.winfo_children():
+        try:
+            row = int(child.grid_info().get("row", -1))
+        except Exception:
+            continue
+        if row >= 2:
+            cards.append((row, child))
+
+    cards.sort(key=lambda item: item[0])
+    profile_names = list(self.cfg.get("profiles", {}).keys())
+
+    for profile_name, (_row, card) in zip(profile_names, cards):
+        label = ctk.CTkLabel(
+            card,
+            text="○  " + self.t("v62_profile_health_loading"),
+            text_color=MUTED,
+            anchor="w",
+            font=ctk.CTkFont(size=10, weight="bold"),
+        )
+        label.grid(row=2, column=1, sticky="w", pady=(0, 11))
+        self._profile_health_labels_v62[profile_name] = label
+
+        ctk.CTkButton(
+            card,
+            text=self.t("v6_profile_quick_play"),
+            width=82,
+            height=30,
+            fg_color=self.accent,
+            hover_color=self.accent_hover,
+            command=lambda n=profile_name: self.quick_launch_profile_v6(n),
+        ).grid(
+            row=2,
+            column=2,
+            columnspan=4,
+            sticky="e",
+            padx=(8, 16),
+            pady=(0, 10),
+        )
+
+    if profile_names:
+        self.run_bg(
+            lambda: self.profile_health_worker_v62(
+                generation,
+                profile_names,
+            )
+        )
+
+
+def _v62_library_signature(self):
+    signature = []
+    folder_names = ("mods", "resourcepacks", "shaderpacks", "datapacks")
+
+    for profile_name in sorted(self.cfg.get("profiles", {})):
+        instance = self.profile_instance_dir(profile_name)
+        profile = self.cfg["profiles"][profile_name]
+
+        entry = [
+            profile_name,
+            str(profile.get("version", "")),
+            str(profile.get("loader", "")),
+        ]
+
+        for folder_name in folder_names:
+            folder = instance / folder_name
+            try:
+                stat = folder.stat()
+                entry.extend([folder_name, stat.st_mtime_ns, stat.st_size])
+            except Exception:
+                entry.extend([folder_name, 0, 0])
+
+        try:
+            meta = self.content_metadata_path(profile_name)
+            stat = meta.stat()
+            entry.extend(["metadata", stat.st_mtime_ns, stat.st_size])
+        except Exception:
+            entry.extend(["metadata", 0, 0])
+
+        signature.append(tuple(entry))
+
+    return tuple(signature)
+
+
+def _v62_library_worker(self, generation):
+    try:
+        signature = self.library_signature_v62()
+        groups = self.library_groups_v6("all", "")
+        self._async_results_v62.put(
+            ("library_ready", (generation, signature, groups))
+        )
+    except Exception as exc:
+        self.write_log("Library indexing: " + str(exc))
+        self._async_results_v62.put(
+            ("library_ready", (generation, (), []))
+        )
+
+
+def _v62_library_filter(self):
+    groups = list(self._library_cache_v62 or [])
+    category = getattr(self, "library_category_v6", "all")
+
+    query = ""
+    if hasattr(self, "library_query_v6"):
+        try:
+            query = self.library_query_v6.get()
+        except Exception:
+            query = ""
+
+    query = str(query or "").strip().casefold()
+    result = []
+
+    for group in groups:
+        if category != "all" and group.get("category") != category:
+            continue
+
+        haystack = " ".join(
+            [
+                str(group.get("title", "")),
+                str(group.get("source", "")),
+                " ".join(group.get("profiles", [])),
+            ]
+        ).casefold()
+
+        if query and query not in haystack:
+            continue
+
+        result.append(group)
+
+    return result
+
+
+def _v62_render_library_chunk(self, groups, start, token):
+    if token != self._library_render_token_v62:
+        return
+
+    container = getattr(self, "library_results_v6", None)
+    if container is None:
+        return
+
+    stop = min(len(groups), start + 18)
+
+    for row_index in range(start, stop):
+        group = groups[row_index]
+
+        card = self.card(container, 13)
+        card.grid(row=row_index, column=0, sticky="ew", padx=8, pady=5)
+        card.grid_columnconfigure(1, weight=1)
+
+        icon = ctk.CTkLabel(
+            card,
+            text="◇",
+            width=54,
+            height=54,
+            corner_radius=12,
+            fg_color=SURFACE_2,
+            text_color=MUTED,
+            font=ctk.CTkFont(size=20, weight="bold"),
+        )
+        icon.grid(row=0, column=0, rowspan=2, padx=14, pady=13)
+
+        if group.get("icon_url"):
+            self.run_bg(
+                lambda u=group["icon_url"], w=icon: self.fetch_project_icon(u, w)
+            )
+
+        ctk.CTkLabel(
+            card,
+            text=group["title"],
+            text_color=TEXT,
+            font=ctk.CTkFont(size=15, weight="bold"),
+            anchor="w",
+        ).grid(row=0, column=1, sticky="sw", pady=(12, 0))
+
+        detail = (
+            f"{group['source']}  •  "
+            f"{self.library_category_label_v6(group['category'])}"
+        )
+        if group.get("version"):
+            detail += f"  •  {group['version']}"
+
+        ctk.CTkLabel(
+            card,
+            text=detail,
+            text_color=MUTED,
+            anchor="w",
+        ).grid(row=1, column=1, sticky="nw", pady=(2, 12))
+
+        ctk.CTkLabel(
+            card,
+            text=self.t(
+                "v6_library_profiles",
+                profiles=", ".join(group["profiles"]),
+            ),
+            text_color="#A8B3C2",
+            anchor="e",
+        ).grid(
+            row=0,
+            column=2,
+            sticky="e",
+            padx=(12, 12),
+            pady=(12, 0),
+        )
+
+        first_profile = group["profiles"][0]
+
+        ctk.CTkButton(
+            card,
+            text=self.t("v6_manage"),
+            width=105,
+            height=32,
+            fg_color=SURFACE_3,
+            hover_color=self.accent,
+            command=lambda p=first_profile: self.show_profile_manager(p),
+        ).grid(
+            row=1,
+            column=2,
+            sticky="e",
+            padx=(12, 12),
+            pady=(2, 12),
+        )
+
+    if stop < len(groups):
+        self.after(
+            12,
+            lambda: self.render_library_chunk_v62(groups, stop, token),
+        )
+
+
+def _v62_render_library_cached(self):
+    container = getattr(self, "library_results_v6", None)
+    if container is None:
+        return
+
+    for child in container.winfo_children():
+        child.destroy()
+
+    self._library_render_token_v62 += 1
+    token = self._library_render_token_v62
+    groups = self.library_filter_v62()
+
+    if not groups:
+        text = (
+            self.t("v62_library_loading")
+            if self._library_refreshing_v62
+            else self.t("v6_library_empty")
+        )
+        ctk.CTkLabel(
+            container,
+            text=text,
+            text_color=MUTED,
+        ).grid(row=0, column=0, pady=30)
+        return
+
+    self.render_library_chunk_v62(groups, 0, token)
+
+
+def _v62_refresh_library(self, force=False):
+    try:
+        signature = self.library_signature_v62()
+    except Exception:
+        signature = None
+
+    if (
+        not force
+        and self._library_cache_v62 is not None
+        and signature == self._library_cache_signature_v62
+    ):
+        self.render_library_cached_v62()
+        return
+
+    if self._library_refreshing_v62:
+        return
+
+    self._library_refreshing_v62 = True
+    self._library_generation_v62 += 1
+    generation = self._library_generation_v62
+
+    self.render_library_cached_v62()
+    self.run_bg(lambda: self.library_worker_v62(generation))
+
+
+def _v62_show_library(self):
+    self.set_active_page("library")
+    self.clear_content()
+
+    outer = ctk.CTkFrame(self.content, fg_color=BG, corner_radius=0)
+    outer.grid(row=0, column=0, sticky="nsew")
+    outer.grid_columnconfigure(0, weight=1)
+    outer.grid_rowconfigure(3, weight=1)
+
+    header = ctk.CTkFrame(outer, fg_color="transparent")
+    header.grid(row=0, column=0, sticky="ew", padx=36, pady=(24, 10))
+
+    ctk.CTkLabel(
+        header,
+        text=self.t("v6_library_title"),
+        text_color=TEXT,
+        font=ctk.CTkFont(size=29, weight="bold"),
+    ).pack(anchor="w")
+
+    ctk.CTkLabel(
+        header,
+        text=self.t("v6_library_subtitle"),
+        text_color=MUTED,
+    ).pack(anchor="w", pady=(2, 0))
+
+    controls = ctk.CTkFrame(outer, fg_color="transparent")
+    controls.grid(row=1, column=0, sticky="ew", padx=36, pady=(0, 8))
+    controls.grid_columnconfigure(0, weight=1)
+
+    self.library_query_v6 = ctk.StringVar(
+        value=getattr(self, "_library_query_value_v6", "")
+    )
+    search = ctk.CTkEntry(
+        controls,
+        textvariable=self.library_query_v6,
+        height=40,
+        fg_color=SURFACE_2,
+        border_color=BORDER,
+        placeholder_text=self.t("v6_library_search"),
+    )
+    search.grid(row=0, column=0, sticky="ew", padx=(0, 8))
+    search.bind(
+        "<Return>",
+        lambda _event: self.render_library_cached_v62(),
+    )
+
+    ctk.CTkButton(
+        controls,
+        text=self.t("search"),
+        width=100,
+        height=40,
+        fg_color=self.accent,
+        hover_color=self.accent_hover,
+        command=self.render_library_cached_v62,
+    ).grid(row=0, column=1)
+
+    tabs = ctk.CTkFrame(outer, fg_color="transparent")
+    tabs.grid(row=2, column=0, sticky="ew", padx=36, pady=(0, 6))
+
+    self.library_category_v6 = getattr(self, "library_category_v6", "all")
+    self.library_tab_buttons_v6 = {}
+
+    for key in ("all", "mods", "resources", "shaders", "datapacks"):
+        active = key == self.library_category_v6
+        button = ctk.CTkButton(
+            tabs,
+            text=self.library_category_label_v6(key),
+            height=34,
+            fg_color=self.accent if active else SURFACE,
+            hover_color=self.accent_hover if active else SURFACE_3,
+            border_width=1,
+            border_color=self.accent if active else BORDER,
+            command=lambda value=key: self.set_library_category_v62(value),
+        )
+        button.pack(side="left", padx=(0, 6))
+        self.library_tab_buttons_v6[key] = button
+
+    self.library_results_v6 = ctk.CTkScrollableFrame(
+        outer,
+        fg_color=BG,
+        corner_radius=0,
+        scrollbar_button_color=SURFACE_3,
+        scrollbar_button_hover_color=BORDER,
+    )
+    self.library_results_v6.grid(
+        row=3,
+        column=0,
+        sticky="nsew",
+        padx=28,
+        pady=(0, 14),
+    )
+    self.library_results_v6.grid_columnconfigure(0, weight=1)
+
+    self.refresh_library_v62(force=False)
+
+
+def _v62_set_library_category(self, category):
+    self.library_category_v6 = category
+
+    for key, button in getattr(self, "library_tab_buttons_v6", {}).items():
+        active = key == category
+        button.configure(
+            fg_color=self.accent if active else SURFACE,
+            border_color=self.accent if active else BORDER,
+        )
+
+    self.render_library_cached_v62()
+
+
+def _v62_invalidate_library_cache(self):
+    self._library_cache_signature_v62 = None
+
+
+def _v62_close_explore_overlay(self):
+    overlay = getattr(self, "explore_overlay_v62", None)
+    if overlay is None:
+        return
+    try:
+        overlay.place_forget()
+    except Exception:
+        pass
+
+
+def _v62_refresh_explore_target(self):
+    try:
+        _v61_refresh_explore_target(self)
+    except Exception as exc:
+        self.write_log("Explore target refresh: " + str(exc))
+
+    if not hasattr(self, "explore_target_name_v61"):
+        return
+
+    if self.modrinth_category != "Modpacki":
+        name = self.modrinth_profile.get()
+
+        if name not in self.cfg.get("profiles", {}):
+            name = self.cfg.get("selected")
+
+        if name not in self.cfg.get("profiles", {}):
+            name = next(iter(self.cfg["profiles"]))
+
+        self.modrinth_profile.set(name)
+        profile = self.cfg["profiles"][name]
+
+        image = self.profile_icon_ctk(name, 40)
+        self._explore_target_image_v61 = image
+
+        self.explore_target_icon_v61.configure(
+            image=image,
+            text="" if image else name[:1].upper(),
+        )
+        self.explore_target_name_v61.configure(text=name)
+        self.explore_target_meta_v61.configure(
+            text=(
+                f"Minecraft {profile.get('version','?')} • "
+                f"{profile.get('loader','?')}"
+            )
+        )
+        self.explore_target_arrow_v61.configure(state="normal", text="⌄")
+
+
+def _v62_build_explore_target(self):
+    _V62_BUILD_EXPLORE_TARGET_BASE(self)
+
+    old_menu = getattr(self, "explore_target_menu_v61", None)
+    if old_menu is not None:
+        try:
+            old_menu.destroy()
+        except Exception:
+            pass
+
+    self.explore_overlay_v62 = ctk.CTkFrame(
+        self.content,
+        fg_color=SURFACE,
+        corner_radius=11,
+        border_width=1,
+        border_color=self.accent,
+    )
+
+    self.after(0, self.refresh_explore_target_v62)
+    self.after(80, self.refresh_explore_target_v62)
+    self.after(220, self.refresh_explore_target_v62)
+
+
+def _v62_select_explore_profile(self, profile_name):
+    if profile_name not in self.cfg.get("profiles", {}):
+        return
+
+    old = self.modrinth_profile.get()
+    self.modrinth_profile.set(profile_name)
+    self.refresh_explore_target_v62()
+    self.close_explore_overlay_v62()
+
+    if old != profile_name:
+        self.search_modrinth()
+
+
+def _v62_toggle_explore_overlay(self):
+    if self.modrinth_category == "Modpacki":
+        return
+
+    overlay = getattr(self, "explore_overlay_v62", None)
+    if overlay is None:
+        return
+
+    try:
+        if overlay.winfo_ismapped():
+            self.close_explore_overlay_v62()
+            return
+    except Exception:
+        pass
+
+    for child in overlay.winfo_children():
+        child.destroy()
+
+    current = self.modrinth_profile.get()
+
+    for profile_name, profile in self.cfg["profiles"].items():
+        image = self.profile_icon_ctk(profile_name, 32)
+
+        button = ctk.CTkButton(
+            overlay,
+            text=(
+                f"{'✓  ' if profile_name == current else ''}"
+                f"{profile_name}\n"
+                f"Minecraft {profile.get('version','?')} • "
+                f"{profile.get('loader','?')}"
+            ),
+            image=image,
+            compound="left",
+            anchor="w",
+            height=56,
+            corner_radius=9,
+            fg_color=self.accent if profile_name == current else SURFACE_2,
+            hover_color=self.accent_hover,
+            border_width=1,
+            border_color=self.accent if profile_name == current else BORDER,
+            command=lambda n=profile_name: self.select_explore_profile_v62(n),
+        )
+        button._outerclient_image_v62 = image
+        button.pack(fill="x", padx=7, pady=(7, 0))
+
+    ctk.CTkLabel(
+        overlay,
+        text=self.t("v61_explore_target_hint"),
+        text_color=MUTED,
+        font=ctk.CTkFont(size=9),
+    ).pack(anchor="w", padx=11, pady=(7, 9))
+
+    try:
+        self.update_idletasks()
+        target_card = self.modrinth_target_card
+        x = target_card.winfo_rootx() - self.content.winfo_rootx()
+        y = (
+            target_card.winfo_rooty()
+            - self.content.winfo_rooty()
+            + target_card.winfo_height()
+            + 4
+        )
+        width = max(240, target_card.winfo_width())
+
+        overlay.place(x=x, y=y, width=width)
+        overlay.lift()
+    except Exception as exc:
+        self.write_log("Explore overlay: " + str(exc))
+
+
+def _v62_is_wayland(self):
+    return bool(
+        os.environ.get("WAYLAND_DISPLAY")
+        or os.environ.get("XDG_SESSION_TYPE", "").lower() == "wayland"
+    )
+
+
+def _v62_use_native_linux_titlebar(self):
+    if not sys.platform.startswith("linux"):
+        return
+
+    try:
+        self.overrideredirect(False)
+    except Exception:
+        pass
+
+    bar = getattr(self, "_custom_titlebar_v5101", None)
+    if bar is not None:
+        try:
+            bar.grid_remove()
+        except Exception:
+            pass
+
+    try:
+        self.sidebar.grid_configure(row=0, column=0)
+        self.content.grid_configure(row=0, column=1)
+        self.download_bar.grid_configure(row=1, column=0, columnspan=2)
+
+        self.grid_rowconfigure(0, weight=1, minsize=0)
+        self.grid_rowconfigure(1, weight=0, minsize=0)
+        self.grid_rowconfigure(2, weight=0, minsize=0)
+    except Exception:
+        pass
+
+
+def _v62_apply_linux_titlebar(self, force=False):
+    if not sys.platform.startswith("linux"):
+        return _V62_LINUX_MANAGED_BASE(self, force)
+
+    if self.is_wayland_v62():
+        self.use_native_linux_titlebar_v62()
+        return
+
+    try:
+        self.overrideredirect(False)
+    except Exception:
+        pass
+
+    try:
+        self.update_idletasks()
+    except Exception:
+        pass
+
+    window_id = self.linux_window_id_v61()
+
+    if window_id and shutil.which("xprop"):
+        try:
+            subprocess.run(
+                [
+                    "xprop",
+                    "-id",
+                    window_id,
+                    "-f",
+                    "_MOTIF_WM_HINTS",
+                    "32c",
+                    "-set",
+                    "_MOTIF_WM_HINTS",
+                    "2, 0, 0, 0, 0",
+                ],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                timeout=2,
+            )
+        except Exception:
+            pass
+
+
+def _v62_map(self, event=None):
+    if not sys.platform.startswith("linux"):
+        return _V62_MAP_BASE(self, event)
+
+    if event is not None and getattr(event, "widget", None) is not self:
+        return
+
+    self.after(
+        80,
+        lambda: self.apply_linux_titlebar_v62(force=True),
+    )
+
+
+def _v62_minimize(self):
+    if not sys.platform.startswith("linux"):
+        return _V62_MINIMIZE_BASE(self)
+
+    try:
+        self.iconify()
+    except Exception:
+        try:
+            self.state("iconic")
+        except Exception:
+            pass
+
+
+def _v62_prepare_stable_executable(self):
+    root = self.managed_install_dir()
+    root.mkdir(parents=True, exist_ok=True)
+
+    target = self.managed_executable()
+    current = self.current_outerclient_package()
+
+    if current is not None:
+        try:
+            same = current.resolve() == target.resolve()
+        except Exception:
+            same = False
+
+        if not same:
+            temp = target.with_suffix(target.suffix + ".new")
+            shutil.copy2(current, temp)
+
+            if not sys.platform.startswith("win"):
+                os.chmod(temp, 0o755)
+
+            os.replace(temp, target)
+
+    return target
+
+
+def _v62_linux_application_entry(self):
+    target = self.prepare_stable_executable_v62()
+
+    if not target.exists():
+        raise RuntimeError(
+            "OuterClient musi być uruchomiony jako AppImage, aby utworzyć trwały wpis."
+        )
+
+    self.install_linux_icon_theme_v57()
+
+    applications = Path.home() / ".local" / "share" / "applications"
+    applications.mkdir(parents=True, exist_ok=True)
+
+    desktop = applications / "outerclient.desktop"
+
+    desktop.write_text(
+        f"""[Desktop Entry]
+Type=Application
+Version=1.0
+Name=OuterClient
+Comment=OuterClient Minecraft Launcher
+Exec={target}
+TryExec={target}
+Icon=outerclient
+Categories=Game;
+Terminal=false
+StartupNotify=true
+StartupWMClass=OuterClient
+X-KDE-StartupNotify=true
+""",
+        encoding="utf-8",
+    )
+    os.chmod(desktop, 0o755)
+
+    if shutil.which("update-desktop-database"):
+        try:
+            subprocess.run(
+                ["update-desktop-database", str(applications)],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                timeout=5,
+            )
+        except Exception:
+            pass
+
+    return desktop
+
+
+def _v62_try_pin_kde(self):
+    qdbus = shutil.which("qdbus6") or shutil.which("qdbus")
+    if not qdbus:
+        return False
+
+    script = """
+var ps = panels();
+for (var i = 0; i < ps.length; ++i) {
+    var ws = ps[i].widgets();
+    for (var j = 0; j < ws.length; ++j) {
+        var w = ws[j];
+        if (w.type == "org.kde.plasma.icontasks" ||
+            w.type == "org.kde.plasma.taskmanager") {
+            w.currentConfigGroup = ["General"];
+            var launchers = w.readConfig("launchers", "");
+            var target = "applications:outerclient.desktop";
+            if (launchers.indexOf(target) < 0) {
+                if (launchers.length > 0 &&
+                    launchers.charAt(launchers.length - 1) != ",")
+                    launchers += ",";
+                launchers += target;
+                w.writeConfig("launchers", launchers);
+            }
+        }
+    }
+}
+"""
+
+    commands = [
+        [
+            qdbus,
+            "org.kde.plasmashell",
+            "/PlasmaShell",
+            "org.kde.PlasmaShell.evaluateScript",
+            script,
+        ],
+        [
+            qdbus,
+            "org.kde.plasmashell",
+            "/PlasmaShell",
+            "evaluateScript",
+            script,
+        ],
+    ]
+
+    for command in commands:
+        try:
+            result = subprocess.run(
+                command,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                timeout=6,
+            )
+            if result.returncode == 0:
+                return True
+        except Exception:
+            pass
+
+    return False
+
+
+def _v62_try_pin_windows(self, shortcut):
+    try:
+        q = str(shortcut).replace("'", "''")
+        command = (
+            "$s=New-Object -ComObject Shell.Application;"
+            f"$f=$s.Namespace((Split-Path '{q}'));"
+            f"$i=$f.ParseName((Split-Path '{q}' -Leaf));"
+            "$v=$i.Verbs() | Where-Object { "
+            "$_.Name.Replace('&','') -match 'taskbar|pasek zadań' "
+            "} | Select-Object -First 1;"
+            "if($v){$v.DoIt(); exit 0}else{exit 2}"
+        )
+        result = subprocess.run(
+            [
+                "powershell",
+                "-NoProfile",
+                "-ExecutionPolicy",
+                "Bypass",
+                "-Command",
+                command,
+            ],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            timeout=12,
+        )
+        return result.returncode == 0
+    except Exception:
+        return False
+
+
+def _v62_add_taskbar(self):
+    try:
+        pinned = False
+
+        if sys.platform.startswith("win"):
+            self.write_outerclient_shortcut()
+            shortcut = self.desktop_directory_v57() / "OuterClient.lnk"
+            pinned = self.try_pin_windows_v62(shortcut)
+        else:
+            self.linux_application_entry_v62()
+
+            if "kde" in os.environ.get("XDG_CURRENT_DESKTOP", "").lower():
+                pinned = self.try_pin_kde_v62()
+
+        if pinned:
+            messagebox.showinfo(
+                self.t("v62_taskbar_title"),
+                self.t("v62_taskbar_pinned"),
+            )
+        else:
+            messagebox.showinfo(
+                self.t("v62_taskbar_title"),
+                self.t("v62_taskbar_manual"),
+            )
+
+    except Exception as exc:
+        messagebox.showerror(
+            self.t("v62_taskbar_title"),
+            self.t("v62_taskbar_error", error=exc),
+        )
+
+
+def _v62_open_app_location(self):
+    try:
+        if sys.platform.startswith("win"):
+            root = self.managed_install_dir()
+            root.mkdir(parents=True, exist_ok=True)
+            os.startfile(str(root))
+        else:
+            path = Path.home() / ".local" / "share" / "applications"
+            path.mkdir(parents=True, exist_ok=True)
+            subprocess.Popen(["xdg-open", str(path)])
+    except Exception as exc:
+        messagebox.showerror(self.t("v62_taskbar_title"), str(exc))
+
+
+def _v62_show_system_tools(self):
+    _V62_SHOW_SYSTEM_TOOLS_BASE(self)
+
+    pages = self.content.winfo_children()
+    page = pages[0] if pages else None
+    if page is None:
+        return
+
+    rows = []
+    for child in page.winfo_children():
+        try:
+            rows.append(int(child.grid_info().get("row", -1)))
+        except Exception:
+            pass
+
+    row = max(rows) + 1 if rows else 5
+
+    card = self.card(page, 14)
+    card.grid(
+        row=row,
+        column=0,
+        sticky="ew",
+        padx=36,
+        pady=(0, 18),
+    )
+
+    ctk.CTkLabel(
+        card,
+        text=self.t("v62_taskbar_title"),
+        text_color=TEXT,
+        font=ctk.CTkFont(size=19, weight="bold"),
+    ).pack(anchor="w", padx=20, pady=(16, 3))
+
+    ctk.CTkLabel(
+        card,
+        text=self.t("v62_taskbar_desc"),
+        text_color=MUTED,
+        anchor="w",
+        justify="left",
+        wraplength=850,
+    ).pack(anchor="w", padx=20, pady=(0, 12))
+
+    buttons = ctk.CTkFrame(card, fg_color="transparent")
+    buttons.pack(fill="x", padx=20, pady=(0, 16))
+
+    ctk.CTkButton(
+        buttons,
+        text=self.t("v62_taskbar_add"),
+        fg_color=self.accent,
+        hover_color=self.accent_hover,
+        command=lambda: self.run_bg(self.add_taskbar_v62),
+    ).pack(side="left")
+
+    ctk.CTkButton(
+        buttons,
+        text=self.t("v62_taskbar_open_apps"),
+        fg_color=SURFACE_3,
+        hover_color=self.accent,
+        command=self.open_app_location_v62,
+    ).pack(side="left", padx=8)
+
+
+def _v62_init(self):
+    self._async_results_v62 = queue.Queue()
+
+    self._library_cache_v62 = None
+    self._library_cache_signature_v62 = None
+    self._library_refreshing_v62 = False
+    self._library_generation_v62 = 0
+    self._library_render_token_v62 = 0
+
+    self._profiles_generation_v62 = 0
+    self._profile_health_labels_v62 = {}
+
+    self._ui_state_v62 = {}
+
+    _V62_INIT_BASE(self)
+
+    self._ui_state_v62 = self.load_ui_state_v62()
+
+    legacy_seen = self.cfg.get("whats_new_seen_version", "")
+    if legacy_seen and not self._ui_state_v62.get("whats_new_seen_version"):
+        self._ui_state_v62["whats_new_seen_version"] = legacy_seen
+        self.save_ui_state_v62()
+
+    self.after(120, self.poll_async_v62)
+
+    if sys.platform.startswith("linux"):
+        self.after(
+            250,
+            lambda: self.apply_linux_titlebar_v62(force=True),
+        )
+
+
+OuterClient.ui_state_path_v62 = _v62_state_path
+OuterClient.load_ui_state_v62 = _v62_load_state
+OuterClient.save_ui_state_v62 = _v62_save_state
+OuterClient.mark_whats_new_seen_v62 = _v62_mark_whats_new_seen
+OuterClient.show_whats_new_v61 = _v62_show_whats_new
+OuterClient.maybe_show_whats_new_v61 = _v62_maybe_show_whats_new
+
+OuterClient.poll_async_v62 = _v62_poll_async
+OuterClient.profile_health_worker_v62 = _v62_profile_health_worker
+OuterClient.show_profiles = _v62_show_profiles
+
+OuterClient.library_signature_v62 = _v62_library_signature
+OuterClient.library_worker_v62 = _v62_library_worker
+OuterClient.library_filter_v62 = _v62_library_filter
+OuterClient.render_library_chunk_v62 = _v62_render_library_chunk
+OuterClient.render_library_cached_v62 = _v62_render_library_cached
+OuterClient.refresh_library_v62 = _v62_refresh_library
+OuterClient.show_content_library_v6 = _v62_show_library
+OuterClient.set_library_category_v62 = _v62_set_library_category
+OuterClient.set_library_category_v6 = _v62_set_library_category
+OuterClient.render_library_v6 = _v62_render_library_cached
+OuterClient.invalidate_library_cache_v62 = _v62_invalidate_library_cache
+
+OuterClient.close_explore_overlay_v62 = _v62_close_explore_overlay
+OuterClient.refresh_explore_target_v62 = _v62_refresh_explore_target
+OuterClient.build_explore_target_v61 = _v62_build_explore_target
+OuterClient.select_explore_profile_v62 = _v62_select_explore_profile
+OuterClient.toggle_explore_target_menu_v61 = _v62_toggle_explore_overlay
+OuterClient.close_explore_target_menu_v61 = _v62_close_explore_overlay
+OuterClient.select_explore_profile_v61 = _v62_select_explore_profile
+OuterClient.update_modrinth_target_ui = _v62_refresh_explore_target
+
+OuterClient.is_wayland_v62 = _v62_is_wayland
+OuterClient.use_native_linux_titlebar_v62 = _v62_use_native_linux_titlebar
+OuterClient.apply_linux_titlebar_v62 = _v62_apply_linux_titlebar
+OuterClient.apply_linux_managed_titlebar_v61 = _v62_apply_linux_titlebar
+OuterClient.apply_borderless_once_v5103 = _v62_apply_linux_titlebar
+OuterClient.force_borderless_v5102 = _v62_apply_linux_titlebar
+OuterClient.custom_on_map_v5101 = _v62_map
+OuterClient.custom_minimize_v5101 = _v62_minimize
+
+OuterClient.prepare_stable_executable_v62 = _v62_prepare_stable_executable
+OuterClient.linux_application_entry_v62 = _v62_linux_application_entry
+OuterClient.try_pin_kde_v62 = _v62_try_pin_kde
+OuterClient.try_pin_windows_v62 = _v62_try_pin_windows
+OuterClient.add_taskbar_v62 = _v62_add_taskbar
+OuterClient.open_app_location_v62 = _v62_open_app_location
+OuterClient.show_system_tools_settings = _v62_show_system_tools
+
+OuterClient.__init__ = _v62_init
 
 
 

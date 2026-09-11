@@ -1,0 +1,31 @@
+OuterClient 6.2 — validation report
+
+PASS 1
+- Python compile: OK
+- AST parse: OK
+- all literal translation keys exist in PL + EN: OK
+- final v6.2 method bindings: OK
+- App version: 6.2
+
+PASS 2
+- What's New one-time version logic: OK
+- separate UI-state persistence path: present
+- Explore menu uses overlay/place and does not pack/grid into page layout: OK
+- selected-profile hard refresh path: present
+- Profiles health scanning runs in background: present
+- Library cache/signature/background rebuild path: present
+- Library progressive rendering path: present
+- duplicate config writes skipped + atomic replace: present
+- Wayland duplicate-titlebar fallback: present
+- X11 custom-titlebar Motif path: present
+- normal Linux iconify/minimize path: present
+- taskbar/dock stable application entry: present
+- KDE/Windows best-effort automatic pin path: present
+- GitHub Linux Xvfb UI smoke test preserved
+- GitHub Windows import smoke test preserved
+- AppImage + EXE artifact names verified
+
+Additional bug scan
+- no missing literal i18n keys found
+- no stale 6.1 artifact names in active workflow
+- no invalid v6.2 method binding signatures found
