@@ -1,4 +1,4 @@
-name: Build and Release OuterClient 5.10.3
+name: Build and Release OuterClient 6.0
 
 on:
   workflow_dispatch:
@@ -7,25 +7,26 @@ permissions:
   contents: write
 
 env:
-  OC_VERSION: "5.10.3"
+  OC_VERSION: "6.0"
 
 jobs:
   verify-source:
-    name: Verify OuterClient 5.10.3
+    name: Verify OuterClient 6.0
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Verify version
+      - name: Verify version and syntax
         shell: bash
         run: |
           set -eux
-          grep -F 'APP_VERSION = "5.10.3"' outerclient.py
+          grep -F 'APP_VERSION = "6.0"' outerclient.py
+          python3 -m py_compile outerclient.py
 
   linux-appimage:
-    name: Linux AppImage 5.10.3
+    name: Linux AppImage 6.0
     needs: verify-source
     runs-on: ubuntu-22.04
 
@@ -43,7 +44,7 @@ jobs:
         shell: bash
         run: |
           sudo apt-get update
-          sudo apt-get install -y libfuse2 tk-dev tcl-dev
+          sudo apt-get install -y libfuse2 tk-dev tcl-dev xvfb x11-utils
           python -m pip install --upgrade pip
           python -m pip install -r requirements.txt
           python -m pip install pyinstaller
@@ -91,6 +92,25 @@ jobs:
           print("Private CurseForge build secret prepared.")
           PY
 
+      - name: Source UI smoke test
+        shell: bash
+        env:
+          OUTERCLIENT_SMOKE_TEST: "1"
+        run: |
+          timeout 15s xvfb-run -a python - <<'PY'
+          import outerclient
+          app = outerclient.OuterClient()
+          app.update_idletasks()
+          app.update()
+          assert app.winfo_exists()
+          assert outerclient.APP_VERSION == "6.0"
+          assert hasattr(app, "show_content_library_v6")
+          assert hasattr(app, "profile_health_report_v6")
+          app.after(150, app.destroy)
+          app.mainloop()
+          print("OuterClient 6.0 source UI smoke test: OK")
+          PY
+
       - name: Build PyInstaller bundle
         shell: bash
         run: |
@@ -132,14 +152,14 @@ jobs:
           cat > AppDir/OuterClient.desktop <<'EOF'
           [Desktop Entry]
           Type=Application
-          Name=OuterClient 5.10.3
+          Name=OuterClient 6.0
           Comment=OuterClient Minecraft Launcher
           Exec=OuterClient
           Icon=outerclient
           Categories=Game;
           Terminal=false
           StartupWMClass=OuterClient
-          X-AppImage-Version=5.10.3
+          X-AppImage-Version=6.0
           EOF
 
           cat > AppDir/AppRun <<'EOF'
@@ -164,25 +184,25 @@ jobs:
         shell: bash
         env:
           ARCH: x86_64
-          VERSION: "5.10.3"
+          VERSION: "6.0"
           APPIMAGE_EXTRACT_AND_RUN: "1"
         run: |
           ./appimagetool.AppImage \
             AppDir \
-            OuterClient-v5.10.3-x86_64.AppImage
+            OuterClient-v6.0-x86_64.AppImage
 
-          chmod +x OuterClient-v5.10.3-x86_64.AppImage
-          test -f OuterClient-v5.10.3-x86_64.AppImage
+          chmod +x OuterClient-v6.0-x86_64.AppImage
+          test -f OuterClient-v6.0-x86_64.AppImage
 
       - name: Upload AppImage
         uses: actions/upload-artifact@v4
         with:
-          name: OuterClient-v5.10.3-AppImage
-          path: OuterClient-v5.10.3-x86_64.AppImage
+          name: OuterClient-v6.0-AppImage
+          path: OuterClient-v6.0-x86_64.AppImage
           if-no-files-found: error
 
   windows-exe:
-    name: Windows EXE 5.10.3
+    name: Windows EXE 6.0
     needs: verify-source
     runs-on: windows-latest
 
@@ -221,6 +241,11 @@ jobs:
         run: |
           python -c "import os,pathlib; key=os.environ.get('CURSEFORGE_API_KEY','').strip(); (_ for _ in ()).throw(SystemExit('Missing GitHub Actions secret: CURSEFORGE_API_KEY')) if not key else pathlib.Path('outerclient_build_secrets.py').write_text('CURSEFORGE_API_KEY = ' + repr(key) + '\n', encoding='utf-8')"
 
+      - name: Source import smoke test
+        shell: pwsh
+        run: |
+          python -c "import outerclient; assert outerclient.APP_VERSION == '6.0'; assert hasattr(outerclient.OuterClient, 'show_content_library_v6'); assert hasattr(outerclient.OuterClient, 'profile_health_report_v6'); print('OuterClient 6.0 source import: OK')"
+
       - name: Build EXE
         shell: pwsh
         run: |
@@ -229,7 +254,7 @@ jobs:
             --clean `
             --onefile `
             --windowed `
-            --name "OuterClient-v5.10.3" `
+            --name "OuterClient-v6.0" `
             --icon assets/outerclient.ico `
             --add-data "assets;assets" `
             --collect-all customtkinter `
@@ -240,19 +265,19 @@ jobs:
             --hidden-import outerclient_build_secrets `
             outerclient.py
 
-          if (-not (Test-Path "dist\OuterClient-v5.10.3.exe")) {
-            throw "OuterClient-v5.10.3.exe was not created"
+          if (-not (Test-Path "dist\OuterClient-v6.0.exe")) {
+            throw "OuterClient-v6.0.exe was not created"
           }
 
       - name: Upload Windows EXE
         uses: actions/upload-artifact@v4
         with:
-          name: OuterClient-v5.10.3-Windows
-          path: dist/OuterClient-v5.10.3.exe
+          name: OuterClient-v6.0-Windows
+          path: dist/OuterClient-v6.0.exe
           if-no-files-found: error
 
   release:
-    name: Make 5.10.3 Latest
+    name: Make 6.0 Latest
     needs:
       - linux-appimage
       - windows-exe
@@ -265,13 +290,13 @@ jobs:
           path: release
           merge-multiple: true
 
-      - name: Publish OuterClient 5.10.3
+      - name: Publish OuterClient 6.0
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v5.10.3
-          name: OuterClient v5.10.3
+          tag_name: v6.0
+          name: OuterClient v6.0
           make_latest: true
           generate_release_notes: true
           files: |
-            release/OuterClient-v5.10.3-x86_64.AppImage
-            release/OuterClient-v5.10.3.exe
+            release/OuterClient-v6.0-x86_64.AppImage
+            release/OuterClient-v6.0.exe

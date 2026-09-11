@@ -1,0 +1,29 @@
+OuterClient 6.0 — validation report
+
+PASS 1 — static validation
+- outerclient.py compiles successfully
+- Python AST parses successfully
+- final v6 method bindings verified
+- Polish and English v6 translation keys verified
+- GitHub Actions version/artifact names verified
+- CurseForge GitHub secret integration preserved
+
+PASS 2 — functional helper tests
+- module import test with isolated dependency stubs passed
+- Fabric profile health test passed
+- incompatible Minecraft-version mod detection passed
+- duplicate Fabric mod-id detection passed
+- profile-health cache test passed
+- snapshot ZIP creation test passed
+- snapshot manifest/content test passed
+- cross-profile content-library grouping test passed
+
+GitHub Actions additionally runs:
+- py_compile source verification
+- Linux source UI startup smoke test under Xvfb
+- Windows source import smoke test
+- PyInstaller AppImage/EXE builds
+
+Note:
+The AppImage and EXE themselves are built by GitHub Actions, where the real
+CustomTkinter/minecraft-launcher-lib dependencies and platform toolchains are present.

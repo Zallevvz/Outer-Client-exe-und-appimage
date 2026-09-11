@@ -1,41 +1,72 @@
-# OuterClient v5.10.3
+# OuterClient 6.0
 
-## Fix for dark / flickering window
+Major update focused on daily use and reliability.
 
-v5.10.2 remapped the root window every time Tk generated a `<Map>` event.
-The remap itself generated another `<Map>` event, creating a loop:
+## New Dashboard
+- quick profile switching directly on the Play page
+- profile icon, Minecraft version, loader and RAM
+- local profile-health score
+- play time, launch count and last-played stats
+- cached mod-update count
+- recommended RAM based on profile size
+- quick links to repair, diagnostics and update checks
 
-withdraw -> overrideredirect -> deiconify -> Map -> repeat
+## Profile Health
+OuterClient checks locally before you need to read a Fabric crash window:
+- Minecraft / loader installation
+- Java major version
+- Fabric mod duplicates
+- Fabric Minecraft-version constraints
+- Fabric API presence
 
-Symptoms:
-- dark/dim launcher
-- flickering
-- UI appearing frozen
-- repeated remapping
+The checker is intentionally conservative: unknown dependency syntax is not treated as an error.
 
-v5.10.3 removes that loop.
+## Snapshots and rollback
+Profile Manager now shows profile health and snapshot state.
+Snapshots cover mutable content:
+- mods
+- resourcepacks
+- shaderpacks
+- config
+- options.txt
+- OuterClient content metadata
 
-Borderless/custom-titlebar mode is now:
-- applied once after startup
-- reapplied only after an actual minimize/restore transition
-- guarded against re-entrant remaps
+OuterClient automatically creates a snapshot before individual or bulk content updates.
+The newest five snapshots are retained by default.
 
-The custom title bar from v5.10.1 stays enabled:
-- logo
-- version
-- minimize
-- maximize/restore
-- close
-- window dragging
-- edge/corner resizing
+## Content Library
+A new Library navigation page aggregates installed mods, resource packs, shaders and datapacks across every profile. It supports search and category filtering and links back to the relevant profile manager.
 
-No native KDE/Windows title bar and no purple outer border.
+## Profiles
+The Profiles page also shows a local health score for every profile and adds a one-click Play action without first returning to the dashboard.
+
+## Diagnostics 2.0
+Diagnostics now has status cards for:
+- Minecraft / loader
+- Java
+- mods
+- account
+- Modrinth / CurseForge services
+
+Logs remain available below the health overview.
+
+## Local play statistics
+OuterClient records locally per profile:
+- successful launches
+- play time
+- last played time
+- last Minecraft exit code
+
+No telemetry is sent anywhere.
+
+## Safer content updates
+- automatic snapshot before updates
+- corrected update-candidate filtering for Modrinth vs CurseForge metadata
+- same existing rollback/full-backup tools remain available
 
 ## Build
+GitHub Actions workflow: `Build and Release OuterClient 6.0`
 
-GitHub Actions:
-`Build and Release OuterClient 5.10.3`
-
-Expected:
-- `OuterClient-v5.10.3-x86_64.AppImage`
-- `OuterClient-v5.10.3.exe`
+Expected assets:
+- `OuterClient-v6.0-x86_64.AppImage`
+- `OuterClient-v6.0.exe`

@@ -1,9 +1,9 @@
 [Desktop Entry]
 Type=Application
-Name=OuterClient 5.10.3
+Name=OuterClient 6.0
 Comment=OuterClient Minecraft Launcher
 Exec=REPLACE_WITH_ABSOLUTE_PATH/run_outerclient.sh
 Path=REPLACE_WITH_ABSOLUTE_PATH
 Terminal=false
 Categories=Game;
-X-AppImage-Version=5.10.3
+X-AppImage-Version=6.0

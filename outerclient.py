@@ -38,7 +38,7 @@ except Exception:
 
 
 APP_NAME = "OuterClient"
-APP_VERSION = "5.10.3"
+APP_VERSION = "6.0"
 CONFIG_PATH = Path.home() / ".outerclient.json"
 REDIRECT_URI = "http://localhost:8765/callback"
 MICROSOFT_CLIENT_ID = "fb14d1c4-7d14-4a35-99a7-3f921f7a1e77"
@@ -448,6 +448,72 @@ TEXTS = {
         "v5101_close": "Zamknij",
         "v5102_titlebar_fixed": "Customowy pasek OuterClient jest aktywny.",
         "v5103_titlebar_stable": "Customowy pasek działa bez ponownego mapowania okna.",
+        "nav_library": "Biblioteka",
+        "v6_dashboard": "PULPIT 6.0",
+        "v6_dashboard_subtitle": "Profil, stan gry, aktualizacje i statystyki w jednym miejscu.",
+        "v6_quick_profiles": "SZYBKIE PROFILE",
+        "v6_health": "STAN PROFILU",
+        "v6_health_good": "Wszystko wygląda dobrze",
+        "v6_health_warn": "Wymaga uwagi",
+        "v6_health_bad": "Wykryto problemy",
+        "v6_health_score": "Wynik {score}/100",
+        "v6_health_details": "Szczegóły diagnostyki",
+        "v6_health_install": "Pliki gry nie są jeszcze zainstalowane.",
+        "v6_health_java_missing": "Nie znaleziono Javy {major} dla tego profilu.",
+        "v6_health_java_old": "Wybrana Java {found} jest za stara — wymagana jest Java {required}.",
+        "v6_health_java_ok": "Java {major} jest zgodna.",
+        "v6_health_duplicate_mod": "Duplikat moda: {mod_id}",
+        "v6_health_wrong_mc": "{name} nie jest zgodny z Minecraft {version}.",
+        "v6_health_fabric_api": "Profil Fabric nie ma wykrytego Fabric API.",
+        "v6_health_mods_ok": "Nie wykryto oczywistych konfliktów modów.",
+        "v6_health_installed": "Minecraft i loader są zainstalowane.",
+        "v6_check_profile": "Sprawdź profil",
+        "v6_repair": "Napraw profil",
+        "v6_activity": "AKTYWNOŚĆ",
+        "v6_playtime": "Czas gry",
+        "v6_launches": "Uruchomienia",
+        "v6_last_played": "Ostatnia gra",
+        "v6_never": "Nigdy",
+        "v6_updates": "Aktualizacje",
+        "v6_check_updates_short": "Sprawdź aktualizacje",
+        "v6_recommended_ram": "Zalecane: {value} MB",
+        "v6_use_recommended": "Ustaw zalecane",
+        "v6_library_title": "Biblioteka zawartości",
+        "v6_library_subtitle": "Mody, resource packi i shadery ze wszystkich profili w jednym miejscu.",
+        "v6_library_search": "Szukaj w bibliotece…",
+        "v6_library_all": "Wszystko",
+        "v6_library_mods": "Mody",
+        "v6_library_resources": "Resource packi",
+        "v6_library_shaders": "Shadery",
+        "v6_library_datapacks": "Datapacki",
+        "v6_library_profiles": "Profile: {profiles}",
+        "v6_library_empty": "Brak pasującej zawartości.",
+        "v6_manage": "Zarządzaj",
+        "v6_snapshots": "SNAPSHOTY",
+        "v6_snapshot_create": "Utwórz snapshot",
+        "v6_snapshot_restore": "Przywróć ostatni",
+        "v6_snapshot_done": "Utworzono snapshot: {name}",
+        "v6_snapshot_none": "Brak snapshotów dla tego profilu.",
+        "v6_snapshot_restore_confirm": "Przywrócić snapshot „{name}”? Aktualna zawartość profilu zostanie zastąpiona.",
+        "v6_snapshot_restored": "Przywrócono snapshot {name}.",
+        "v6_snapshot_auto": "Automatyczny snapshot przed aktualizacją",
+        "v6_diag_title": "Diagnostyka 2.0",
+        "v6_diag_subtitle": "Stan Minecrafta, Javy, modów, konta i usług OuterClient.",
+        "v6_component_game": "Minecraft / loader",
+        "v6_component_java": "Java",
+        "v6_component_mods": "Mody",
+        "v6_component_account": "Konto",
+        "v6_component_services": "Usługi",
+        "v6_status_ok": "OK",
+        "v6_status_warn": "UWAGA",
+        "v6_status_bad": "BŁĄD",
+        "v6_api_ready": "Modrinth + CurseForge gotowe",
+        "v6_api_cf_missing": "CurseForge API nie jest dostępne w tej kompilacji",
+        "v6_account_offline": "Tryb Offline",
+        "v6_account_ms": "Microsoft: {name}",
+        "v6_profile_health_summary": "{errors} błędów • {warnings} ostrzeżeń",
+        "v6_snapshot_count": "{count} snapshotów • ostatni: {last}",
+        "v6_profile_quick_play": "Graj",
         "v58_update_checking": "Sprawdzanie aktualizacji OuterClient…",
         "v58_update_failed": "Nie udało się sprawdzić aktualizacji: {error}",
         "v58_latest": "Masz najnowszą wersję OuterClient ({version}).",
@@ -875,6 +941,72 @@ TEXTS = {
         "v5101_close": "Close",
         "v5102_titlebar_fixed": "The OuterClient custom title bar is active.",
         "v5103_titlebar_stable": "The custom title bar now works without repeated window remapping.",
+        "nav_library": "Library",
+        "v6_dashboard": "DASHBOARD 6.0",
+        "v6_dashboard_subtitle": "Profile, game health, updates and statistics in one place.",
+        "v6_quick_profiles": "QUICK PROFILES",
+        "v6_health": "PROFILE HEALTH",
+        "v6_health_good": "Everything looks good",
+        "v6_health_warn": "Needs attention",
+        "v6_health_bad": "Problems detected",
+        "v6_health_score": "Score {score}/100",
+        "v6_health_details": "Diagnostics details",
+        "v6_health_install": "The game files are not installed yet.",
+        "v6_health_java_missing": "Java {major} was not found for this profile.",
+        "v6_health_java_old": "Selected Java {found} is too old — Java {required} is required.",
+        "v6_health_java_ok": "Java {major} is compatible.",
+        "v6_health_duplicate_mod": "Duplicate mod: {mod_id}",
+        "v6_health_wrong_mc": "{name} is not compatible with Minecraft {version}.",
+        "v6_health_fabric_api": "No Fabric API was detected in this Fabric profile.",
+        "v6_health_mods_ok": "No obvious mod conflicts were detected.",
+        "v6_health_installed": "Minecraft and the loader are installed.",
+        "v6_check_profile": "Check profile",
+        "v6_repair": "Repair profile",
+        "v6_activity": "ACTIVITY",
+        "v6_playtime": "Play time",
+        "v6_launches": "Launches",
+        "v6_last_played": "Last played",
+        "v6_never": "Never",
+        "v6_updates": "Updates",
+        "v6_check_updates_short": "Check updates",
+        "v6_recommended_ram": "Recommended: {value} MB",
+        "v6_use_recommended": "Use recommended",
+        "v6_library_title": "Content library",
+        "v6_library_subtitle": "Mods, resource packs and shaders from every profile in one place.",
+        "v6_library_search": "Search the library…",
+        "v6_library_all": "All",
+        "v6_library_mods": "Mods",
+        "v6_library_resources": "Resource packs",
+        "v6_library_shaders": "Shaders",
+        "v6_library_datapacks": "Datapacks",
+        "v6_library_profiles": "Profiles: {profiles}",
+        "v6_library_empty": "No matching content.",
+        "v6_manage": "Manage",
+        "v6_snapshots": "SNAPSHOTS",
+        "v6_snapshot_create": "Create snapshot",
+        "v6_snapshot_restore": "Restore latest",
+        "v6_snapshot_done": "Created snapshot: {name}",
+        "v6_snapshot_none": "There are no snapshots for this profile.",
+        "v6_snapshot_restore_confirm": "Restore snapshot “{name}”? The current mutable profile content will be replaced.",
+        "v6_snapshot_restored": "Restored snapshot {name}.",
+        "v6_snapshot_auto": "Automatic snapshot before update",
+        "v6_diag_title": "Diagnostics 2.0",
+        "v6_diag_subtitle": "Minecraft, Java, mods, account and OuterClient service health.",
+        "v6_component_game": "Minecraft / loader",
+        "v6_component_java": "Java",
+        "v6_component_mods": "Mods",
+        "v6_component_account": "Account",
+        "v6_component_services": "Services",
+        "v6_status_ok": "OK",
+        "v6_status_warn": "WARNING",
+        "v6_status_bad": "ERROR",
+        "v6_api_ready": "Modrinth + CurseForge ready",
+        "v6_api_cf_missing": "CurseForge API is not available in this build",
+        "v6_account_offline": "Offline mode",
+        "v6_account_ms": "Microsoft: {name}",
+        "v6_profile_health_summary": "{errors} errors • {warnings} warnings",
+        "v6_snapshot_count": "{count} snapshots • latest: {last}",
+        "v6_profile_quick_play": "Play",
         "v5_change_profile": "Change profile",
         "v5_previous": "Previous",
         "v5_next": "Next",
@@ -1265,7 +1397,7 @@ class OuterClient(ctk.CTk):
                 try:
                     import ctypes
                     ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(
-                        "OuterClient.Launcher.5.10.3"
+                        "OuterClient.Launcher.6.0"
                     )
                 except Exception:
                     pass
@@ -7150,6 +7282,9 @@ def _v5_process_events(self):
             elif kind=="profile_updates_done":
                 profile_name,count=value; self.set_status(self.t("v5_updates_found",count=count) if count else self.t("v5_updates_none"));
                 if hasattr(self,"manage_profile_name") and self.manage_profile_name==profile_name: self.render_manage_file_list()
+                if getattr(self,"active_page",None)=="home" and self.cfg.get("selected")==profile_name:
+                    try: self.show_home()
+                    except Exception: pass
             elif kind=="content_updated":
                 if hasattr(self,"manage_profile_name") and self.manage_profile_name==value: self.render_manage_file_list()
             elif kind=="launcher_update":
@@ -25779,6 +25914,1210 @@ OuterClient.restore_from_taskbar_v5103 = _v5103_restore_from_taskbar
 OuterClient.force_borderless_v5102 = _v5103_apply_borderless_once
 
 OuterClient.__init__ = _v5103_init
+
+
+
+# ============================================================
+# OuterClient 6.0 — Dashboard / Profile Health / Snapshots / Library
+# ============================================================
+
+_V6_LOAD_CONFIG_BASE = load_config
+_V6_INIT_BASE = OuterClient.__init__
+_V6_BUILD_SHELL_BASE = OuterClient.build_shell
+_V6_SHOW_MANAGER_BASE = OuterClient.show_profile_manager
+_V6_LAUNCH_INSTALLED_BASE = OuterClient.launch_installed_v54
+_V6_UPDATE_CONTENT_WORKER = OuterClient.update_content_worker
+_V6_UPDATE_ALL_WORKER = OuterClient.update_all_worker
+
+
+def _v6_load_config():
+    cfg = _V6_LOAD_CONFIG_BASE()
+    cfg.setdefault("snapshot_keep", 5)
+    for profile in cfg.get("profiles", {}).values():
+        stats = profile.setdefault("play_stats", {})
+        stats.setdefault("launches", 0)
+        stats.setdefault("seconds", 0)
+        stats.setdefault("last_played", 0)
+        stats.setdefault("last_exit_code", None)
+    return cfg
+
+
+def _v6_profile_stats(self, profile_name):
+    profile = self.cfg.get("profiles", {}).get(profile_name, {})
+    stats = profile.setdefault("play_stats", {})
+    stats.setdefault("launches", 0)
+    stats.setdefault("seconds", 0)
+    stats.setdefault("last_played", 0)
+    stats.setdefault("last_exit_code", None)
+    return stats
+
+
+def _v6_format_duration(self, seconds):
+    seconds = max(0, int(seconds or 0))
+    minutes = seconds // 60
+    hours = minutes // 60
+    minutes %= 60
+    if hours:
+        return f"{hours} h {minutes:02d} min"
+    if minutes:
+        return f"{minutes} min"
+    return f"{seconds} s"
+
+
+def _v6_format_last_played(self, timestamp):
+    try:
+        timestamp = int(timestamp or 0)
+        if timestamp <= 0:
+            return self.t("v6_never")
+        return datetime.fromtimestamp(timestamp).strftime("%d.%m.%Y  %H:%M")
+    except Exception:
+        return self.t("v6_never")
+
+
+def _v6_recommended_ram(self, profile_name):
+    stats = self.profile_content_stats(profile_name)
+    mods = int(stats.get("mods", 0) or 0)
+    maximum = int(self.max_ram_mb())
+
+    # Conservative recommendation: enough for modded play, never most of host RAM.
+    value = 3072 + mods * 32
+    profile = self.cfg.get("profiles", {}).get(profile_name, {})
+    if profile.get("loader") != "Vanilla":
+        value = max(value, 4096)
+    value = min(value, 12288, max(3072, int(maximum * 0.65)))
+    value = max(2048, ((int(value) + 511) // 512) * 512)
+    return min(maximum, value)
+
+
+def _v6_health_report(self, profile_name):
+    profile = self.cfg.get("profiles", {}).get(profile_name)
+    if not profile:
+        return {"score": 0, "status": "bad", "errors": 1, "warnings": 0, "items": []}
+
+    instance = self.profile_instance_dir(profile_name)
+    try:
+        content_signature = self.profile_content_signature(profile_name)
+    except Exception:
+        content_signature = ()
+    try:
+        versions_dir = instance / "versions"
+        versions_stamp = versions_dir.stat().st_mtime_ns if versions_dir.exists() else 0
+    except Exception:
+        versions_stamp = 0
+    cache_key = (
+        profile.get("version"),
+        profile.get("loader"),
+        profile.get("java_path"),
+        self.cfg.get("java"),
+        bool(self.cfg.get("auto_java", True)),
+        versions_stamp,
+        content_signature,
+    )
+    cached = getattr(self, "_v6_health_cache", {}).get(profile_name)
+    if cached and cached.get("key") == cache_key:
+        return cached["report"]
+
+    items = []
+    errors = 0
+    warnings = 0
+
+    def add(level, text, component):
+        nonlocal errors, warnings
+        if level == "error":
+            errors += 1
+        elif level == "warning":
+            warnings += 1
+        items.append({"level": level, "text": text, "component": component})
+
+    launch_version = None
+    try:
+        launch_version = self.installed_launch_version(profile_name)
+    except Exception:
+        launch_version = None
+
+    if launch_version:
+        add("ok", self.t("v6_health_installed"), "game")
+    else:
+        add("warning", self.t("v6_health_install"), "game")
+
+    required = int(self.required_java_major(profile.get("version", "")) or 0)
+    java_major = None
+
+    try:
+        manual = self.profile_manual_java(profile_name)
+    except Exception:
+        manual = None
+
+    if manual:
+        java_major = int(manual.get("major", 0) or 0)
+    else:
+        try:
+            runtime = self.vanilla_runtime_for_profile(profile.get("version"), instance)
+        except Exception:
+            runtime = None
+        if runtime:
+            java_major = int(runtime.get("major", 0) or 0)
+        else:
+            configured = str(self.cfg.get("java", "") or "").strip()
+            if configured and Path(configured).exists():
+                try:
+                    java_major = int(self.java_major(Path(configured)) or 0)
+                except Exception:
+                    java_major = None
+
+    if not java_major:
+        add("warning", self.t("v6_health_java_missing", major=required), "java")
+    elif java_major < required:
+        add("error", self.t("v6_health_java_old", found=java_major, required=required), "java")
+    else:
+        add("ok", self.t("v6_health_java_ok", major=java_major), "java")
+
+    loader = profile.get("loader", "Vanilla")
+    if loader == "Fabric":
+        mods_dir = instance / "mods"
+        ids = {}
+        wrong = []
+        fabric_api = False
+
+        if mods_dir.exists():
+            for jar in sorted(mods_dir.glob("*.jar")):
+                local = self.read_fabric_mod_metadata(jar)
+                if not local:
+                    continue
+                mod_id = str(local.get("id") or "").strip()
+                if mod_id:
+                    ids.setdefault(mod_id, []).append(jar.name)
+                if mod_id in {"fabric-api", "fabric_api"} or jar.name.casefold().startswith("fabric-api-"):
+                    fabric_api = True
+                result = self.fabric_constraint_result(
+                    profile.get("version"),
+                    (local.get("depends") or {}).get("minecraft"),
+                )
+                if result is False:
+                    wrong.append(local.get("name") or jar.stem)
+
+        for mod_id, files in ids.items():
+            if len(files) > 1:
+                add("error", self.t("v6_health_duplicate_mod", mod_id=mod_id), "mods")
+
+        for name in wrong[:6]:
+            add("error", self.t("v6_health_wrong_mc", name=name, version=profile.get("version")), "mods")
+
+        if ids and not fabric_api:
+            add("warning", self.t("v6_health_fabric_api"), "mods")
+
+        if not wrong and not any(len(v) > 1 for v in ids.values()):
+            add("ok", self.t("v6_health_mods_ok"), "mods")
+    else:
+        add("ok", self.t("v6_health_mods_ok"), "mods")
+
+    score = max(0, 100 - errors * 28 - warnings * 10)
+    status = "bad" if errors else ("warning" if warnings else "good")
+    report = {
+        "score": score,
+        "status": status,
+        "errors": errors,
+        "warnings": warnings,
+        "items": items,
+        "launch_version": launch_version,
+        "java_major": java_major,
+        "required_java": required,
+    }
+    self._v6_health_cache[profile_name] = {"key": cache_key, "report": report}
+    return report
+
+
+def _v6_health_color(self, status):
+    if status == "bad":
+        return "#E05A6A"
+    if status == "warning":
+        return "#E7A24C"
+    return self.secondary
+
+
+def _v6_health_title(self, status):
+    if status == "bad":
+        return self.t("v6_health_bad")
+    if status == "warning":
+        return self.t("v6_health_warn")
+    return self.t("v6_health_good")
+
+
+def _v6_select_home_profile(self, name):
+    if name not in self.cfg.get("profiles", {}):
+        return
+    self.cfg["selected"] = name
+    save_config(self.cfg)
+    self.show_home()
+
+
+def _v6_set_recommended_ram(self, profile_name):
+    profile = self.cfg.get("profiles", {}).get(profile_name)
+    if not profile:
+        return
+    value = self.recommended_profile_ram_v6(profile_name)
+    profile["preset"] = "Custom"
+    profile["ram"] = value
+    save_config(self.cfg)
+    self.show_home()
+
+
+def _v6_show_home(self):
+    self.set_active_page("home")
+    self.clear_content()
+    page = self.page()
+
+    self.page_header(
+        page,
+        self.t("v6_dashboard"),
+        self.t("home_title"),
+        self.t("v6_dashboard_subtitle"),
+    )
+
+    name, profile = self.selected_profile_data()
+    content_stats = self.profile_content_stats(name)
+    play_stats = self.profile_play_stats_v6(name)
+    health = self.profile_health_report_v6(name)
+    ram = self.profile_ram(name)
+    recommended = self.recommended_profile_ram_v6(name)
+    update_count = sum(1 for key in self.profile_update_cache if key[0] == name)
+
+    quick = self.card(page, 12)
+    quick.grid(row=1, column=0, sticky="ew", padx=36, pady=(0, 12))
+    ctk.CTkLabel(
+        quick,
+        text=self.t("v6_quick_profiles"),
+        text_color=MUTED,
+        font=ctk.CTkFont(size=10, weight="bold"),
+    ).pack(anchor="w", padx=16, pady=(12, 7))
+
+    quick_row = ctk.CTkFrame(quick, fg_color="transparent")
+    quick_row.pack(fill="x", padx=14, pady=(0, 12))
+    for index, profile_name in enumerate(list(self.cfg["profiles"].keys())[:6]):
+        selected = profile_name == name
+        icon = self.profile_icon_ctk(profile_name, 28)
+        button = ctk.CTkButton(
+            quick_row,
+            text=profile_name,
+            image=icon,
+            compound="left",
+            height=38,
+            corner_radius=10,
+            fg_color=self.accent if selected else SURFACE_2,
+            hover_color=self.accent_hover if selected else SURFACE_3,
+            border_width=1,
+            border_color=self.accent if selected else BORDER,
+            command=lambda n=profile_name: self.select_home_profile_v6(n),
+        )
+        button._outerclient_profile_icon = icon
+        button.pack(side="left", padx=(0, 6))
+
+    if len(self.cfg["profiles"]) > 6:
+        ctk.CTkButton(
+            quick_row,
+            text="…",
+            width=42,
+            height=38,
+            fg_color=SURFACE_3,
+            hover_color=self.accent,
+            command=self.show_profiles,
+        ).pack(side="left")
+
+    hero = self.card(page, 18)
+    hero.grid(row=2, column=0, sticky="ew", padx=36, pady=(0, 12))
+    hero.grid_columnconfigure(1, weight=1)
+
+    icon = self.profile_icon_widget(hero, name, 78)
+    icon.grid(row=0, column=0, rowspan=4, padx=(20, 18), pady=20)
+
+    ctk.CTkLabel(
+        hero,
+        text=name,
+        text_color=TEXT,
+        font=ctk.CTkFont(size=25, weight="bold"),
+        anchor="w",
+    ).grid(row=0, column=1, sticky="sw", pady=(19, 0))
+
+    ctk.CTkLabel(
+        hero,
+        text=f"Minecraft {profile.get('version')}  •  {profile.get('loader')}  •  {ram} MB RAM",
+        text_color=MUTED,
+        anchor="w",
+    ).grid(row=1, column=1, sticky="w", pady=(2, 0))
+
+    health_color = self.health_color_v6(health["status"])
+    ctk.CTkLabel(
+        hero,
+        text=f"●  {self.health_title_v6(health['status'])}  •  {self.t('v6_health_score', score=health['score'])}",
+        text_color=health_color,
+        anchor="w",
+        font=ctk.CTkFont(size=12, weight="bold"),
+    ).grid(row=2, column=1, sticky="w", pady=(5, 0))
+
+    ctk.CTkLabel(
+        hero,
+        text=self.t("v6_recommended_ram", value=recommended),
+        text_color=MUTED,
+        anchor="w",
+    ).grid(row=3, column=1, sticky="nw", pady=(3, 18))
+
+    actions = ctk.CTkFrame(hero, fg_color="transparent")
+    actions.grid(row=0, column=2, rowspan=4, padx=18, pady=18)
+
+    ctk.CTkButton(
+        actions,
+        text=self.t("launch_minecraft"),
+        width=175,
+        height=46,
+        fg_color=self.accent,
+        hover_color=self.accent_hover,
+        font=ctk.CTkFont(size=13, weight="bold"),
+        command=self.launch,
+    ).pack(fill="x", pady=(0, 6))
+
+    self.home_stop_button = ctk.CTkButton(
+        actions,
+        text=self.t("v52_stop_game"),
+        width=175,
+        height=38,
+        fg_color=SURFACE_3,
+        hover_color="#8A3341",
+        text_color=MUTED,
+        state="disabled",
+        command=self.stop_game,
+    )
+    self.home_stop_button.pack(fill="x", pady=(0, 6))
+
+    ctk.CTkButton(
+        actions,
+        text=self.t("v5_manage"),
+        width=175,
+        height=38,
+        fg_color=SURFACE_3,
+        hover_color=self.accent,
+        command=lambda: self.show_profile_manager(name),
+    ).pack(fill="x")
+
+    activity = self.card(page, 14)
+    activity.grid(row=3, column=0, sticky="ew", padx=36, pady=(0, 12))
+    ctk.CTkLabel(
+        activity,
+        text=self.t("v6_activity"),
+        text_color=MUTED,
+        font=ctk.CTkFont(size=10, weight="bold"),
+    ).pack(anchor="w", padx=18, pady=(13, 7))
+
+    activity_row = ctk.CTkFrame(activity, fg_color="transparent")
+    activity_row.pack(fill="x", padx=14, pady=(0, 14))
+    activity_values = (
+        (self.t("v6_playtime"), self.format_duration_v6(play_stats.get("seconds", 0))),
+        (self.t("v6_launches"), str(play_stats.get("launches", 0))),
+        (self.t("v6_last_played"), self.format_last_played_v6(play_stats.get("last_played", 0))),
+        (self.t("v6_updates"), str(update_count)),
+    )
+    for index, (label, value) in enumerate(activity_values):
+        box = ctk.CTkFrame(activity_row, fg_color=SURFACE_2, corner_radius=11)
+        box.pack(side="left", fill="x", expand=True, padx=(0 if index == 0 else 5, 0))
+        ctk.CTkLabel(box, text=value, text_color=TEXT, font=ctk.CTkFont(size=16, weight="bold")).pack(pady=(10, 1))
+        ctk.CTkLabel(box, text=label, text_color=MUTED, font=ctk.CTkFont(size=10)).pack(pady=(0, 10))
+
+    health_card = self.card(page, 14)
+    health_card.grid(row=4, column=0, sticky="ew", padx=36, pady=(0, 12))
+    health_card.grid_columnconfigure(0, weight=1)
+
+    header = ctk.CTkFrame(health_card, fg_color="transparent")
+    header.grid(row=0, column=0, sticky="ew", padx=18, pady=(14, 6))
+    header.grid_columnconfigure(0, weight=1)
+    ctk.CTkLabel(
+        header,
+        text=self.t("v6_health"),
+        text_color=MUTED,
+        font=ctk.CTkFont(size=10, weight="bold"),
+    ).grid(row=0, column=0, sticky="w")
+    ctk.CTkLabel(
+        header,
+        text=self.t("v6_profile_health_summary", errors=health["errors"], warnings=health["warnings"]),
+        text_color=health_color,
+        font=ctk.CTkFont(size=11, weight="bold"),
+    ).grid(row=0, column=1, sticky="e")
+
+    issue_box = ctk.CTkFrame(health_card, fg_color=SURFACE_2, corner_radius=11)
+    issue_box.grid(row=1, column=0, sticky="ew", padx=18, pady=(0, 8))
+    visible_items = [x for x in health["items"] if x["level"] != "ok"][:4]
+    if not visible_items:
+        visible_items = [{"level": "ok", "text": self.t("v6_health_good"), "component": "mods"}]
+    for index, item in enumerate(visible_items):
+        color = self.health_color_v6("bad" if item["level"] == "error" else ("warning" if item["level"] == "warning" else "good"))
+        ctk.CTkLabel(
+            issue_box,
+            text=("●  " + item["text"]),
+            text_color=color,
+            anchor="w",
+            justify="left",
+        ).pack(fill="x", padx=14, pady=(10 if index == 0 else 3, 10 if index == len(visible_items)-1 else 3))
+
+    health_actions = ctk.CTkFrame(health_card, fg_color="transparent")
+    health_actions.grid(row=2, column=0, sticky="ew", padx=18, pady=(2, 15))
+    ctk.CTkButton(
+        health_actions,
+        text=self.t("v6_health_details"),
+        height=36,
+        fg_color=SURFACE_3,
+        hover_color=self.accent,
+        command=self.show_diagnostics,
+    ).pack(side="left")
+    ctk.CTkButton(
+        health_actions,
+        text=self.t("v6_repair"),
+        height=36,
+        fg_color=SURFACE_3,
+        hover_color=self.accent,
+        command=self.install_profile,
+    ).pack(side="left", padx=7)
+    ctk.CTkButton(
+        health_actions,
+        text=self.t("v6_check_updates_short"),
+        height=36,
+        fg_color=SURFACE_3,
+        hover_color=self.accent,
+        command=lambda: self.check_profile_updates(name),
+    ).pack(side="left")
+    ctk.CTkButton(
+        health_actions,
+        text=self.t("v6_use_recommended"),
+        height=36,
+        fg_color=SURFACE_3,
+        hover_color=self.accent,
+        command=lambda: self.set_recommended_ram_v6(name),
+    ).pack(side="right")
+
+    contents = self.card(page, 14)
+    contents.grid(row=5, column=0, sticky="ew", padx=36, pady=(0, 16))
+    row = ctk.CTkFrame(contents, fg_color="transparent")
+    row.pack(fill="x", padx=14, pady=14)
+    for index, (key, value) in enumerate((
+        ("mods_stat", content_stats["mods"]),
+        ("resources_stat", content_stats["resources"]),
+        ("shaders_stat", content_stats["shaders"]),
+        ("worlds_stat", content_stats["worlds"]),
+    )):
+        box = ctk.CTkFrame(row, fg_color=SURFACE_2, corner_radius=10)
+        box.pack(side="left", fill="x", expand=True, padx=(0 if index == 0 else 5, 0))
+        ctk.CTkLabel(box, text=str(value), text_color=TEXT, font=ctk.CTkFont(size=18, weight="bold")).pack(pady=(9, 0))
+        ctk.CTkLabel(box, text=self.t(key), text_color=MUTED, font=ctk.CTkFont(size=10)).pack(pady=(0, 9))
+
+    ctk.CTkLabel(page, textvariable=self.status_var, text_color=MUTED).grid(row=6, column=0, sticky="w", padx=38, pady=(0, 26))
+    self.after(250, self.refresh_game_controls)
+
+
+def _v6_snapshots_root(self, profile_name):
+    safe_name = re.sub(r"[^A-Za-z0-9_.-]+", "_", profile_name).strip("._") or "profile"
+    root = Path(self.cfg["game_dir"]) / "snapshots" / safe_name
+    root.mkdir(parents=True, exist_ok=True)
+    return root
+
+
+def _v6_list_snapshots(self, profile_name):
+    root = self.snapshots_root_v6(profile_name)
+    return sorted(root.glob("*.zip"), key=lambda p: p.stat().st_mtime, reverse=True)
+
+
+def _v6_create_snapshot(self, profile_name, reason="manual", silent=False):
+    if profile_name not in self.cfg.get("profiles", {}):
+        return None
+    instance = self.profile_instance_dir(profile_name)
+    root = self.snapshots_root_v6(profile_name)
+    stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+    target = root / f"snapshot-{stamp}-{reason}.zip"
+    include_roots = ("mods", "resourcepacks", "shaderpacks", "config")
+    include_files = ("options.txt", ".outerclient-content.json")
+
+    with zipfile.ZipFile(target, "w", zipfile.ZIP_DEFLATED) as archive:
+        archive.writestr(
+            "outerclient-snapshot.json",
+            json.dumps({
+                "profile": profile_name,
+                "profile_data": self.cfg["profiles"][profile_name],
+                "created": int(time.time()),
+                "reason": reason,
+                "format": 1,
+            }, ensure_ascii=False, indent=2),
+        )
+        if instance.exists():
+            for folder_name in include_roots:
+                folder = instance / folder_name
+                if not folder.exists():
+                    continue
+                for item in folder.rglob("*"):
+                    if item.is_file():
+                        archive.write(item, Path("instance") / item.relative_to(instance))
+            for filename in include_files:
+                item = instance / filename
+                if item.is_file():
+                    archive.write(item, Path("instance") / filename)
+
+    keep = max(1, int(self.cfg.get("snapshot_keep", 5) or 5))
+    for old in self.list_profile_snapshots_v6(profile_name)[keep:]:
+        try:
+            old.unlink()
+        except Exception:
+            pass
+
+    if not silent:
+        self.set_status(self.t("v6_snapshot_done", name=target.name))
+        if getattr(self, "manage_profile_name", None) == profile_name:
+            self.show_profile_manager(profile_name)
+    return target
+
+
+def _v6_restore_snapshot(self, profile_name, snapshot=None):
+    snapshots = self.list_profile_snapshots_v6(profile_name)
+    if snapshot is None:
+        snapshot = snapshots[0] if snapshots else None
+    if snapshot is None:
+        messagebox.showinfo("OuterClient", self.t("v6_snapshot_none"))
+        return
+    snapshot = Path(snapshot)
+    if not messagebox.askyesno(
+        self.t("v6_snapshots"),
+        self.t("v6_snapshot_restore_confirm", name=snapshot.name),
+    ):
+        return
+
+    # Safety net before restore.
+    try:
+        self.create_profile_snapshot_v6(profile_name, "before-restore", True)
+    except Exception:
+        pass
+
+    instance = self.profile_instance_dir(profile_name)
+    instance.mkdir(parents=True, exist_ok=True)
+    mutable_dirs = ("mods", "resourcepacks", "shaderpacks", "config")
+    for folder_name in mutable_dirs:
+        folder = instance / folder_name
+        if folder.exists():
+            shutil.rmtree(folder, ignore_errors=True)
+    for filename in ("options.txt", ".outerclient-content.json"):
+        try:
+            (instance / filename).unlink(missing_ok=True)
+        except Exception:
+            pass
+
+    with zipfile.ZipFile(snapshot, "r") as archive:
+        for member in archive.infolist():
+            if member.is_dir() or not member.filename.startswith("instance/"):
+                continue
+            relative = member.filename[len("instance/"):]
+            if not relative:
+                continue
+            target = safe_child(instance, relative)
+            target.parent.mkdir(parents=True, exist_ok=True)
+            with archive.open(member, "r") as source, target.open("wb") as output:
+                shutil.copyfileobj(source, output)
+
+    self.set_status(self.t("v6_snapshot_restored", name=snapshot.name))
+    self.show_profile_manager(profile_name)
+
+
+def _v6_show_profile_manager(self, profile_name):
+    _V6_SHOW_MANAGER_BASE(self, profile_name)
+
+    if profile_name not in self.cfg.get("profiles", {}):
+        return
+    try:
+        outer = self.content.winfo_children()[0]
+    except Exception:
+        return
+
+    # Insert one compact health/snapshot row under the header.
+    for child in list(outer.winfo_children()):
+        try:
+            info = child.grid_info()
+            row = int(info.get("row", -1))
+            if row >= 1:
+                child.grid_configure(row=row + 1)
+        except Exception:
+            pass
+
+    try:
+        outer.grid_rowconfigure(5, weight=1)
+        outer.grid_rowconfigure(4, weight=0)
+    except Exception:
+        pass
+
+    report = self.profile_health_report_v6(profile_name)
+    color = self.health_color_v6(report["status"])
+    snapshots = self.list_profile_snapshots_v6(profile_name)
+    latest = (
+        datetime.fromtimestamp(snapshots[0].stat().st_mtime).strftime("%d.%m %H:%M")
+        if snapshots else self.t("v6_never")
+    )
+
+    strip = self.card(outer, 12)
+    strip.grid(row=1, column=0, sticky="ew", padx=28, pady=(2, 8))
+    strip.grid_columnconfigure(1, weight=1)
+
+    ctk.CTkLabel(
+        strip,
+        text="●",
+        text_color=color,
+        font=ctk.CTkFont(size=22),
+    ).grid(row=0, column=0, rowspan=2, padx=(16, 12), pady=12)
+    ctk.CTkLabel(
+        strip,
+        text=f"{self.health_title_v6(report['status'])}  •  {self.t('v6_health_score', score=report['score'])}",
+        text_color=TEXT,
+        font=ctk.CTkFont(size=14, weight="bold"),
+        anchor="w",
+    ).grid(row=0, column=1, sticky="sw", pady=(11, 0))
+    ctk.CTkLabel(
+        strip,
+        text=self.t("v6_snapshot_count", count=len(snapshots), last=latest),
+        text_color=MUTED,
+        anchor="w",
+    ).grid(row=1, column=1, sticky="nw", pady=(1, 11))
+
+    ctk.CTkButton(
+        strip,
+        text=self.t("v6_snapshot_create"),
+        width=120,
+        height=34,
+        fg_color=SURFACE_3,
+        hover_color=self.accent,
+        command=lambda: self.create_profile_snapshot_v6(profile_name, "manual", False),
+    ).grid(row=0, column=2, rowspan=2, padx=(8, 5))
+    ctk.CTkButton(
+        strip,
+        text=self.t("v6_snapshot_restore"),
+        width=120,
+        height=34,
+        fg_color=SURFACE_3,
+        hover_color=self.accent,
+        state="normal" if snapshots else "disabled",
+        command=lambda: self.restore_profile_snapshot_v6(profile_name),
+    ).grid(row=0, column=3, rowspan=2, padx=(0, 15))
+
+
+def _v6_update_managed_content(self, profile_name, entry):
+    def worker():
+        try:
+            self.create_profile_snapshot_v6(profile_name, "auto-update", True)
+            self.events.put(("status", self.t("v6_snapshot_auto")))
+            _V6_UPDATE_CONTENT_WORKER(self, profile_name, entry)
+        except Exception as exc:
+            self.events.put(("error", f"Update:\n{exc}"))
+    self.run_bg(worker)
+
+
+def _v6_update_all_content(self, profile_name):
+    entries = []
+    for category in ("mods", "resources", "shaders"):
+        entries.extend(self.profile_manage_entries(profile_name, category))
+    updates = [
+        entry for entry in entries
+        if (profile_name, entry.get("rel")) in self.profile_update_cache
+    ]
+    if not updates:
+        self.set_status(self.t("v5_updates_none"))
+        return
+
+    def worker():
+        try:
+            self.create_profile_snapshot_v6(profile_name, "auto-update-all", True)
+            self.events.put(("status", self.t("v6_snapshot_auto")))
+            _V6_UPDATE_ALL_WORKER(self, profile_name, updates)
+        except Exception as exc:
+            self.events.put(("error", f"Update:\n{exc}"))
+    self.run_bg(worker)
+
+
+def _v6_check_updates_worker(self, profile_name):
+    metadata = self.load_content_metadata(profile_name)
+    profile = self.cfg["profiles"][profile_name]
+    candidates = [
+        (rel, meta)
+        for rel, meta in metadata.items()
+        if (
+            meta.get("source") == "Modrinth" and meta.get("project_id")
+        ) or (
+            meta.get("source") == "CurseForge" and meta.get("cf_mod_id")
+        )
+    ]
+    updates = {}
+
+    def check(item):
+        rel, meta = item
+        try:
+            if meta.get("source") == "Modrinth":
+                latest = self.find_modrinth_version(
+                    meta.get("project_id"),
+                    meta.get("category", "Mody"),
+                    profile["version"],
+                    profile["loader"],
+                )
+                if latest and latest.get("id") != meta.get("version_id"):
+                    return rel, {"source": "Modrinth", "latest": latest}
+            else:
+                files = self.curseforge_get_files(
+                    meta.get("cf_mod_id"),
+                    profile["version"],
+                    profile["loader"],
+                )
+                if files and files[0].get("id") != meta.get("file_id"):
+                    return rel, {"source": "CurseForge", "latest": files[0]}
+        except Exception:
+            pass
+        return None
+
+    with ThreadPoolExecutor(max_workers=5) as pool:
+        futures = [pool.submit(check, item) for item in candidates]
+        for future in as_completed(futures):
+            result = future.result()
+            if result:
+                updates[result[0]] = result[1]
+
+    self.profile_update_cache = {
+        key: value for key, value in self.profile_update_cache.items()
+        if key[0] != profile_name
+    }
+    for rel, value in updates.items():
+        self.profile_update_cache[(profile_name, rel)] = value
+    self.events.put(("profile_updates_done", (profile_name, len(updates))))
+
+
+def _v6_library_category_label(self, category):
+    return {
+        "all": self.t("v6_library_all"),
+        "mods": self.t("v6_library_mods"),
+        "resources": self.t("v6_library_resources"),
+        "shaders": self.t("v6_library_shaders"),
+        "datapacks": self.t("v6_library_datapacks"),
+    }.get(category, category)
+
+
+def _v6_library_groups(self, category="all", query=""):
+    query = str(query or "").strip().casefold()
+    groups = {}
+    categories = ("mods", "resources", "shaders", "datapacks") if category == "all" else (category,)
+
+    for profile_name in self.cfg.get("profiles", {}):
+        for current_category in categories:
+            try:
+                entries = self.profile_manage_entries(profile_name, current_category)
+            except Exception:
+                entries = []
+            for entry in entries:
+                meta = entry.get("meta") or {}
+                source = meta.get("source") or "Local"
+                project_key = (
+                    meta.get("project_id")
+                    or meta.get("cf_mod_id")
+                    or meta.get("slug")
+                    or (entry.get("local_meta") or {}).get("id")
+                    or entry.get("name")
+                    or entry.get("rel")
+                )
+                key = (current_category, str(source), str(project_key).casefold())
+                group = groups.setdefault(key, {
+                    "category": current_category,
+                    "source": source,
+                    "title": meta.get("title") or entry.get("name") or str(project_key),
+                    "icon_url": meta.get("icon_url"),
+                    "version": meta.get("version_number") or meta.get("version") or entry.get("detail", ""),
+                    "profiles": [],
+                    "entries": [],
+                })
+                if profile_name not in group["profiles"]:
+                    group["profiles"].append(profile_name)
+                group["entries"].append((profile_name, entry))
+
+    result = []
+    for group in groups.values():
+        haystack = " ".join([
+            str(group.get("title", "")),
+            str(group.get("source", "")),
+            " ".join(group.get("profiles", [])),
+        ]).casefold()
+        if query and query not in haystack:
+            continue
+        result.append(group)
+
+    result.sort(key=lambda item: (item["title"].casefold(), item["category"]))
+    return result
+
+
+def _v6_show_library(self):
+    self.set_active_page("library")
+    self.clear_content()
+    outer = ctk.CTkFrame(self.content, fg_color=BG, corner_radius=0)
+    outer.grid(row=0, column=0, sticky="nsew")
+    outer.grid_columnconfigure(0, weight=1)
+    outer.grid_rowconfigure(3, weight=1)
+
+    header = ctk.CTkFrame(outer, fg_color="transparent")
+    header.grid(row=0, column=0, sticky="ew", padx=36, pady=(24, 10))
+    ctk.CTkLabel(
+        header,
+        text=self.t("v6_library_title"),
+        text_color=TEXT,
+        font=ctk.CTkFont(size=29, weight="bold"),
+    ).pack(anchor="w")
+    ctk.CTkLabel(
+        header,
+        text=self.t("v6_library_subtitle"),
+        text_color=MUTED,
+    ).pack(anchor="w", pady=(2, 0))
+
+    controls = ctk.CTkFrame(outer, fg_color="transparent")
+    controls.grid(row=1, column=0, sticky="ew", padx=36, pady=(0, 8))
+    controls.grid_columnconfigure(0, weight=1)
+
+    self.library_query_v6 = ctk.StringVar(value=getattr(self, "_library_query_value_v6", ""))
+    search = ctk.CTkEntry(
+        controls,
+        textvariable=self.library_query_v6,
+        height=40,
+        fg_color=SURFACE_2,
+        border_color=BORDER,
+        placeholder_text=self.t("v6_library_search"),
+    )
+    search.grid(row=0, column=0, sticky="ew", padx=(0, 8))
+    search.bind("<Return>", lambda _e: self.render_library_v6())
+    ctk.CTkButton(
+        controls,
+        text=self.t("search"),
+        width=100,
+        height=40,
+        fg_color=self.accent,
+        hover_color=self.accent_hover,
+        command=self.render_library_v6,
+    ).grid(row=0, column=1)
+
+    tabs = ctk.CTkFrame(outer, fg_color="transparent")
+    tabs.grid(row=2, column=0, sticky="ew", padx=36, pady=(0, 6))
+    self.library_category_v6 = getattr(self, "library_category_v6", "all")
+    self.library_tab_buttons_v6 = {}
+    for key in ("all", "mods", "resources", "shaders", "datapacks"):
+        active = key == self.library_category_v6
+        button = ctk.CTkButton(
+            tabs,
+            text=self.library_category_label_v6(key),
+            height=34,
+            fg_color=self.accent if active else SURFACE,
+            hover_color=self.accent_hover if active else SURFACE_3,
+            border_width=1,
+            border_color=self.accent if active else BORDER,
+            command=lambda value=key: self.set_library_category_v6(value),
+        )
+        button.pack(side="left", padx=(0, 6))
+        self.library_tab_buttons_v6[key] = button
+
+    self.library_results_v6 = ctk.CTkScrollableFrame(
+        outer,
+        fg_color=BG,
+        corner_radius=0,
+        scrollbar_button_color=SURFACE_3,
+        scrollbar_button_hover_color=BORDER,
+    )
+    self.library_results_v6.grid(row=3, column=0, sticky="nsew", padx=28, pady=(0, 14))
+    self.library_results_v6.grid_columnconfigure(0, weight=1)
+    self.render_library_v6()
+
+
+def _v6_set_library_category(self, category):
+    self.library_category_v6 = category
+    for key, button in getattr(self, "library_tab_buttons_v6", {}).items():
+        active = key == category
+        button.configure(
+            fg_color=self.accent if active else SURFACE,
+            border_color=self.accent if active else BORDER,
+        )
+    self.render_library_v6()
+
+
+def _v6_render_library(self):
+    container = getattr(self, "library_results_v6", None)
+    if container is None:
+        return
+    for child in container.winfo_children():
+        child.destroy()
+
+    query = self.library_query_v6.get() if hasattr(self, "library_query_v6") else ""
+    self._library_query_value_v6 = query
+    groups = self.library_groups_v6(getattr(self, "library_category_v6", "all"), query)
+
+    if not groups:
+        ctk.CTkLabel(container, text=self.t("v6_library_empty"), text_color=MUTED).grid(row=0, column=0, pady=30)
+        return
+
+    for row_index, group in enumerate(groups):
+        card = self.card(container, 13)
+        card.grid(row=row_index, column=0, sticky="ew", padx=8, pady=5)
+        card.grid_columnconfigure(1, weight=1)
+
+        icon = ctk.CTkLabel(
+            card,
+            text="◇",
+            width=54,
+            height=54,
+            corner_radius=12,
+            fg_color=SURFACE_2,
+            text_color=MUTED,
+            font=ctk.CTkFont(size=20, weight="bold"),
+        )
+        icon.grid(row=0, column=0, rowspan=2, padx=14, pady=13)
+        if group.get("icon_url"):
+            self.run_bg(lambda u=group["icon_url"], w=icon: self.fetch_project_icon(u, w))
+
+        ctk.CTkLabel(
+            card,
+            text=group["title"],
+            text_color=TEXT,
+            font=ctk.CTkFont(size=15, weight="bold"),
+            anchor="w",
+        ).grid(row=0, column=1, sticky="sw", pady=(12, 0))
+        detail = f"{group['source']}  •  {self.library_category_label_v6(group['category'])}"
+        if group.get("version"):
+            detail += f"  •  {group['version']}"
+        ctk.CTkLabel(card, text=detail, text_color=MUTED, anchor="w").grid(row=1, column=1, sticky="nw", pady=(2, 12))
+        ctk.CTkLabel(
+            card,
+            text=self.t("v6_library_profiles", profiles=", ".join(group["profiles"])),
+            text_color="#A8B3C2",
+            anchor="e",
+        ).grid(row=0, column=2, sticky="e", padx=(12, 12), pady=(12, 0))
+        first_profile = group["profiles"][0]
+        ctk.CTkButton(
+            card,
+            text=self.t("v6_manage"),
+            width=105,
+            height=32,
+            fg_color=SURFACE_3,
+            hover_color=self.accent,
+            command=lambda p=first_profile: self.show_profile_manager(p),
+        ).grid(row=1, column=2, sticky="e", padx=(12, 12), pady=(2, 12))
+
+
+def _v6_build_shell(self):
+    _V6_BUILD_SHELL_BASE(self)
+    self.nav_buttons["library"] = self.nav_button(
+        "▦",
+        self.t("nav_library"),
+        self.show_content_library_v6,
+    )
+
+
+def _v6_diagnostic_component(self, parent, row, title, status, detail):
+    color = self.health_color_v6(status)
+    card = self.card(parent, 12)
+    card.grid(row=row, column=0, sticky="ew", padx=36, pady=5)
+    card.grid_columnconfigure(1, weight=1)
+    ctk.CTkLabel(card, text="●", text_color=color, font=ctk.CTkFont(size=20)).grid(row=0, column=0, rowspan=2, padx=(16, 12), pady=12)
+    ctk.CTkLabel(card, text=title, text_color=TEXT, font=ctk.CTkFont(size=14, weight="bold"), anchor="w").grid(row=0, column=1, sticky="sw", pady=(10, 0))
+    ctk.CTkLabel(card, text=detail, text_color=MUTED, anchor="w", justify="left", wraplength=760).grid(row=1, column=1, sticky="nw", pady=(2, 10))
+    status_text = self.t("v6_status_bad") if status == "bad" else (self.t("v6_status_warn") if status == "warning" else self.t("v6_status_ok"))
+    ctk.CTkLabel(card, text=status_text, text_color=color, font=ctk.CTkFont(size=11, weight="bold")).grid(row=0, column=2, rowspan=2, padx=16)
+
+
+def _v6_show_diagnostics(self):
+    self.set_active_page("diagnostics")
+    self.clear_content()
+    outer = ctk.CTkScrollableFrame(self.content, fg_color=BG, corner_radius=0, scrollbar_button_color=SURFACE_3)
+    outer.grid(row=0, column=0, sticky="nsew")
+    outer.grid_columnconfigure(0, weight=1)
+
+    name, profile = self.selected_profile_data()
+    report = self.profile_health_report_v6(name)
+
+    header = ctk.CTkFrame(outer, fg_color="transparent")
+    header.grid(row=0, column=0, sticky="ew", padx=36, pady=(24, 10))
+    header.grid_columnconfigure(0, weight=1)
+    ctk.CTkLabel(header, text=self.t("v6_diag_title"), text_color=TEXT, font=ctk.CTkFont(size=29, weight="bold")).grid(row=0, column=0, sticky="w")
+    ctk.CTkLabel(header, text=self.t("v6_diag_subtitle"), text_color=MUTED).grid(row=1, column=0, sticky="w", pady=(2, 0))
+    ctk.CTkButton(header, text=self.t("v6_repair"), height=36, fg_color=self.accent, hover_color=self.accent_hover, command=self.install_profile).grid(row=0, column=1, rowspan=2, padx=(8, 0))
+
+    game_item = next((x for x in report["items"] if x["component"] == "game"), None)
+    java_item = next((x for x in report["items"] if x["component"] == "java"), None)
+    mod_items = [x for x in report["items"] if x["component"] == "mods"]
+
+    def map_level(item):
+        if not item or item.get("level") == "ok": return "good"
+        return "bad" if item.get("level") == "error" else "warning"
+
+    self.diagnostic_component_v6(outer, 1, self.t("v6_component_game"), map_level(game_item), game_item["text"] if game_item else self.t("v6_health_installed"))
+    self.diagnostic_component_v6(outer, 2, self.t("v6_component_java"), map_level(java_item), java_item["text"] if java_item else self.t("v6_health_java_ok", major=report.get("java_major") or "?"))
+
+    mod_status = "bad" if any(x["level"] == "error" for x in mod_items) else ("warning" if any(x["level"] == "warning" for x in mod_items) else "good")
+    mod_detail = " • ".join(x["text"] for x in mod_items if x["level"] != "ok") or self.t("v6_health_mods_ok")
+    self.diagnostic_component_v6(outer, 3, self.t("v6_component_mods"), mod_status, mod_detail)
+
+    if self.cfg.get("account_mode") == "Microsoft":
+        account_status = "good" if self.auth else "bad"
+        account_detail = self.t("v6_account_ms", name=(self.auth or {}).get("name", "?")) if self.auth else self.t("microsoft_not_authenticated")
+    else:
+        account_status = "good"
+        account_detail = self.t("v6_account_offline")
+    self.diagnostic_component_v6(outer, 4, self.t("v6_component_account"), account_status, account_detail)
+
+    services_status = "good" if BUILTIN_CURSEFORGE_API_KEY else "warning"
+    services_detail = self.t("v6_api_ready") if BUILTIN_CURSEFORGE_API_KEY else self.t("v6_api_cf_missing")
+    self.diagnostic_component_v6(outer, 5, self.t("v6_component_services"), services_status, services_detail)
+
+    actions = ctk.CTkFrame(outer, fg_color="transparent")
+    actions.grid(row=6, column=0, sticky="ew", padx=36, pady=(10, 8))
+    ctk.CTkButton(actions, text=self.t("v6_check_updates_short"), fg_color=SURFACE_3, hover_color=self.accent, command=lambda: self.check_profile_updates(name)).pack(side="left")
+    ctk.CTkButton(actions, text=self.t("v5_copy_report"), fg_color=SURFACE_3, hover_color=self.accent, command=self.copy_diagnostic_report).pack(side="left", padx=7)
+    ctk.CTkButton(actions, text=self.t("v5_open_logs"), fg_color=SURFACE_3, hover_color=self.accent, command=lambda: self.open_profile_folder_path(self.logs_dir())).pack(side="left")
+
+    log_card = self.card(outer, 12)
+    log_card.grid(row=7, column=0, sticky="ew", padx=36, pady=(0, 18))
+    textbox = ctk.CTkTextbox(log_card, height=330, fg_color=SURFACE_2, border_width=0, text_color="#B9C5D6", font=ctk.CTkFont(family="monospace", size=11))
+    textbox.pack(fill="both", expand=True, padx=10, pady=10)
+    log = self.logs_dir() / "latest-minecraft.log"
+    launcher = self.logs_dir() / "outerclient.log"
+    text = "=== OuterClient ===\n" + (launcher.read_text(encoding="utf-8", errors="ignore")[-10000:] if launcher.exists() else "")
+    text += "\n\n=== Minecraft ===\n" + (log.read_text(encoding="utf-8", errors="ignore")[-18000:] if log.exists() else "")
+    textbox.insert("1.0", text)
+    textbox.configure(state="disabled")
+
+
+def _v6_launch_installed(self, launch_version, instance, profile_name, server_address=None, runtime=None):
+    result = _V6_LAUNCH_INSTALLED_BASE(self, launch_version, instance, profile_name, server_address, runtime)
+    process = getattr(self, "minecraft_process", None)
+    if process is not None and process.poll() is None:
+        stats = self.profile_play_stats_v6(profile_name)
+        stats["launches"] = int(stats.get("launches", 0) or 0) + 1
+        stats["last_played"] = int(time.time())
+        self._v6_launch_started[process.pid] = time.time()
+        save_config(self.cfg)
+    return result
+
+
+def _v6_monitor_process(self, process, profile_name, log_path):
+    code = process.wait()
+    started = self._v6_launch_started.pop(process.pid, None)
+    if started:
+        stats = self.profile_play_stats_v6(profile_name)
+        stats["seconds"] = int(stats.get("seconds", 0) or 0) + max(0, int(time.time() - started))
+        stats["last_exit_code"] = int(code)
+        save_config(self.cfg)
+
+    try:
+        handle = getattr(self, "minecraft_log_handle", None)
+        if handle:
+            handle.flush()
+            handle.close()
+            self.minecraft_log_handle = None
+    except Exception:
+        pass
+
+    try:
+        text = Path(log_path).read_text(encoding="utf-8", errors="ignore")[-30000:]
+    except Exception:
+        text = ""
+
+    self.minecraft_process = None
+    self.events.put(("status", self.t("ready")))
+    self.events.put(("minecraft_exit", (code, self.analyze_crash(text, code), profile_name)))
+
+
+def _v6_init(self):
+    self._v6_launch_started = {}
+    self._v6_health_cache = {}
+    self.library_category_v6 = "all"
+    self._library_query_value_v6 = ""
+    _V6_INIT_BASE(self)
+
+
+# Install v6 config loader before the application instance is created.
+load_config = _v6_load_config
+
+OuterClient.profile_play_stats_v6 = _v6_profile_stats
+OuterClient.format_duration_v6 = _v6_format_duration
+OuterClient.format_last_played_v6 = _v6_format_last_played
+OuterClient.recommended_profile_ram_v6 = _v6_recommended_ram
+OuterClient.profile_health_report_v6 = _v6_health_report
+OuterClient.health_color_v6 = _v6_health_color
+OuterClient.health_title_v6 = _v6_health_title
+OuterClient.select_home_profile_v6 = _v6_select_home_profile
+OuterClient.set_recommended_ram_v6 = _v6_set_recommended_ram
+OuterClient.show_home = _v6_show_home
+
+OuterClient.snapshots_root_v6 = _v6_snapshots_root
+OuterClient.list_profile_snapshots_v6 = _v6_list_snapshots
+OuterClient.create_profile_snapshot_v6 = _v6_create_snapshot
+OuterClient.restore_profile_snapshot_v6 = _v6_restore_snapshot
+OuterClient.show_profile_manager = _v6_show_profile_manager
+OuterClient.update_managed_content = _v6_update_managed_content
+OuterClient.update_all_content = _v6_update_all_content
+OuterClient.check_profile_updates_worker = _v6_check_updates_worker
+
+OuterClient.library_category_label_v6 = _v6_library_category_label
+OuterClient.library_groups_v6 = _v6_library_groups
+OuterClient.show_content_library_v6 = _v6_show_library
+OuterClient.set_library_category_v6 = _v6_set_library_category
+OuterClient.render_library_v6 = _v6_render_library
+OuterClient.build_shell = _v6_build_shell
+
+OuterClient.diagnostic_component_v6 = _v6_diagnostic_component
+OuterClient.show_diagnostics = _v6_show_diagnostics
+
+OuterClient.launch_installed_v54 = _v6_launch_installed
+OuterClient.monitor_minecraft_process = _v6_monitor_process
+
+_V6_SHOW_PROFILES_BASE = OuterClient.show_profiles
+
+
+def _v6_quick_launch_profile(self, profile_name):
+    if profile_name not in self.cfg.get("profiles", {}):
+        return
+    self.cfg["selected"] = profile_name
+    save_config(self.cfg)
+    self.launch()
+
+
+def _v6_show_profiles(self):
+    _V6_SHOW_PROFILES_BASE(self)
+    try:
+        page = self.content.winfo_children()[0]
+    except Exception:
+        return
+
+    cards = []
+    for child in page.winfo_children():
+        try:
+            row = int(child.grid_info().get("row", -1))
+        except Exception:
+            continue
+        if row >= 2:
+            cards.append((row, child))
+    cards.sort(key=lambda item: item[0])
+
+    for (profile_name, _profile), (_row, card) in zip(self.cfg["profiles"].items(), cards):
+        report = self.profile_health_report_v6(profile_name)
+        color = self.health_color_v6(report["status"])
+        ctk.CTkLabel(
+            card,
+            text=f"●  {self.health_title_v6(report['status'])}  •  {self.t('v6_health_score', score=report['score'])}",
+            text_color=color,
+            anchor="w",
+            font=ctk.CTkFont(size=10, weight="bold"),
+        ).grid(row=2, column=1, sticky="w", pady=(0, 11))
+
+        ctk.CTkButton(
+            card,
+            text=self.t("v6_profile_quick_play"),
+            width=82,
+            height=30,
+            fg_color=self.accent,
+            hover_color=self.accent_hover,
+            command=lambda n=profile_name: self.quick_launch_profile_v6(n),
+        ).grid(row=2, column=2, columnspan=4, sticky="e", padx=(8, 16), pady=(0, 10))
+
+
+OuterClient.quick_launch_profile_v6 = _v6_quick_launch_profile
+OuterClient.show_profiles = _v6_show_profiles
+OuterClient.__init__ = _v6_init
 
 
 
