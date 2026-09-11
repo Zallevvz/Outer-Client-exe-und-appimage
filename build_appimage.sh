@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-VERSION="6.0"
+VERSION="6.1"
 
 python3 -m venv .build-venv
 source .build-venv/bin/activate
@@ -45,14 +45,14 @@ cp assets/outerclient-logo.png AppDir/outerclient.png
 cat > AppDir/OuterClient.desktop <<'EOF'
 [Desktop Entry]
 Type=Application
-Name=OuterClient 6.0
+Name=OuterClient 6.1
 Comment=OuterClient Minecraft Launcher
 Exec=OuterClient
 Icon=outerclient
 Categories=Game;
 Terminal=false
 StartupWMClass=OuterClient
-X-AppImage-Version=6.0
+X-AppImage-Version=6.1
 EOF
 
 cat > AppDir/AppRun <<'EOF'

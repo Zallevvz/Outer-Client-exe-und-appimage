@@ -38,7 +38,7 @@ except Exception:
 
 
 APP_NAME = "OuterClient"
-APP_VERSION = "6.0"
+APP_VERSION = "6.1"
 CONFIG_PATH = Path.home() / ".outerclient.json"
 REDIRECT_URI = "http://localhost:8765/callback"
 MICROSOFT_CLIENT_ID = "fb14d1c4-7d14-4a35-99a7-3f921f7a1e77"
@@ -106,7 +106,7 @@ TEXTS = {
     "pl": {
         "nav_play": "Graj",
         "nav_profiles": "Profile",
-        "nav_modrinth": "Modrinth",
+        "nav_modrinth": "Eksploruj",
         "nav_settings": "Ustawienia",
         "account_settings": "Ustawienia konta",
         "microsoft_account": "Konto Microsoft",
@@ -514,6 +514,33 @@ TEXTS = {
         "v6_profile_health_summary": "{errors} błędów • {warnings} ostrzeżeń",
         "v6_snapshot_count": "{count} snapshotów • ostatni: {last}",
         "v6_profile_quick_play": "Graj",
+        "nav_whats_new": "Co nowego?",
+        "v61_whats_new_eyebrow": "OUTERCLIENT 6.1",
+        "v61_whats_new_title": "Co nowego?",
+        "v61_whats_new_subtitle": "Najważniejsze zmiany w tej i poprzednich wersjach OuterClient.",
+        "v61_current_version": "AKTUALNA WERSJA",
+        "v61_previous_version": "POPRZEDNIA WERSJA",
+        "v61_whats_new_61_title": "OuterClient 6.1",
+        "v61_whats_new_61_date": "Wrzesień 2026",
+        "v61_change_changelog": "Nowa zakładka „Co nowego?” i automatyczne pokazanie zmian po pierwszym uruchomieniu po aktualizacji.",
+        "v61_change_explore": "Zakładka Modrinth zmieniła nazwę na „Eksploruj”, bo obsługuje Modrinth i CurseForge.",
+        "v61_change_target": "Naprawiony panel „Instaluj na profilu” — zawsze pokazuje ikonę, nazwę, wersję Minecrafta i loader.",
+        "v61_change_diagnostics": "Diagnostyka ma własny wybór profilu w lewym górnym rogu.",
+        "v61_change_window": "Poprawione zachowanie okna na Linuxie: wpis na pasku zadań i normalna minimalizacja przy zachowaniu customowego paska.",
+        "v61_whats_new_60_title": "OuterClient 6.0",
+        "v61_whats_new_60_date": "Wrzesień 2026",
+        "v61_change_60_dashboard": "Nowy Dashboard z informacjami o profilu, RAM-ie, czasie gry i stanie profilu.",
+        "v61_change_60_health": "Profile Health wykrywa problemy z Javą, loaderem, Fabric API i modami.",
+        "v61_change_60_snapshots": "Snapshoty profili i możliwość cofnięcia zmian po aktualizacji modów.",
+        "v61_change_60_library": "Biblioteka zawartości pokazująca mody, resource packi, shadery i datapacki ze wszystkich profili.",
+        "v61_change_60_diag": "Diagnostyka 2.0 z osobnymi statusami komponentów.",
+        "v61_seen_note": "Ten ekran pojawia się automatycznie tylko raz po każdej aktualizacji. Zawsze możesz do niego wrócić z menu po lewej.",
+        "v61_diag_profile": "PROFIL DO SPRAWDZENIA",
+        "v61_diag_profile_hint": "Wyniki poniżej dotyczą wybranego profilu.",
+        "v61_repair_selected": "Napraw wybrany profil",
+        "v61_explore_target_hint": "Kliknij, aby wybrać profil",
+        "v61_new_profile_target": "Nowy profil",
+        "v61_new_profile_target_meta": "Modpack utworzy osobny profil",
         "v58_update_checking": "Sprawdzanie aktualizacji OuterClient…",
         "v58_update_failed": "Nie udało się sprawdzić aktualizacji: {error}",
         "v58_latest": "Masz najnowszą wersję OuterClient ({version}).",
@@ -588,7 +615,7 @@ TEXTS = {
     "en": {
         "nav_play": "Play",
         "nav_profiles": "Profiles",
-        "nav_modrinth": "Modrinth",
+        "nav_modrinth": "Explore",
         "nav_settings": "Settings",
         "account_settings": "Account settings",
         "microsoft_account": "Microsoft account",
@@ -1007,6 +1034,33 @@ TEXTS = {
         "v6_profile_health_summary": "{errors} errors • {warnings} warnings",
         "v6_snapshot_count": "{count} snapshots • latest: {last}",
         "v6_profile_quick_play": "Play",
+        "nav_whats_new": "What's New",
+        "v61_whats_new_eyebrow": "OUTERCLIENT 6.1",
+        "v61_whats_new_title": "What's New",
+        "v61_whats_new_subtitle": "The most important changes in this and previous OuterClient releases.",
+        "v61_current_version": "CURRENT VERSION",
+        "v61_previous_version": "PREVIOUS VERSION",
+        "v61_whats_new_61_title": "OuterClient 6.1",
+        "v61_whats_new_61_date": "September 2026",
+        "v61_change_changelog": "A new What's New page and an automatic release overview on the first launch after an update.",
+        "v61_change_explore": "The Modrinth sidebar item is now Explore because it contains both Modrinth and CurseForge.",
+        "v61_change_target": "Fixed Install to profile — it always shows the profile icon, name, Minecraft version and loader.",
+        "v61_change_diagnostics": "Diagnostics now has its own profile selector in the upper-left corner.",
+        "v61_change_window": "Improved Linux window behavior: taskbar presence and normal minimization while keeping the custom title bar.",
+        "v61_whats_new_60_title": "OuterClient 6.0",
+        "v61_whats_new_60_date": "September 2026",
+        "v61_change_60_dashboard": "A new Dashboard with profile, RAM, play-time and profile-health information.",
+        "v61_change_60_health": "Profile Health detects Java, loader, Fabric API and mod problems.",
+        "v61_change_60_snapshots": "Profile snapshots and rollback before/after mod updates.",
+        "v61_change_60_library": "A cross-profile content Library for mods, resource packs, shaders and datapacks.",
+        "v61_change_60_diag": "Diagnostics 2.0 with separate component status cards.",
+        "v61_seen_note": "This screen is shown automatically only once after each update. You can always reopen it from the left sidebar.",
+        "v61_diag_profile": "PROFILE TO CHECK",
+        "v61_diag_profile_hint": "The results below apply to the selected profile.",
+        "v61_repair_selected": "Repair selected profile",
+        "v61_explore_target_hint": "Click to choose a profile",
+        "v61_new_profile_target": "New profile",
+        "v61_new_profile_target_meta": "The modpack will create a separate profile",
         "v5_change_profile": "Change profile",
         "v5_previous": "Previous",
         "v5_next": "Next",
@@ -1397,7 +1451,7 @@ class OuterClient(ctk.CTk):
                 try:
                     import ctypes
                     ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(
-                        "OuterClient.Launcher.6.0"
+                        "OuterClient.Launcher.6.1"
                     )
                 except Exception:
                     pass
@@ -27118,6 +27172,886 @@ def _v6_show_profiles(self):
 OuterClient.quick_launch_profile_v6 = _v6_quick_launch_profile
 OuterClient.show_profiles = _v6_show_profiles
 OuterClient.__init__ = _v6_init
+
+
+
+# ============================================================
+# OuterClient 6.1
+# ============================================================
+
+_V61_INIT_BASE = OuterClient.__init__
+_V61_BUILD_SHELL_BASE = OuterClient.build_shell
+_V61_SHOW_EXPLORE_BASE = OuterClient.show_modrinth
+_V61_BORDERLESS_BASE = OuterClient.apply_borderless_once_v5103
+_V61_SET_OVERRIDE_BASE = OuterClient.set_custom_override_v5101
+_V61_MINIMIZE_BASE = OuterClient.custom_minimize_v5101
+_V61_MAP_BASE = OuterClient.custom_on_map_v5101
+
+
+# ---------------- What's New ----------------
+
+def _v61_change_row(self, parent, text, row):
+    item = ctk.CTkFrame(parent, fg_color=SURFACE_2, corner_radius=10)
+    item.grid(row=row, column=0, sticky="ew", pady=4)
+    item.grid_columnconfigure(1, weight=1)
+
+    ctk.CTkLabel(
+        item,
+        text="✓",
+        width=34,
+        text_color=self.secondary,
+        font=ctk.CTkFont(size=15, weight="bold"),
+    ).grid(row=0, column=0, padx=(10, 2), pady=10)
+
+    ctk.CTkLabel(
+        item,
+        text=text,
+        text_color="#D6DEE9",
+        anchor="w",
+        justify="left",
+        wraplength=760,
+        font=ctk.CTkFont(size=12),
+    ).grid(row=0, column=1, sticky="ew", padx=(3, 14), pady=10)
+
+
+def _v61_release_card(self, parent, row, title, date_text, changes, current=False):
+    card = self.card(parent, 14)
+    card.grid(row=row, column=0, sticky="ew", padx=36, pady=(0, 14))
+    card.grid_columnconfigure(0, weight=1)
+
+    head = ctk.CTkFrame(card, fg_color="transparent")
+    head.grid(row=0, column=0, sticky="ew", padx=18, pady=(16, 8))
+    head.grid_columnconfigure(0, weight=1)
+
+    left = ctk.CTkFrame(head, fg_color="transparent")
+    left.grid(row=0, column=0, sticky="w")
+
+    ctk.CTkLabel(
+        left,
+        text=self.t("v61_current_version") if current else self.t("v61_previous_version"),
+        text_color=self.secondary if current else MUTED,
+        font=ctk.CTkFont(size=9, weight="bold"),
+    ).pack(anchor="w")
+
+    ctk.CTkLabel(
+        left,
+        text=title,
+        text_color=TEXT,
+        font=ctk.CTkFont(size=20, weight="bold"),
+    ).pack(anchor="w", pady=(2, 0))
+
+    ctk.CTkLabel(
+        head,
+        text=date_text,
+        text_color=MUTED,
+        font=ctk.CTkFont(size=10),
+    ).grid(row=0, column=1, sticky="e", padx=(12, 0))
+
+    items = ctk.CTkFrame(card, fg_color="transparent")
+    items.grid(row=1, column=0, sticky="ew", padx=18, pady=(0, 16))
+    items.grid_columnconfigure(0, weight=1)
+
+    for index, change in enumerate(changes):
+        self.whats_new_change_row_v61(items, change, index)
+
+
+def _v61_show_whats_new(self, mark_seen=True):
+    self.set_active_page("whats_new")
+    self.clear_content()
+
+    outer = ctk.CTkScrollableFrame(
+        self.content,
+        fg_color=BG,
+        corner_radius=0,
+        scrollbar_button_color=SURFACE_3,
+        scrollbar_button_hover_color=BORDER,
+    )
+    outer.grid(row=0, column=0, sticky="nsew")
+    outer.grid_columnconfigure(0, weight=1)
+
+    self.page_header(
+        outer,
+        self.t("v61_whats_new_eyebrow"),
+        self.t("v61_whats_new_title"),
+        self.t("v61_whats_new_subtitle"),
+    )
+
+    self.release_card_v61(
+        outer,
+        1,
+        self.t("v61_whats_new_61_title"),
+        self.t("v61_whats_new_61_date"),
+        [
+            self.t("v61_change_changelog"),
+            self.t("v61_change_explore"),
+            self.t("v61_change_target"),
+            self.t("v61_change_diagnostics"),
+            self.t("v61_change_window"),
+        ],
+        current=True,
+    )
+
+    self.release_card_v61(
+        outer,
+        2,
+        self.t("v61_whats_new_60_title"),
+        self.t("v61_whats_new_60_date"),
+        [
+            self.t("v61_change_60_dashboard"),
+            self.t("v61_change_60_health"),
+            self.t("v61_change_60_snapshots"),
+            self.t("v61_change_60_library"),
+            self.t("v61_change_60_diag"),
+        ],
+        current=False,
+    )
+
+    note = ctk.CTkFrame(
+        outer,
+        fg_color=SURFACE,
+        corner_radius=12,
+        border_width=1,
+        border_color=BORDER,
+    )
+    note.grid(row=3, column=0, sticky="ew", padx=36, pady=(0, 30))
+
+    ctk.CTkLabel(
+        note,
+        text="✦",
+        text_color=self.accent,
+        font=ctk.CTkFont(size=18, weight="bold"),
+    ).pack(side="left", padx=(16, 10), pady=14)
+
+    ctk.CTkLabel(
+        note,
+        text=self.t("v61_seen_note"),
+        text_color=MUTED,
+        anchor="w",
+        justify="left",
+        wraplength=820,
+    ).pack(side="left", fill="x", expand=True, padx=(0, 16), pady=14)
+
+    if mark_seen:
+        self.cfg["whats_new_seen_version"] = APP_VERSION
+        save_config(self.cfg)
+
+
+def _v61_maybe_show_whats_new(self):
+    if self.cfg.get("whats_new_seen_version") == APP_VERSION:
+        return
+
+    if self.microsoft_login_in_progress:
+        self.after(750, self.maybe_show_whats_new_v61)
+        return
+
+    self.show_whats_new_v61(mark_seen=True)
+
+
+# ---------------- Diagnostics profile selector ----------------
+
+def _v61_diag_profile_name(self):
+    name = getattr(self, "diagnostics_profile_name_v61", None)
+
+    if name not in self.cfg.get("profiles", {}):
+        name = self.cfg.get("selected")
+
+    if name not in self.cfg.get("profiles", {}):
+        name = next(iter(self.cfg["profiles"]))
+
+    self.diagnostics_profile_name_v61 = name
+    return name
+
+
+def _v61_select_diag_profile(self, profile_name):
+    if profile_name not in self.cfg.get("profiles", {}):
+        return
+
+    self.diagnostics_profile_name_v61 = profile_name
+    self._v6_health_cache.pop(profile_name, None)
+    self.show_diagnostics()
+
+
+def _v61_repair_diag_profile(self):
+    name = self.diagnostic_profile_name_v61()
+    profile = self.cfg["profiles"][name]
+
+    self.set_status(
+        self.t(
+            "installing_profile",
+            loader=profile["loader"],
+            version=profile["version"],
+        )
+    )
+
+    self.run_bg(
+        lambda: self.install_worker(
+            name,
+            profile["version"],
+            profile["loader"],
+            False,
+        )
+    )
+
+
+def _v61_show_diagnostics(self):
+    self.set_active_page("diagnostics")
+    self.clear_content()
+
+    outer = ctk.CTkScrollableFrame(
+        self.content,
+        fg_color=BG,
+        corner_radius=0,
+        scrollbar_button_color=SURFACE_3,
+        scrollbar_button_hover_color=BORDER,
+    )
+    outer.grid(row=0, column=0, sticky="nsew")
+    outer.grid_columnconfigure(0, weight=1)
+
+    name = self.diagnostic_profile_name_v61()
+    profile = self.cfg["profiles"][name]
+    report = self.profile_health_report_v6(name)
+
+    selector_wrap = ctk.CTkFrame(outer, fg_color="transparent")
+    selector_wrap.grid(row=0, column=0, sticky="ew", padx=36, pady=(24, 7))
+    selector_wrap.grid_columnconfigure(1, weight=1)
+
+    selector_card = ctk.CTkFrame(
+        selector_wrap,
+        fg_color=SURFACE,
+        corner_radius=12,
+        border_width=1,
+        border_color=BORDER,
+    )
+    selector_card.grid(row=0, column=0, sticky="w")
+
+    ctk.CTkLabel(
+        selector_card,
+        text=self.t("v61_diag_profile"),
+        text_color=MUTED,
+        font=ctk.CTkFont(size=9, weight="bold"),
+    ).pack(anchor="w", padx=12, pady=(9, 2))
+
+    self.diagnostics_profile_var_v61 = ctk.StringVar(value=name)
+    selector = self.themed_option_menu(
+        selector_card,
+        variable=self.diagnostics_profile_var_v61,
+        values=list(self.cfg["profiles"].keys()),
+        width=245,
+        height=38,
+        command=self.select_diagnostic_profile_v61,
+    )
+    selector.pack(padx=10, pady=(0, 10))
+
+    ctk.CTkLabel(
+        selector_wrap,
+        text=self.t("v61_diag_profile_hint"),
+        text_color=MUTED,
+        anchor="w",
+        font=ctk.CTkFont(size=10),
+    ).grid(row=0, column=1, sticky="w", padx=(14, 0))
+
+    header = ctk.CTkFrame(outer, fg_color="transparent")
+    header.grid(row=1, column=0, sticky="ew", padx=36, pady=(4, 10))
+    header.grid_columnconfigure(0, weight=1)
+
+    ctk.CTkLabel(
+        header,
+        text=self.t("v6_diag_title"),
+        text_color=TEXT,
+        font=ctk.CTkFont(size=29, weight="bold"),
+    ).grid(row=0, column=0, sticky="w")
+
+    ctk.CTkLabel(
+        header,
+        text=(
+            f"{self.t('v6_diag_subtitle')}  •  {name}  •  "
+            f"Minecraft {profile.get('version','?')}  •  {profile.get('loader','?')}"
+        ),
+        text_color=MUTED,
+    ).grid(row=1, column=0, sticky="w", pady=(2, 0))
+
+    ctk.CTkButton(
+        header,
+        text=self.t("v61_repair_selected"),
+        height=36,
+        fg_color=self.accent,
+        hover_color=self.accent_hover,
+        command=self.repair_diagnostic_profile_v61,
+    ).grid(row=0, column=1, rowspan=2, padx=(8, 0))
+
+    game_item = next((x for x in report["items"] if x["component"] == "game"), None)
+    java_item = next((x for x in report["items"] if x["component"] == "java"), None)
+    mod_items = [x for x in report["items"] if x["component"] == "mods"]
+
+    def map_level(item):
+        if not item or item.get("level") == "ok":
+            return "good"
+        return "bad" if item.get("level") == "error" else "warning"
+
+    self.diagnostic_component_v6(
+        outer,
+        2,
+        self.t("v6_component_game"),
+        map_level(game_item),
+        game_item["text"] if game_item else self.t("v6_health_installed"),
+    )
+
+    self.diagnostic_component_v6(
+        outer,
+        3,
+        self.t("v6_component_java"),
+        map_level(java_item),
+        java_item["text"] if java_item else self.t(
+            "v6_health_java_ok",
+            major=report.get("java_major") or "?",
+        ),
+    )
+
+    mod_status = (
+        "bad"
+        if any(x["level"] == "error" for x in mod_items)
+        else (
+            "warning"
+            if any(x["level"] == "warning" for x in mod_items)
+            else "good"
+        )
+    )
+    mod_detail = (
+        " • ".join(x["text"] for x in mod_items if x["level"] != "ok")
+        or self.t("v6_health_mods_ok")
+    )
+    self.diagnostic_component_v6(
+        outer,
+        4,
+        self.t("v6_component_mods"),
+        mod_status,
+        mod_detail,
+    )
+
+    if self.cfg.get("account_mode") == "Microsoft":
+        account_status = "good" if self.auth else "bad"
+        account_detail = (
+            self.t("v6_account_ms", name=(self.auth or {}).get("name", "?"))
+            if self.auth
+            else self.t("microsoft_not_authenticated")
+        )
+    else:
+        account_status = "good"
+        account_detail = self.t("v6_account_offline")
+
+    self.diagnostic_component_v6(
+        outer,
+        5,
+        self.t("v6_component_account"),
+        account_status,
+        account_detail,
+    )
+
+    services_status = "good" if BUILTIN_CURSEFORGE_API_KEY else "warning"
+    services_detail = (
+        self.t("v6_api_ready")
+        if BUILTIN_CURSEFORGE_API_KEY
+        else self.t("v6_api_cf_missing")
+    )
+    self.diagnostic_component_v6(
+        outer,
+        6,
+        self.t("v6_component_services"),
+        services_status,
+        services_detail,
+    )
+
+    actions = ctk.CTkFrame(outer, fg_color="transparent")
+    actions.grid(row=7, column=0, sticky="ew", padx=36, pady=(10, 8))
+    ctk.CTkButton(
+        actions,
+        text=self.t("v6_check_updates_short"),
+        fg_color=SURFACE_3,
+        hover_color=self.accent,
+        command=lambda: self.check_profile_updates(name),
+    ).pack(side="left")
+    ctk.CTkButton(
+        actions,
+        text=self.t("v5_copy_report"),
+        fg_color=SURFACE_3,
+        hover_color=self.accent,
+        command=self.copy_diagnostic_report,
+    ).pack(side="left", padx=7)
+    ctk.CTkButton(
+        actions,
+        text=self.t("v5_open_logs"),
+        fg_color=SURFACE_3,
+        hover_color=self.accent,
+        command=lambda: self.open_profile_folder_path(self.logs_dir()),
+    ).pack(side="left")
+
+    log_card = self.card(outer, 12)
+    log_card.grid(row=8, column=0, sticky="ew", padx=36, pady=(0, 18))
+
+    textbox = ctk.CTkTextbox(
+        log_card,
+        height=330,
+        fg_color=SURFACE_2,
+        border_width=0,
+        text_color="#B9C5D6",
+        font=ctk.CTkFont(family="monospace", size=11),
+    )
+    textbox.pack(fill="both", expand=True, padx=10, pady=10)
+
+    log = self.logs_dir() / "latest-minecraft.log"
+    launcher = self.logs_dir() / "outerclient.log"
+
+    text = "=== OuterClient ===\n" + (
+        launcher.read_text(encoding="utf-8", errors="ignore")[-10000:]
+        if launcher.exists()
+        else ""
+    )
+    text += "\n\n=== Minecraft ===\n" + (
+        log.read_text(encoding="utf-8", errors="ignore")[-18000:]
+        if log.exists()
+        else ""
+    )
+
+    textbox.insert("1.0", text)
+    textbox.configure(state="disabled")
+
+
+# ---------------- Explore target selector ----------------
+
+def _v61_logo_image(self, size=40):
+    try:
+        if LOGO_PNG.exists():
+            pil = Image.open(LOGO_PNG).convert("RGBA")
+            return ctk.CTkImage(
+                light_image=pil,
+                dark_image=pil,
+                size=(size, size),
+            )
+    except Exception:
+        pass
+    return None
+
+
+def _v61_close_explore_target_menu(self):
+    menu = getattr(self, "explore_target_menu_v61", None)
+    if menu is not None:
+        try:
+            menu.pack_forget()
+        except Exception:
+            pass
+
+
+def _v61_refresh_explore_target(self):
+    if not hasattr(self, "explore_target_name_v61"):
+        return
+
+    if self.modrinth_category == "Modpacki":
+        self.modrinth_target_label.configure(text=self.t("modpack_new_profile"))
+
+        image = self.outerclient_logo_ctk_v61(40)
+        self._explore_target_image_v61 = image
+        self.explore_target_icon_v61.configure(
+            image=image,
+            text="" if image else "O",
+        )
+        self.explore_target_name_v61.configure(
+            text=self.t("v61_new_profile_target")
+        )
+        self.explore_target_meta_v61.configure(
+            text=self.t("v61_new_profile_target_meta")
+        )
+        self.explore_target_arrow_v61.configure(state="disabled", text="+")
+        self.close_explore_target_menu_v61()
+        return
+
+    self.modrinth_target_label.configure(text=self.t("install_on_profile"))
+
+    name = self.modrinth_profile.get()
+    if name not in self.cfg.get("profiles", {}):
+        name = self.cfg.get("selected")
+    if name not in self.cfg.get("profiles", {}):
+        name = next(iter(self.cfg["profiles"]))
+
+    self.modrinth_profile.set(name)
+    profile = self.cfg["profiles"][name]
+
+    image = self.profile_icon_ctk(name, 40)
+    self._explore_target_image_v61 = image
+
+    self.explore_target_icon_v61.configure(
+        image=image,
+        text="" if image else name[:1].upper(),
+    )
+    self.explore_target_name_v61.configure(text=name)
+    self.explore_target_meta_v61.configure(
+        text=(
+            f"Minecraft {profile.get('version','?')} • "
+            f"{profile.get('loader','?')}"
+        )
+    )
+    self.explore_target_arrow_v61.configure(state="normal", text="⌄")
+
+
+def _v61_select_explore_profile(self, profile_name):
+    if profile_name not in self.cfg.get("profiles", {}):
+        return
+
+    old = self.modrinth_profile.get()
+    self.modrinth_profile.set(profile_name)
+    self.refresh_explore_target_v61()
+    self.close_explore_target_menu_v61()
+
+    if old != profile_name:
+        self.search_modrinth()
+
+
+def _v61_toggle_explore_target_menu(self):
+    if self.modrinth_category == "Modpacki":
+        return
+
+    menu = getattr(self, "explore_target_menu_v61", None)
+    if menu is None:
+        return
+
+    try:
+        if menu.winfo_ismapped():
+            self.close_explore_target_menu_v61()
+            return
+    except Exception:
+        pass
+
+    for child in menu.winfo_children():
+        child.destroy()
+
+    current = self.modrinth_profile.get()
+
+    for profile_name, profile in self.cfg["profiles"].items():
+        image = self.profile_icon_ctk(profile_name, 32)
+
+        button = ctk.CTkButton(
+            menu,
+            text=(
+                f"{'✓  ' if profile_name == current else ''}"
+                f"{profile_name}\n"
+                f"Minecraft {profile.get('version','?')} • "
+                f"{profile.get('loader','?')}"
+            ),
+            image=image,
+            compound="left",
+            anchor="w",
+            height=56,
+            corner_radius=9,
+            fg_color=self.accent if profile_name == current else SURFACE_2,
+            hover_color=self.accent_hover,
+            border_width=1,
+            border_color=self.accent if profile_name == current else BORDER,
+            command=lambda n=profile_name: self.select_explore_profile_v61(n),
+        )
+        button._outerclient_image_v61 = image
+        button.pack(fill="x", padx=7, pady=(7, 0))
+
+    ctk.CTkLabel(
+        menu,
+        text=self.t("v61_explore_target_hint"),
+        text_color=MUTED,
+        font=ctk.CTkFont(size=9),
+    ).pack(anchor="w", padx=11, pady=(7, 9))
+
+    menu.pack(fill="x", padx=10, pady=(0, 10))
+
+
+def _v61_build_explore_target(self):
+    target = getattr(self, "modrinth_target_card", None)
+
+    if target is None:
+        old = getattr(self, "modrinth_profile_button", None)
+        if old is not None:
+            target = old.master
+
+    if target is None:
+        return
+
+    for child in list(target.winfo_children()):
+        try:
+            child.destroy()
+        except Exception:
+            pass
+
+    self.modrinth_target_card = target
+
+    self.modrinth_target_label = ctk.CTkLabel(
+        target,
+        text=self.t("install_on_profile"),
+        text_color=MUTED,
+        font=ctk.CTkFont(size=9, weight="bold"),
+    )
+    self.modrinth_target_label.pack(anchor="w", padx=12, pady=(9, 3))
+
+    row = ctk.CTkFrame(
+        target,
+        fg_color=SURFACE_2,
+        corner_radius=11,
+        border_width=1,
+        border_color=BORDER,
+        height=62,
+    )
+    row.pack(fill="x", padx=10, pady=(0, 10))
+    row.grid_columnconfigure(1, weight=1)
+
+    self.explore_target_icon_v61 = ctk.CTkLabel(
+        row,
+        text="",
+        width=46,
+        height=46,
+        corner_radius=10,
+        fg_color=SURFACE_3,
+    )
+    self.explore_target_icon_v61.grid(
+        row=0, column=0, rowspan=2, padx=(7, 9), pady=7
+    )
+
+    self.explore_target_name_v61 = ctk.CTkLabel(
+        row,
+        text="",
+        text_color=TEXT,
+        anchor="w",
+        font=ctk.CTkFont(size=13, weight="bold"),
+    )
+    self.explore_target_name_v61.grid(
+        row=0, column=1, sticky="sw", pady=(8, 0)
+    )
+
+    self.explore_target_meta_v61 = ctk.CTkLabel(
+        row,
+        text="",
+        text_color=MUTED,
+        anchor="w",
+        font=ctk.CTkFont(size=9),
+    )
+    self.explore_target_meta_v61.grid(
+        row=1, column=1, sticky="nw", pady=(1, 8)
+    )
+
+    self.explore_target_arrow_v61 = ctk.CTkButton(
+        row,
+        text="⌄",
+        width=36,
+        height=38,
+        corner_radius=9,
+        fg_color=SURFACE_3,
+        hover_color=self.accent,
+        command=self.toggle_explore_target_menu_v61,
+    )
+    self.explore_target_arrow_v61.grid(
+        row=0, column=2, rowspan=2, padx=(6, 7)
+    )
+
+    for widget in (
+        row,
+        self.explore_target_icon_v61,
+        self.explore_target_name_v61,
+        self.explore_target_meta_v61,
+    ):
+        widget.bind(
+            "<Button-1>",
+            lambda _event: self.toggle_explore_target_menu_v61(),
+        )
+
+    self.explore_target_menu_v61 = ctk.CTkFrame(
+        target,
+        fg_color=SURFACE,
+        corner_radius=10,
+        border_width=1,
+        border_color=BORDER,
+    )
+
+    self.refresh_explore_target_v61()
+    self.after(30, self.refresh_explore_target_v61)
+
+
+def _v61_update_explore_target(self):
+    self.refresh_explore_target_v61()
+
+
+def _v61_show_explore(self):
+    _V61_SHOW_EXPLORE_BASE(self)
+    self.build_explore_target_v61()
+
+
+def _v61_set_explore_target(self, profile_name):
+    if profile_name not in self.cfg.get("profiles", {}):
+        return
+    self.modrinth_profile.set(profile_name)
+    self.refresh_explore_target_v61()
+    self.close_explore_target_menu_v61()
+
+
+# ---------------- Linux taskbar/minimize ----------------
+
+def _v61_linux_window_id(self):
+    try:
+        return str(self.tk.call("wm", "frame", self._w))
+    except Exception:
+        try:
+            return str(int(self.winfo_id()))
+        except Exception:
+            return ""
+
+
+def _v61_apply_linux_managed_titlebar(self, force=False):
+    if not sys.platform.startswith("linux"):
+        return _V61_BORDERLESS_BASE(self, force)
+
+    # Keep the root managed by KWin/system: taskbar + Alt-Tab + minimize work.
+    try:
+        self.overrideredirect(False)
+    except Exception:
+        pass
+
+    try:
+        self.attributes("-type", "normal")
+    except Exception:
+        pass
+
+    try:
+        self.update_idletasks()
+    except Exception:
+        pass
+
+    window_id = self.linux_window_id_v61()
+
+    if window_id and shutil.which("xprop"):
+        try:
+            subprocess.run(
+                [
+                    "xprop",
+                    "-id",
+                    window_id,
+                    "-f",
+                    "_MOTIF_WM_HINTS",
+                    "32c",
+                    "-set",
+                    "_MOTIF_WM_HINTS",
+                    "2, 0, 0, 0, 0",
+                ],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                timeout=2,
+            )
+            subprocess.run(
+                [
+                    "xprop",
+                    "-id",
+                    window_id,
+                    "-f",
+                    "_NET_WM_WINDOW_TYPE",
+                    "32a",
+                    "-set",
+                    "_NET_WM_WINDOW_TYPE",
+                    "_NET_WM_WINDOW_TYPE_NORMAL",
+                ],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                timeout=2,
+            )
+        except Exception:
+            pass
+
+    self._borderless_applied_v5103 = True
+
+
+def _v61_set_custom_override(self, enabled=True):
+    if sys.platform.startswith("linux"):
+        self.apply_linux_managed_titlebar_v61(force=True)
+        return
+
+    return _V61_SET_OVERRIDE_BASE(self, enabled)
+
+
+def _v61_linux_map(self, event=None):
+    if not sys.platform.startswith("linux"):
+        return _V61_MAP_BASE(self, event)
+
+    if event is not None and getattr(event, "widget", None) is not self:
+        return
+
+    self.after(
+        40,
+        lambda: self.apply_linux_managed_titlebar_v61(force=True),
+    )
+
+
+def _v61_minimize(self):
+    if not sys.platform.startswith("linux"):
+        return _V61_MINIMIZE_BASE(self)
+
+    try:
+        self.iconify()
+    except Exception:
+        try:
+            self.state("iconic")
+        except Exception:
+            pass
+
+
+# ---------------- Shell + init ----------------
+
+def _v61_build_shell(self):
+    _V61_BUILD_SHELL_BASE(self)
+
+    self.nav_buttons["whats_new"] = self.nav_button(
+        "✦",
+        self.t("nav_whats_new"),
+        self.show_whats_new_v61,
+    )
+
+
+def _v61_init(self):
+    self.diagnostics_profile_name_v61 = None
+
+    _V61_INIT_BASE(self)
+
+    self.cfg.setdefault("whats_new_seen_version", "")
+
+    if sys.platform.startswith("linux"):
+        self.after(
+            180,
+            lambda: self.apply_linux_managed_titlebar_v61(force=True),
+        )
+
+    self.after(650, self.maybe_show_whats_new_v61)
+
+
+OuterClient.whats_new_change_row_v61 = _v61_change_row
+OuterClient.release_card_v61 = _v61_release_card
+OuterClient.show_whats_new_v61 = _v61_show_whats_new
+OuterClient.maybe_show_whats_new_v61 = _v61_maybe_show_whats_new
+
+OuterClient.diagnostic_profile_name_v61 = _v61_diag_profile_name
+OuterClient.select_diagnostic_profile_v61 = _v61_select_diag_profile
+OuterClient.repair_diagnostic_profile_v61 = _v61_repair_diag_profile
+OuterClient.show_diagnostics = _v61_show_diagnostics
+
+OuterClient.outerclient_logo_ctk_v61 = _v61_logo_image
+OuterClient.close_explore_target_menu_v61 = _v61_close_explore_target_menu
+OuterClient.refresh_explore_target_v61 = _v61_refresh_explore_target
+OuterClient.select_explore_profile_v61 = _v61_select_explore_profile
+OuterClient.toggle_explore_target_menu_v61 = _v61_toggle_explore_target_menu
+OuterClient.build_explore_target_v61 = _v61_build_explore_target
+OuterClient.update_modrinth_target_ui = _v61_update_explore_target
+OuterClient.show_modrinth = _v61_show_explore
+OuterClient.set_modrinth_target_profile = _v61_set_explore_target
+
+OuterClient.linux_window_id_v61 = _v61_linux_window_id
+OuterClient.apply_linux_managed_titlebar_v61 = _v61_apply_linux_managed_titlebar
+OuterClient.apply_borderless_once_v5103 = _v61_apply_linux_managed_titlebar
+OuterClient.force_borderless_v5102 = _v61_apply_linux_managed_titlebar
+OuterClient.set_custom_override_v5101 = _v61_set_custom_override
+OuterClient.custom_on_map_v5101 = _v61_linux_map
+OuterClient.custom_minimize_v5101 = _v61_minimize
+
+OuterClient.build_shell = _v61_build_shell
+OuterClient.__init__ = _v61_init
 
 
 

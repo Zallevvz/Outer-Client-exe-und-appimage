@@ -1,0 +1,22 @@
+OuterClient 6.1 — validation report
+
+PASS 1
+- outerclient.py compile: OK
+- AST parse: OK
+- final v6.1 bindings: OK
+- Polish translations: OK
+- English translations: OK
+- Eksploruj / Explore rename: OK
+
+PASS 2
+- first-launch What's New version logic: OK
+- permanent What's New navigation: present
+- Diagnostics profile selector: present
+- repair-selected-profile path: present
+- Explore target icon/name/version/loader renderer: present
+- modpack New profile target: present
+- Linux managed-window custom-titlebar path: present
+- Linux Motif decoration removal path: present
+- Linux UI smoke-test workflow preserved
+- Windows import smoke-test workflow preserved
+- AppImage / EXE version names verified
