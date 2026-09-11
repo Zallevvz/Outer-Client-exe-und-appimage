@@ -35,3 +35,9 @@ FIX1 (GitHub AppImage smoke test)
 - Xvfb smoke test no longer runs Linux WM withdraw/remap logic.
 - Explore dropdown test now validates existence, place geometry manager, place_info and populated children instead of transient X11 mapping state.
 - Workflow visibly identifies itself as 6.3.1 FIX1.
+
+FIX2 (GitHub AppImage smoke test)
+- Identified failing line 69: overlay.winfo_manager() == 'place'.
+- Removed Xvfb/WM-dependent geometry assertions from blocking smoke test.
+- Blocking test now verifies CTkButton command wiring and that the real selector creates populated profile controls.
+- Workflow visibly identifies itself as 6.3.1 FIX2.

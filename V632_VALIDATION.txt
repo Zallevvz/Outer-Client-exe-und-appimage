@@ -1,0 +1,26 @@
+OuterClient 6.3.2 — validation report
+
+FIXES
+- Explore profile selector rebuilt as a CTkToplevel borderless transient popup.
+- Popup is anchored below the target-profile card and does not shift the page layout.
+- Selecting a profile updates modrinth_profile, cfg.selected and refreshes compatibility search.
+- Leaving Explore destroys the selector popup.
+- Linux/KDE titlebar now follows a strict single-titlebar policy.
+- Startup begins in native-only layout to avoid native + custom stacking.
+- Motif decoration hint is applied to the X11 client window.
+- After remap, _NET_FRAME_EXTENTS is inspected.
+- If KWin still provides native frame extents, the custom titlebar stays hidden.
+- If native decorations are actually removed, the custom OuterClient bar is shown.
+- No-xprop / unknown Wayland state falls back to one native titlebar rather than two.
+
+VALIDATION
+- Python compile: OK
+- AST parse: OK
+- PL/EN translation parity: OK
+- literal translation lookup coverage: OK
+- final method binding order: OK
+- GitHub Actions YAML parse: OK
+- bash -n on Linux scripts: OK
+- workflow smoke test checks the 6.3.2 popup selector without WM-dependent place()/mapped assertions
+- AppImage artifact: OuterClient-v6.3.2-x86_64.AppImage
+- Windows artifact: OuterClient-v6.3.2.exe

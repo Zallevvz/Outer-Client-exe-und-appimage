@@ -38,7 +38,7 @@ except Exception:
 
 
 APP_NAME = "OuterClient"
-APP_VERSION = "6.3.1"
+APP_VERSION = "6.3.2"
 CONFIG_PATH = Path.home() / ".outerclient.json"
 REDIRECT_URI = "http://localhost:8765/callback"
 MICROSOFT_CLIENT_ID = "fb14d1c4-7d14-4a35-99a7-3f921f7a1e77"
@@ -598,6 +598,11 @@ TEXTS = {
         "v631_change_windows_console": "Minecraft na Windowsie uruchamia się bez wyskakującego okna terminala.",
         "v631_change_settings": "Usunięto pole Discord Application ID z ustawień ogólnych.",
         "v631_change_taskbar_card": "Panel „Pasek zadań / dock” ma stały wiersz i przewija się normalnie zamiast nakładać się na pozostałe ustawienia.",
+        "v632_whats_new_eyebrow": "OUTERCLIENT 6.3.2",
+        "v632_whats_new_title": "OuterClient 6.3.2",
+        "v632_whats_new_date": "Wrzesień 2026",
+        "v632_change_explore_profile": "Przebudowano wybór profilu w Eksploruj jako bezramkowy popup przypięty do karty profilu — nie zależy już od place() wewnątrz głównego okna.",
+        "v632_change_titlebar": "Dodano kontrolę rzeczywistych dekoracji KWin/X11. OuterClient nigdy nie pokazuje jednocześnie natywnego i customowego paska.",
         "v58_update_checking": "Sprawdzanie aktualizacji OuterClient…",
         "v58_update_failed": "Nie udało się sprawdzić aktualizacji: {error}",
         "v58_latest": "Masz najnowszą wersję OuterClient ({version}).",
@@ -1175,6 +1180,11 @@ TEXTS = {
         "v631_change_windows_console": "Minecraft now launches on Windows without opening a terminal window.",
         "v631_change_settings": "Removed the raw Discord Application ID field from General Settings.",
         "v631_change_taskbar_card": "The Taskbar / dock card now has a fixed layout row and scrolls normally instead of overlapping other settings.",
+        "v632_whats_new_eyebrow": "OUTERCLIENT 6.3.2",
+        "v632_whats_new_title": "OuterClient 6.3.2",
+        "v632_whats_new_date": "September 2026",
+        "v632_change_explore_profile": "Rebuilt the Explore profile selector as a borderless popup anchored to the profile card, so it no longer depends on place() inside the main window.",
+        "v632_change_titlebar": "Added real KWin/X11 frame-decoration detection. OuterClient never shows native and custom title bars at the same time.",
         "v5_change_profile": "Change profile",
         "v5_previous": "Previous",
         "v5_next": "Next",
@@ -1565,7 +1575,7 @@ class OuterClient(ctk.CTk):
                 try:
                     import ctypes
                     ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(
-                        "OuterClient.Launcher.6.3.1"
+                        "OuterClient.Launcher.6.3.2"
                     )
                 except Exception:
                     pass
@@ -32239,6 +32249,608 @@ OuterClient.custom_on_map_v5101 = _v631_linux_map
 
 OuterClient.show_whats_new_v61 = _v631_show_whats_new
 OuterClient.__init__ = _v631_init
+
+
+
+# ============================================================
+# OuterClient 6.3.2
+# - reliable Explore profile popup
+# - single-titlebar policy on Linux/KDE
+# ============================================================
+
+_V632_INIT_BASE = OuterClient.__init__
+_V632_SET_ACTIVE_PAGE_BASE = OuterClient.set_active_page
+_V632_WHATS_NEW_BASE = OuterClient.show_whats_new_v61
+_V632_LINUX_WINDOW_BASE = OuterClient.apply_linux_window_mode_v631
+
+
+# ---------- Explore profile popup ----------
+
+def _v632_destroy_explore_popup(self):
+    popup = getattr(self, "explore_profile_popup_v632", None)
+    if popup is not None:
+        try:
+            popup.destroy()
+        except Exception:
+            pass
+    self.explore_profile_popup_v632 = None
+
+
+def _v632_build_explore_target(self):
+    target = getattr(self, "modrinth_target_card", None)
+
+    if target is None:
+        old = getattr(self, "modrinth_profile_button", None)
+        if old is not None:
+            target = old.master
+
+    if target is None:
+        old_label = getattr(self, "modrinth_target_label", None)
+        if old_label is not None:
+            target = old_label.master
+
+    if target is None:
+        self.write_log("Explore target card not found")
+        return
+
+    self.destroy_explore_popup_v632()
+
+    # Destroy every old target widget and rebuild one deterministic button.
+    for child in list(target.winfo_children()):
+        try:
+            child.destroy()
+        except Exception:
+            pass
+
+    self.modrinth_target_card = target
+
+    self.modrinth_target_label = ctk.CTkLabel(
+        target,
+        text=self.t("install_on_profile"),
+        text_color=MUTED,
+        font=ctk.CTkFont(size=9, weight="bold"),
+    )
+    self.modrinth_target_label.pack(
+        anchor="w",
+        padx=12,
+        pady=(9, 4),
+    )
+
+    self.explore_target_button_v63 = ctk.CTkButton(
+        target,
+        text="",
+        image=None,
+        compound="left",
+        anchor="w",
+        height=62,
+        corner_radius=11,
+        fg_color=SURFACE_2,
+        hover_color=SURFACE_3,
+        border_width=1,
+        border_color=BORDER,
+        command=self.toggle_explore_profile_popup_v632,
+    )
+    self.explore_target_button_v63.pack(
+        fill="x",
+        padx=10,
+        pady=(0, 10),
+    )
+
+    # Compatibility with old code.
+    self.modrinth_profile_button = self.explore_target_button_v63
+
+    self.refresh_explore_target_v63()
+
+
+def _v632_popup_geometry(self, target, width, height):
+    self.update_idletasks()
+
+    x = int(target.winfo_rootx())
+    y = int(target.winfo_rooty() + target.winfo_height() + 4)
+
+    # Keep the popup on the current screen as much as possible.
+    try:
+        screen_w = int(self.winfo_screenwidth())
+        screen_h = int(self.winfo_screenheight())
+
+        if x + width > screen_w - 8:
+            x = max(8, screen_w - width - 8)
+
+        if y + height > screen_h - 8:
+            y = max(8, int(target.winfo_rooty()) - height - 4)
+    except Exception:
+        pass
+
+    return x, y
+
+
+def _v632_toggle_explore_profile_popup(self):
+    if getattr(self, "active_page", None) != "modrinth":
+        return
+
+    if getattr(self, "modrinth_category", "") == "Modpacki":
+        return
+
+    existing = getattr(self, "explore_profile_popup_v632", None)
+    if existing is not None:
+        try:
+            if existing.winfo_exists():
+                self.destroy_explore_popup_v632()
+                return
+        except Exception:
+            self.destroy_explore_popup_v632()
+
+    profiles = self.cfg.get("profiles", {})
+    if not profiles:
+        return
+
+    target = getattr(self, "modrinth_target_card", None)
+    if target is None:
+        return
+
+    popup = ctk.CTkToplevel(self)
+    self.explore_profile_popup_v632 = popup
+
+    # It is a dropdown, not a second launcher window.
+    popup.withdraw()
+    popup.overrideredirect(True)
+
+    try:
+        popup.transient(self)
+    except Exception:
+        pass
+
+    popup.configure(fg_color=SURFACE)
+
+    body = ctk.CTkFrame(
+        popup,
+        fg_color=SURFACE,
+        corner_radius=12,
+        border_width=1,
+        border_color=self.accent,
+    )
+    body.pack(fill="both", expand=True)
+
+    current = self.modrinth_profile.get()
+
+    row_height = 60
+    width = max(270, int(target.winfo_width()))
+    height = max(74, 14 + len(profiles) * row_height + 30)
+
+    # Limit very large profile lists.
+    visible_height = min(height, 420)
+    if height > 420:
+        holder = ctk.CTkScrollableFrame(
+            body,
+            fg_color="transparent",
+            corner_radius=0,
+            height=390,
+            scrollbar_button_color=SURFACE_3,
+            scrollbar_button_hover_color=BORDER,
+        )
+        holder.pack(fill="both", expand=True, padx=5, pady=5)
+    else:
+        holder = body
+
+    for profile_name, profile in profiles.items():
+        image = self.profile_icon_ctk(profile_name, 32)
+        active = profile_name == current
+
+        button = ctk.CTkButton(
+            holder,
+            text=(
+                f"{'✓  ' if active else ''}{profile_name}\n"
+                f"Minecraft {profile.get('version','?')} • {profile.get('loader','?')}"
+            ),
+            image=image,
+            compound="left",
+            anchor="w",
+            height=54,
+            corner_radius=9,
+            fg_color=self.accent if active else SURFACE_2,
+            hover_color=self.accent_hover if active else SURFACE_3,
+            border_width=1,
+            border_color=self.accent if active else BORDER,
+            command=lambda n=profile_name: self.select_explore_profile_v632(n),
+        )
+        button._outerclient_image_v632 = image
+        button.pack(
+            fill="x",
+            padx=7,
+            pady=(7, 0),
+        )
+
+    if height <= 420:
+        ctk.CTkLabel(
+            body,
+            text=self.t("v61_explore_target_hint"),
+            text_color=MUTED,
+            font=ctk.CTkFont(size=9),
+        ).pack(
+            anchor="w",
+            padx=11,
+            pady=(7, 9),
+        )
+
+    x, y = self.popup_geometry_v632(
+        target,
+        width,
+        visible_height,
+    )
+
+    popup.geometry(
+        f"{width}x{visible_height}+{x}+{y}"
+    )
+
+    popup.deiconify()
+    popup.lift()
+
+    try:
+        popup.attributes("-topmost", True)
+        popup.after(
+            80,
+            lambda: popup.attributes("-topmost", False)
+            if popup.winfo_exists()
+            else None,
+        )
+    except Exception:
+        pass
+
+    try:
+        popup.focus_force()
+        popup.bind(
+            "<Escape>",
+            lambda event: self.destroy_explore_popup_v632(),
+        )
+        popup.bind(
+            "<FocusOut>",
+            lambda event: self.after(
+                80,
+                self.close_explore_popup_if_unfocused_v632,
+            ),
+        )
+    except Exception:
+        pass
+
+
+def _v632_close_explore_popup_if_unfocused(self):
+    popup = getattr(self, "explore_profile_popup_v632", None)
+    if popup is None:
+        return
+
+    try:
+        if not popup.winfo_exists():
+            self.explore_profile_popup_v632 = None
+            return
+
+        focused = popup.focus_get()
+        if focused is None:
+            self.destroy_explore_popup_v632()
+    except Exception:
+        self.destroy_explore_popup_v632()
+
+
+def _v632_select_explore_profile(self, profile_name):
+    if profile_name not in self.cfg.get("profiles", {}):
+        return
+
+    old = self.modrinth_profile.get()
+    self.modrinth_profile.set(profile_name)
+
+    # Keep the launcher's global selected profile in sync as well.
+    self.cfg["selected"] = profile_name
+    save_config(self.cfg)
+
+    self.refresh_explore_target_v63()
+    self.destroy_explore_popup_v632()
+
+    if old != profile_name:
+        self.search_modrinth()
+
+
+def _v632_set_active_page(self, page):
+    if getattr(self, "active_page", None) == "modrinth" and page != "modrinth":
+        self.destroy_explore_popup_v632()
+
+    return _V632_SET_ACTIVE_PAGE_BASE(self, page)
+
+
+# ---------- Linux/KDE single-titlebar policy ----------
+
+def _v632_client_window_id(self):
+    try:
+        return str(int(self.winfo_id()))
+    except Exception:
+        return ""
+
+
+def _v632_xprop_value(self, window_id, property_name):
+    if not window_id or not shutil.which("xprop"):
+        return ""
+
+    try:
+        result = subprocess.run(
+            ["xprop", "-id", window_id, property_name],
+            capture_output=True,
+            text=True,
+            timeout=2,
+        )
+        if result.returncode == 0:
+            return result.stdout.strip()
+    except Exception:
+        pass
+
+    return ""
+
+
+def _v632_native_frame_present(self):
+    """Return True when KWin/X11 still gives the client native frame extents."""
+    if not sys.platform.startswith("linux"):
+        return False
+
+    client_id = self.client_window_id_v632()
+    raw = self.xprop_value_v632(
+        client_id,
+        "_NET_FRAME_EXTENTS",
+    )
+
+    if not raw:
+        # Unknown: prefer native-only rather than ever showing two titlebars.
+        return True
+
+    numbers = [
+        int(value)
+        for value in re.findall(r"-?\d+", raw)
+    ]
+
+    # Property format is left, right, top, bottom.
+    if len(numbers) < 4:
+        return True
+
+    left, right, top, bottom = numbers[-4:]
+    return any(value > 0 for value in (left, right, top, bottom))
+
+
+def _v632_apply_motif_hint(self):
+    if (
+        not sys.platform.startswith("linux")
+        or not shutil.which("xprop")
+    ):
+        return False
+
+    client_id = self.client_window_id_v632()
+    if not client_id:
+        return False
+
+    try:
+        result = subprocess.run(
+            [
+                "xprop",
+                "-id",
+                client_id,
+                "-f",
+                "_MOTIF_WM_HINTS",
+                "32c",
+                "-set",
+                "_MOTIF_WM_HINTS",
+                "2, 0, 0, 0, 0",
+            ],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            timeout=2,
+        )
+        return result.returncode == 0
+    except Exception:
+        return False
+
+
+def _v632_finalize_titlebar_mode(self):
+    try:
+        self.update_idletasks()
+    except Exception:
+        pass
+
+    self.apply_window_identity_v63()
+    self.set_topmost_false_v63()
+
+    if self.native_frame_present_v632():
+        # KWin ignored the Motif hint. Never stack our custom bar underneath it.
+        self.show_native_titlebar_layout_v63()
+        self._linux_titlebar_mode_v632 = "native"
+    else:
+        self.show_custom_titlebar_layout_v63()
+        self._linux_titlebar_mode_v632 = "custom"
+
+
+def _v632_apply_linux_titlebar(self, force=False):
+    if not sys.platform.startswith("linux"):
+        return _V632_LINUX_WINDOW_BASE(self, force)
+
+    if os.environ.get("OUTERCLIENT_SMOKE_TEST") == "1":
+        self.show_native_titlebar_layout_v63()
+        self.set_topmost_false_v63()
+        return
+
+    self.set_topmost_false_v63()
+
+    try:
+        self.overrideredirect(False)
+    except Exception:
+        pass
+
+    if not shutil.which("xprop"):
+        # Wayland/no-X11 fallback: one native bar, never native + custom.
+        self.show_native_titlebar_layout_v63()
+        self._linux_titlebar_mode_v632 = "native"
+        return
+
+    # Apply the hint on the CLIENT window, then remap once so KWin gets a
+    # chance to read it. Afterwards inspect the real frame extents.
+    self.apply_motif_hint_v632()
+    self.apply_window_identity_v63()
+
+    if force and not getattr(self, "_linux_titlebar_remapped_v632", False):
+        self._linux_titlebar_remapped_v632 = True
+
+        try:
+            self.withdraw()
+        except Exception:
+            pass
+
+        def remap():
+            try:
+                self.deiconify()
+            except Exception:
+                pass
+
+            self.after(
+                120,
+                self.finalize_titlebar_mode_v632,
+            )
+
+        self.after(25, remap)
+        return
+
+    self.after(
+        80,
+        self.finalize_titlebar_mode_v632,
+    )
+
+
+def _v632_linux_map(self, event=None):
+    if not sys.platform.startswith("linux"):
+        return _V63_WINDOW_MAP_BASE(self, event)
+
+    if event is not None and getattr(event, "widget", None) is not self:
+        return
+
+    self.set_topmost_false_v63()
+
+    if os.environ.get("OUTERCLIENT_SMOKE_TEST") == "1":
+        self.show_native_titlebar_layout_v63()
+        return
+
+    self.after(
+        100,
+        self.finalize_titlebar_mode_v632,
+    )
+
+
+# ---------- What's New ----------
+
+def _v632_show_whats_new(self, mark_seen=True):
+    self.set_active_page("whats_new")
+    self.clear_content()
+
+    outer = ctk.CTkScrollableFrame(
+        self.content,
+        fg_color=BG,
+        corner_radius=0,
+        scrollbar_button_color=SURFACE_3,
+        scrollbar_button_hover_color=BORDER,
+    )
+    outer.grid(row=0, column=0, sticky="nsew")
+    outer.grid_columnconfigure(0, weight=1)
+
+    self.page_header(
+        outer,
+        self.t("v632_whats_new_eyebrow"),
+        self.t("v61_whats_new_title"),
+        self.t("v61_whats_new_subtitle"),
+    )
+
+    self._whats_new_state_v63 = {
+        "header": self.t("v61_whats_new_title"),
+        "versions": ["6.3.2", "6.3.1", "6.3", "6.2", "6.1", "6.0"],
+        "current": "6.3.2",
+    }
+
+    self.release_card_v63(
+        outer,
+        1,
+        self.t("v61_current_version"),
+        self.t("v632_whats_new_title"),
+        self.t("v632_whats_new_date"),
+        [
+            self.t("v632_change_explore_profile"),
+            self.t("v632_change_titlebar"),
+        ],
+        current=True,
+    )
+
+    self.release_card_v63(
+        outer,
+        2,
+        self.t("v61_previous_version"),
+        self.t("v631_whats_new_title"),
+        self.t("v631_whats_new_date"),
+        [
+            self.t("v631_change_titlebar"),
+            self.t("v631_change_explore_profile"),
+            self.t("v631_change_windows_console"),
+            self.t("v631_change_settings"),
+            self.t("v631_change_taskbar_card"),
+        ],
+    )
+
+    if mark_seen:
+        self.mark_whats_new_seen_v62()
+
+
+def _v632_init(self):
+    self.explore_profile_popup_v632 = None
+    self._linux_titlebar_remapped_v632 = False
+    self._linux_titlebar_mode_v632 = "unknown"
+
+    _V632_INIT_BASE(self)
+
+    if sys.platform.startswith("linux"):
+        # Start in native-only mode so there is never a persistent
+        # native+custom double bar while KWin decoration support is detected.
+        self.show_native_titlebar_layout_v63()
+
+        # Apply once after the CTk root has a real X11 client id.
+        self.after(
+            140,
+            lambda: self.apply_linux_titlebar_v632(force=True),
+        )
+
+
+OuterClient.destroy_explore_popup_v632 = _v632_destroy_explore_popup
+OuterClient.build_explore_target_v61 = _v632_build_explore_target
+OuterClient.popup_geometry_v632 = _v632_popup_geometry
+OuterClient.toggle_explore_profile_popup_v632 = _v632_toggle_explore_profile_popup
+OuterClient.close_explore_popup_if_unfocused_v632 = _v632_close_explore_popup_if_unfocused
+OuterClient.select_explore_profile_v632 = _v632_select_explore_profile
+OuterClient.set_active_page = _v632_set_active_page
+
+# Compatibility aliases: every older target-selector entry point now uses 6.3.2.
+OuterClient.toggle_explore_target_menu_v631 = _v632_toggle_explore_profile_popup
+OuterClient.toggle_explore_target_menu_v63 = _v632_toggle_explore_profile_popup
+OuterClient.toggle_explore_target_menu_v61 = _v632_toggle_explore_profile_popup
+OuterClient.select_explore_profile_v631 = _v632_select_explore_profile
+OuterClient.select_explore_profile_v63 = _v632_select_explore_profile
+OuterClient.select_explore_profile_v61 = _v632_select_explore_profile
+OuterClient.close_explore_overlay_v631 = _v632_destroy_explore_popup
+OuterClient.close_explore_overlay_v63 = _v632_destroy_explore_popup
+OuterClient.close_explore_target_menu_v61 = _v632_destroy_explore_popup
+
+OuterClient.client_window_id_v632 = _v632_client_window_id
+OuterClient.xprop_value_v632 = _v632_xprop_value
+OuterClient.native_frame_present_v632 = _v632_native_frame_present
+OuterClient.apply_motif_hint_v632 = _v632_apply_motif_hint
+OuterClient.finalize_titlebar_mode_v632 = _v632_finalize_titlebar_mode
+OuterClient.apply_linux_titlebar_v632 = _v632_apply_linux_titlebar
+OuterClient.apply_linux_window_mode_v631 = _v632_apply_linux_titlebar
+OuterClient.apply_linux_window_mode_v63 = _v632_apply_linux_titlebar
+OuterClient.apply_linux_titlebar_v62 = _v632_apply_linux_titlebar
+OuterClient.apply_linux_managed_titlebar_v61 = _v632_apply_linux_titlebar
+OuterClient.apply_borderless_once_v5103 = _v632_apply_linux_titlebar
+OuterClient.force_borderless_v5102 = _v632_apply_linux_titlebar
+OuterClient.custom_on_map_v5101 = _v632_linux_map
+
+OuterClient.show_whats_new_v61 = _v632_show_whats_new
+OuterClient.__init__ = _v632_init
 
 
 

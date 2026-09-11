@@ -1,4 +1,4 @@
-# Build OuterClient v6.3.1
+# Build OuterClient v6.3.2
 
 Workflow:
 `.github/workflows/build-binaries.yml`
@@ -12,5 +12,5 @@ Najważniejsza poprawka PyInstaller:
 ```
 
 Artifacts:
-- OuterClient-v6.3.1-AppImage
-- OuterClient-v6.3.1-Windows
+- OuterClient-v6.3.2-AppImage
+- OuterClient-v6.3.2-Windows
