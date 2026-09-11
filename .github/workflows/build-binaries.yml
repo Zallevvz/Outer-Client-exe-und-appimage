@@ -1,4 +1,4 @@
-name: Build and Release OuterClient 6.3 FIX2
+name: Build and Release OuterClient 6.3.1
 
 on:
   workflow_dispatch:
@@ -7,11 +7,11 @@ permissions:
   contents: write
 
 env:
-  OC_VERSION: "6.3"
+  OC_VERSION: "6.3.1"
 
 jobs:
   verify-source:
-    name: Verify OuterClient 6.3 FIX2
+    name: Verify OuterClient 6.3.1
     runs-on: ubuntu-latest
 
     steps:
@@ -22,14 +22,15 @@ jobs:
         shell: bash
         run: |
           set -eux
-          echo "=== OUTERCLIENT 6.3 FIX2 WORKFLOW LOADED ==="
-          grep -F 'APP_VERSION = "6.3"' outerclient.py
-          grep -F 'def _v63_fix2_set_active_page' outerclient.py
-          grep -F 'self._whats_new_state_v63 = {' outerclient.py
+          grep -F 'APP_VERSION = "6.3.1"' outerclient.py
+          grep -F 'CREATE_NO_WINDOW' outerclient.py
+          grep -F 'def _v631_toggle_explore_overlay' outerclient.py
+          grep -F 'def _v631_apply_linux_window_mode' outerclient.py
+          grep -F 'def _v631_show_system_tools' outerclient.py
           python3 -m py_compile outerclient.py
 
   linux-appimage:
-    name: Linux AppImage 6.3 FIX2
+    name: Linux AppImage 6.3.1
     needs: verify-source
     runs-on: ubuntu-22.04
 
@@ -115,7 +116,7 @@ jobs:
           # below, so disable its delayed first-launch navigation here.
           Path.home().mkdir(parents=True, exist_ok=True)
           (Path.home() / ".outerclient-state.json").write_text(
-              json.dumps({"whats_new_seen_version": "6.3"}),
+              json.dumps({"whats_new_seen_version": "6.3.1"}),
               encoding="utf-8",
           )
 
@@ -133,7 +134,7 @@ jobs:
           app.update()
 
           assert app.winfo_exists()
-          assert outerclient.APP_VERSION == "6.3"
+          assert outerclient.APP_VERSION == "6.3.1"
           print("Tk window class:", app.winfo_class())
           assert app.winfo_class().casefold() == "outerclient"
 
@@ -158,6 +159,14 @@ jobs:
 
           target_text = app.explore_target_button_v63.cget("text")
           assert selected in target_text or app.modrinth_category == "Modpacki"
+
+          # The target-profile button must really open the overlay.
+          if app.modrinth_category != "Modpacki":
+              app.explore_target_button_v63.invoke()
+              app.update_idletasks()
+              app.update()
+              assert app.explore_overlay_v631.winfo_ismapped()
+              app.close_explore_overlay_v631()
 
           old_results_widget = app.modrinth_results
 
@@ -196,8 +205,8 @@ jobs:
 
           changelog_state = app._whats_new_state_v63
           assert changelog_state["header"] == app.t("v61_whats_new_title")
-          assert changelog_state["versions"] == ["6.3", "6.2", "6.1", "6.0"]
-          assert changelog_state["current"] == "6.3"
+          assert changelog_state["versions"] == ["6.3.1", "6.3", "6.2", "6.1", "6.0"]
+          assert changelog_state["current"] == "6.3.1"
           assert not callback_errors, callback_errors
 
           # Runtime API used by the repair button must support progress callbacks.
@@ -207,6 +216,12 @@ jobs:
           assert "callback" in params
           assert hasattr(minecraft_launcher_lib.runtime, "install_jvm_runtime")
           assert hasattr(minecraft_launcher_lib.runtime, "get_executable_path")
+
+          # General Settings must not expose a raw Discord Application ID.
+          app.show_settings()
+          app.update_idletasks()
+          app.update()
+          assert not hasattr(app, "settings_discord")
 
           # System tools page including taskbar integration.
           app.show_system_tools_settings()
@@ -219,7 +234,7 @@ jobs:
           app.mainloop()
 
           assert not callback_errors, callback_errors
-          print("OuterClient 6.3 regression smoke test: OK")
+          print("OuterClient 6.3.1 regression smoke test: OK")
           PY
 
       - name: Build PyInstaller bundle
@@ -270,7 +285,7 @@ jobs:
           Categories=Game;
           Terminal=false
           StartupWMClass=Outerclient
-          X-AppImage-Version=6.3
+          X-AppImage-Version=6.3.1
           EOF
 
           cat > AppDir/AppRun <<'EOF'
@@ -295,25 +310,25 @@ jobs:
         shell: bash
         env:
           ARCH: x86_64
-          VERSION: "6.3"
+          VERSION: "6.3.1"
           APPIMAGE_EXTRACT_AND_RUN: "1"
         run: |
           ./appimagetool.AppImage \
             AppDir \
-            OuterClient-v6.3-x86_64.AppImage
+            OuterClient-v6.3.1-x86_64.AppImage
 
-          chmod +x OuterClient-v6.3-x86_64.AppImage
-          test -f OuterClient-v6.3-x86_64.AppImage
+          chmod +x OuterClient-v6.3.1-x86_64.AppImage
+          test -f OuterClient-v6.3.1-x86_64.AppImage
 
       - name: Upload AppImage
         uses: actions/upload-artifact@v4
         with:
-          name: OuterClient-v6.3-AppImage
-          path: OuterClient-v6.3-x86_64.AppImage
+          name: OuterClient-v6.3.1-AppImage
+          path: OuterClient-v6.3.1-x86_64.AppImage
           if-no-files-found: error
 
   windows-exe:
-    name: Windows EXE 6.3 FIX2
+    name: Windows EXE 6.3.1
     needs: verify-source
     runs-on: windows-latest
 
@@ -355,7 +370,7 @@ jobs:
       - name: Source import smoke test
         shell: pwsh
         run: |
-          python -c "import outerclient; assert outerclient.APP_VERSION == '6.3'; assert hasattr(outerclient.OuterClient, 'show_content_library_v6'); assert hasattr(outerclient.OuterClient, 'profile_health_report_v6'); print('OuterClient 6.3 source import: OK')"
+          python -c "import outerclient; assert outerclient.APP_VERSION == '6.3.1'; assert hasattr(outerclient.OuterClient, 'show_content_library_v6'); assert hasattr(outerclient.OuterClient, 'profile_health_report_v6'); print('OuterClient 6.3.1 source import: OK')"
 
       - name: Build EXE
         shell: pwsh
@@ -365,7 +380,7 @@ jobs:
             --clean `
             --onefile `
             --windowed `
-            --name "OuterClient-v6.3" `
+            --name "OuterClient-v6.3.1" `
             --icon assets/outerclient.ico `
             --add-data "assets;assets" `
             --collect-all customtkinter `
@@ -376,19 +391,19 @@ jobs:
             --hidden-import outerclient_build_secrets `
             outerclient.py
 
-          if (-not (Test-Path "dist\OuterClient-v6.3.exe")) {
-            throw "OuterClient-v6.3.exe was not created"
+          if (-not (Test-Path "dist\OuterClient-v6.3.1.exe")) {
+            throw "OuterClient-v6.3.1.exe was not created"
           }
 
       - name: Upload Windows EXE
         uses: actions/upload-artifact@v4
         with:
-          name: OuterClient-v6.3-Windows
-          path: dist/OuterClient-v6.3.exe
+          name: OuterClient-v6.3.1-Windows
+          path: dist/OuterClient-v6.3.1.exe
           if-no-files-found: error
 
   release:
-    name: Make 6.3 Latest
+    name: Make 6.3.1 Latest
     needs:
       - linux-appimage
       - windows-exe
@@ -401,13 +416,13 @@ jobs:
           path: release
           merge-multiple: true
 
-      - name: Publish OuterClient 6.3
+      - name: Publish OuterClient 6.3.1
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v6.3
-          name: OuterClient v6.3
+          tag_name: v6.3.1
+          name: OuterClient v6.3.1
           make_latest: true
           generate_release_notes: true
           files: |
-            release/OuterClient-v6.3-x86_64.AppImage
-            release/OuterClient-v6.3.exe
+            release/OuterClient-v6.3.1-x86_64.AppImage
+            release/OuterClient-v6.3.1.exe
