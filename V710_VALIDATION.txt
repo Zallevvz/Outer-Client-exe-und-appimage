@@ -1,0 +1,71 @@
+OuterClient 7.1.0 — Quality of Life Update
+
+WINDOWS TASKBAR ROOT FIX
+- Windows no longer uses overrideredirect(True) for the main window.
+- The main HWND remains a normal managed top-level.
+- Native caption is removed through Win32 WS_CAPTION instead.
+- WS_EX_TOOLWINDOW is cleared.
+- WS_EX_APPWINDOW is forced.
+- Window owner is cleared with GWLP_HWNDPARENT=0.
+- SetCurrentProcessExplicitAppUserModelID uses OuterClient.Launcher.7.1.0.
+- Small and large native window icons are sent through WM_SETICON.
+- Minimize uses normal iconify(), preserving the taskbar entry.
+- The custom OuterClient titlebar remains active.
+
+QUALITY OF LIFE
+- Duplicate profile.
+- Export/import profile bundles with advanced profile data.
+- Existing snapshot/backups and update-all are surfaced in profile management.
+- Pinned/favorite profiles on the dashboard.
+- Up to 3 pinned profiles.
+- Open screenshots and profile folders.
+- Advanced profile settings:
+    JVM arguments
+    game arguments
+    resolution
+- Launch history.
+- Crash detector with:
+    open log
+    diagnostics
+    repair profile
+- Explore cards show:
+    installed
+    update available
+    incompatible
+- Library has check-updates and update-all controls.
+- Drag & drop:
+    .jar -> choose profile and install
+    .mrpack -> create/install profile
+- tkinterdnd2 is now included in requirements and PyInstaller collection.
+- Toast notifications.
+- Compact mode.
+- System/dark appearance option.
+- Custom accent color.
+
+MODLOADER ICONS
+- Fabric / Forge / NeoForge / Quilt cards load their project/organization
+  branding and cache the image locally.
+- If network loading fails, the previous text badge remains as a safe fallback.
+
+REGRESSIONS PRESERVED
+- 7.0 project-link fix.
+- 6.4 Minecraft launch / Microsoft / Java core.
+- 6.4.1 version selector fix.
+- 6.3.8 Linux KDE custom titlebar.
+- 6.3.9 KWin/native maximize.
+
+VALIDATION
+- Python compile: OK
+- AST parse: OK
+- complete module-level patch chain import: OK
+- final 7.1 method bindings: OK
+- PL/EN translation parity: OK
+- Windows taskbar Win32 flags: OK
+- tkinterdnd2 packaged in Windows/AppImage builds: OK
+- GitHub Actions YAML parse: OK
+- Linux scripts bash -n: OK
+- ZIP integrity: OK
+
+ARTIFACTS
+- OuterClient-v7.1.0-x86_64.AppImage
+- OuterClient-v7.1.0.exe

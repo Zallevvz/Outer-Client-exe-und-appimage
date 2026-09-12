@@ -1,5 +1,6 @@
 import hashlib
 import base64
+import copy
 import difflib
 import platform
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -9,6 +10,7 @@ import os
 import queue
 import re
 import shutil
+import shlex
 import socket
 import subprocess
 import sys
@@ -39,7 +41,7 @@ except Exception:
 
 
 APP_NAME = "OuterClient"
-APP_VERSION = "7.0"
+APP_VERSION = "7.1.0"
 CONFIG_PATH = Path.home() / ".outerclient.json"
 REDIRECT_URI = "http://localhost:8765/callback"
 MICROSOFT_CLIENT_ID = "fb14d1c4-7d14-4a35-99a7-3f921f7a1e77"
@@ -686,6 +688,63 @@ TEXTS = {
         "v700_open_failed_title": "Nie udało się otworzyć linku",
         "v700_open_failed_body": "OuterClient nie mógł uruchomić przeglądarki. Link został skopiowany do schowka:\n\n{url}",
         "v700_invalid_url": "Projekt nie ma poprawnego adresu strony.",
+        "v710_whats_new_eyebrow": "OUTERCLIENT 7.1",
+        "v710_whats_new_title": "OuterClient 7.1 — Quality of Life",
+        "v710_whats_new_date": "Wrzesień 2026",
+        "v710_change_windows_taskbar": "Naprawiono integrację z paskiem zadań Windows: OuterClient ma własną ikonę, normalny przycisk taskbara i poprawnie wraca po minimalizacji.",
+        "v710_change_profiles": "Profile dostały duplikowanie, eksport/import ustawień, przypinanie, screenshoty oraz ustawienia JVM, gry i rozdzielczości.",
+        "v710_change_mods": "Biblioteka i Eksploruj pokazują stan instalacji/zgodności, a aktualizacje modów można sprawdzić i zainstalować jednym kliknięciem.",
+        "v710_change_crash": "Dodano historię uruchomień i nowy Crash Detector z szybkim dostępem do logów, diagnostyki i naprawy profilu.",
+        "v710_change_qol": "Dodano toasty, tryb kompaktowy, automatyczny motyw/system, własny kolor akcentu oraz drag & drop plików .jar i .mrpack.",
+        "v710_change_loader_logos": "Kafelki Fabric, Forge, NeoForge i Quilt pobierają prawdziwe loga projektów i przechowują je w cache.",
+        "v710_profile_advanced": "USTAWIENIA PROFILU",
+        "v710_jvm_args": "Dodatkowe argumenty JVM",
+        "v710_game_args": "Dodatkowe argumenty gry",
+        "v710_resolution": "Rozdzielczość",
+        "v710_resolution_default": "Domyślna",
+        "v710_save_profile_settings": "Zapisz ustawienia",
+        "v710_duplicate": "Duplikuj",
+        "v710_pin": "Przypnij",
+        "v710_unpin": "Odepnij",
+        "v710_open_screenshots": "Screenshoty",
+        "v710_profile_duplicated": "Utworzono kopię profilu: {name}",
+        "v710_profile_settings_saved": "Ustawienia profilu zapisane",
+        "v710_pinned_profiles": "PRZYPIĘTE PROFILE",
+        "v710_library_profile": "Profil",
+        "v710_check_all_updates": "Sprawdź aktualizacje",
+        "v710_update_all_now": "Aktualizuj wszystko",
+        "v710_installed": "Zainstalowane",
+        "v710_update_available": "Aktualizacja",
+        "v710_incompatible": "Niezgodne",
+        "v710_compatible": "Zgodne",
+        "v710_crash_title": "Minecraft zakończył się błędem",
+        "v710_crash_body": "Profil: {profile}\nKod wyjścia: {code}\n\n{hint}",
+        "v710_open_log": "Otwórz log",
+        "v710_diagnostics": "Diagnostyka",
+        "v710_repair_profile": "Napraw profil",
+        "v710_launch_history": "HISTORIA URUCHOMIEŃ",
+        "v710_no_history": "Brak zapisanej historii uruchomień.",
+        "v710_launch_history_line": "{date} • {duration} • kod {code}",
+        "v710_drop_title": "Przeciągnij plik do OuterClienta",
+        "v710_drop_hint": "Obsługiwane: .jar oraz .mrpack",
+        "v710_drop_choose_profile": "Wybierz profil dla pliku {name}",
+        "v710_drop_added": "Dodano {name} do profilu {profile}",
+        "v710_drop_mrpack_done": "Utworzono profil z modpacka: {profile}",
+        "v710_qol_settings": "INTERFEJS 7.1",
+        "v710_compact_mode": "Tryb kompaktowy",
+        "v710_system_theme": "Motyw zgodny z systemem",
+        "v710_custom_accent": "Własny kolor akcentu (#RRGGBB)",
+        "v710_apply_interface": "Zastosuj wygląd",
+        "v710_accent_invalid": "Kolor akcentu musi mieć format #RRGGBB.",
+        "v710_toast_backup": "Backup profilu utworzony",
+        "v710_toast_updates": "Znaleziono aktualizacje: {count}",
+        "v710_toast_no_updates": "Wszystko jest aktualne",
+        "v710_toast_update_started": "Rozpoczęto aktualizację zawartości",
+        "v710_taskbar_fixed": "Integracja z paskiem zadań Windows aktywna",
+        "v710_export_done": "Profil wyeksportowany",
+        "v710_export": "Eksportuj",
+        "v710_import_done": "Zaimportowano profil {name}",
+        "v710_dragdrop_unavailable": "Drag & drop jest niedostępny w tym buildzie. Użyj przycisku importu.",
         "v58_update_checking": "Sprawdzanie aktualizacji OuterClient…",
         "v58_update_failed": "Nie udało się sprawdzić aktualizacji: {error}",
         "v58_latest": "Masz najnowszą wersję OuterClient ({version}).",
@@ -1350,6 +1409,63 @@ TEXTS = {
         "v700_open_failed_title": "Could not open link",
         "v700_open_failed_body": "OuterClient could not start your browser. The link was copied to the clipboard:\n\n{url}",
         "v700_invalid_url": "This project does not have a valid page URL.",
+        "v710_whats_new_eyebrow": "OUTERCLIENT 7.1",
+        "v710_whats_new_title": "OuterClient 7.1 — Quality of Life",
+        "v710_whats_new_date": "September 2026",
+        "v710_change_windows_taskbar": "Fixed Windows taskbar integration: OuterClient now has its own icon, a normal taskbar button and restores correctly after minimization.",
+        "v710_change_profiles": "Profiles gained duplication, settings-aware export/import, pinning, screenshots and per-profile JVM/game/resolution settings.",
+        "v710_change_mods": "Library and Explore now show install/compatibility status, and mod updates can be checked and installed with one click.",
+        "v710_change_crash": "Added launch history and a new Crash Detector with quick access to logs, diagnostics and profile repair.",
+        "v710_change_qol": "Added toasts, compact mode, system appearance, custom accent color and drag & drop for .jar and .mrpack files.",
+        "v710_change_loader_logos": "Fabric, Forge, NeoForge and Quilt cards now download real project logos and cache them locally.",
+        "v710_profile_advanced": "PROFILE SETTINGS",
+        "v710_jvm_args": "Additional JVM arguments",
+        "v710_game_args": "Additional game arguments",
+        "v710_resolution": "Resolution",
+        "v710_resolution_default": "Default",
+        "v710_save_profile_settings": "Save settings",
+        "v710_duplicate": "Duplicate",
+        "v710_pin": "Pin",
+        "v710_unpin": "Unpin",
+        "v710_open_screenshots": "Screenshots",
+        "v710_profile_duplicated": "Created profile copy: {name}",
+        "v710_profile_settings_saved": "Profile settings saved",
+        "v710_pinned_profiles": "PINNED PROFILES",
+        "v710_library_profile": "Profile",
+        "v710_check_all_updates": "Check updates",
+        "v710_update_all_now": "Update all",
+        "v710_installed": "Installed",
+        "v710_update_available": "Update",
+        "v710_incompatible": "Incompatible",
+        "v710_compatible": "Compatible",
+        "v710_crash_title": "Minecraft exited with an error",
+        "v710_crash_body": "Profile: {profile}\nExit code: {code}\n\n{hint}",
+        "v710_open_log": "Open log",
+        "v710_diagnostics": "Diagnostics",
+        "v710_repair_profile": "Repair profile",
+        "v710_launch_history": "LAUNCH HISTORY",
+        "v710_no_history": "No launch history recorded yet.",
+        "v710_launch_history_line": "{date} • {duration} • code {code}",
+        "v710_drop_title": "Drop a file into OuterClient",
+        "v710_drop_hint": "Supported: .jar and .mrpack",
+        "v710_drop_choose_profile": "Choose a profile for {name}",
+        "v710_drop_added": "Added {name} to profile {profile}",
+        "v710_drop_mrpack_done": "Created profile from modpack: {profile}",
+        "v710_qol_settings": "INTERFACE 7.1",
+        "v710_compact_mode": "Compact mode",
+        "v710_system_theme": "Follow system appearance",
+        "v710_custom_accent": "Custom accent color (#RRGGBB)",
+        "v710_apply_interface": "Apply appearance",
+        "v710_accent_invalid": "Accent color must use #RRGGBB format.",
+        "v710_toast_backup": "Profile backup created",
+        "v710_toast_updates": "Updates found: {count}",
+        "v710_toast_no_updates": "Everything is up to date",
+        "v710_toast_update_started": "Content update started",
+        "v710_taskbar_fixed": "Windows taskbar integration active",
+        "v710_export_done": "Profile exported",
+        "v710_export": "Export",
+        "v710_import_done": "Imported profile {name}",
+        "v710_dragdrop_unavailable": "Drag & drop is unavailable in this build. Use the import button instead.",
         "v5_change_profile": "Change profile",
         "v5_previous": "Previous",
         "v5_next": "Next",
@@ -1740,7 +1856,7 @@ class OuterClient(ctk.CTk):
                 try:
                     import ctypes
                     ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(
-                        "OuterClient.Launcher.7.0"
+                        "OuterClient.Launcher.7.1.0"
                     )
                 except Exception:
                     pass
@@ -20139,7 +20255,7 @@ def _v56_show_accounts_page(self):
 
             if row >= 2:
                 child.grid_configure(
-                    row=row + 1
+                    row=row + 2
                 )
         except Exception:
             pass
@@ -40414,6 +40530,4036 @@ OuterClient.mod_page_url = _v700_mod_url
 
 OuterClient.show_whats_new_v61 = _v700_show_whats_new
 OuterClient.__init__ = _v700_init
+
+
+
+# ============================================================
+# OuterClient 7.1.0 — Quality of Life Update
+# ============================================================
+
+_V710_INIT_BASE = OuterClient.__init__
+_V710_SHOW_HOME_BASE = OuterClient.show_home
+_V710_SHOW_MANAGER_BASE = OuterClient.show_profile_manager
+_V710_SHOW_LIBRARY_BASE = OuterClient.show_content_library_v6
+_V710_SHOW_SETTINGS_BASE = OuterClient.show_settings
+_V710_MODRINTH_CARD_BASE = OuterClient.modrinth_card
+_V710_SET_OVERRIDE_BASE = OuterClient.set_custom_override_v5101
+_V710_MAP_BASE = OuterClient.custom_on_map_v5101
+_V710_MINIMIZE_BASE = OuterClient.custom_minimize_v5101
+_V710_LOAD_CONFIG_BASE = load_config
+
+
+# ------------------------------------------------------------
+# Config migration / persistence
+# ------------------------------------------------------------
+
+V710_PROFILE_FIELDS = (
+    "loader_version",
+    "java_path",
+    "launch_version",
+    "preset",
+    "ram",
+    "play_stats",
+    "launch_history",
+    "jvm_args",
+    "game_args",
+    "resolution_width",
+    "resolution_height",
+)
+
+
+def _v710_load_config():
+    cfg = _V710_LOAD_CONFIG_BASE()
+
+    raw = {}
+    try:
+        raw = json.loads(
+            CONFIG_PATH.read_text(
+                encoding="utf-8"
+            )
+        )
+    except Exception:
+        raw = {}
+
+    for key, default in (
+        ("pinned_profiles", []),
+        ("compact_mode", False),
+        ("appearance_mode", "system"),
+        ("custom_accent", ""),
+        ("crash_popup", True),
+    ):
+        value = raw.get(key, default)
+        cfg[key] = value
+
+    raw_profiles = (
+        raw.get("profiles", {})
+        if isinstance(raw, dict)
+        else {}
+    )
+
+    for name, profile in cfg.get(
+        "profiles",
+        {},
+    ).items():
+        old = (
+            raw_profiles.get(name, {})
+            if isinstance(raw_profiles, dict)
+            else {}
+        )
+
+        for field in V710_PROFILE_FIELDS:
+            if field in old:
+                profile[field] = copy.deepcopy(
+                    old[field]
+                )
+
+        profile.setdefault(
+            "jvm_args",
+            "",
+        )
+        profile.setdefault(
+            "game_args",
+            "",
+        )
+        profile.setdefault(
+            "resolution_width",
+            0,
+        )
+        profile.setdefault(
+            "resolution_height",
+            0,
+        )
+        profile.setdefault(
+            "launch_history",
+            [],
+        )
+
+    pinned = [
+        name
+        for name in cfg.get(
+            "pinned_profiles",
+            [],
+        )
+        if name in cfg.get(
+            "profiles",
+            {},
+        )
+    ]
+    cfg["pinned_profiles"] = pinned[:3]
+
+    return cfg
+
+
+load_config = _v710_load_config
+
+
+# ------------------------------------------------------------
+# Toast notifications
+# ------------------------------------------------------------
+
+def _v710_toast(self, text, kind="info", duration=3200):
+    old = getattr(
+        self,
+        "_toast_widget_v710",
+        None,
+    )
+
+    if old is not None:
+        try:
+            old.destroy()
+        except Exception:
+            pass
+
+    color = {
+        "info": self.accent,
+        "success": self.secondary,
+        "warning": "#E7A24C",
+        "error": DANGER,
+    }.get(kind, self.accent)
+
+    box = ctk.CTkFrame(
+        self,
+        fg_color=SURFACE,
+        corner_radius=12,
+        border_width=1,
+        border_color=color,
+    )
+    box.place(
+        relx=1.0,
+        rely=1.0,
+        x=-20,
+        y=-72,
+        anchor="se",
+    )
+    box.lift()
+
+    ctk.CTkLabel(
+        box,
+        text="●",
+        text_color=color,
+        font=ctk.CTkFont(
+            size=14,
+            weight="bold",
+        ),
+    ).pack(
+        side="left",
+        padx=(13, 7),
+        pady=11,
+    )
+
+    ctk.CTkLabel(
+        box,
+        text=str(text),
+        text_color=TEXT,
+        justify="left",
+        wraplength=430,
+    ).pack(
+        side="left",
+        padx=(0, 14),
+        pady=11,
+    )
+
+    self._toast_widget_v710 = box
+
+    def remove():
+        if getattr(
+            self,
+            "_toast_widget_v710",
+            None,
+        ) is box:
+            self._toast_widget_v710 = None
+        try:
+            box.destroy()
+        except Exception:
+            pass
+
+    self.after(
+        int(duration),
+        remove,
+    )
+
+
+# ------------------------------------------------------------
+# Windows taskbar integration
+# ------------------------------------------------------------
+
+def _v710_windows_hwnd(self):
+    if not sys.platform.startswith("win"):
+        return None
+
+    try:
+        import ctypes
+
+        user32 = ctypes.windll.user32
+        GA_ROOT = 2
+
+        self.update_idletasks()
+        tk_hwnd = int(self.winfo_id())
+
+        root = int(
+            user32.GetAncestor(
+                tk_hwnd,
+                GA_ROOT,
+            )
+            or 0
+        )
+
+        return root or tk_hwnd or None
+    except Exception:
+        return None
+
+
+def _v710_apply_windows_taskbar(self):
+    """
+    Keep the OuterClient custom titlebar while remaining a normal
+    Windows shell/taskbar window.
+
+    Important: do NOT use overrideredirect(True) on Windows. Tk then creates
+    an unmanaged/tool-style window and Windows may omit it from the taskbar.
+    Instead keep the native top-level managed and remove only its caption
+    through Win32 window styles.
+    """
+    if not sys.platform.startswith("win"):
+        return False
+
+    try:
+        import ctypes
+
+        shell32 = ctypes.windll.shell32
+        user32 = ctypes.windll.user32
+
+        app_id = "OuterClient.Launcher.7.1.0"
+        shell32.SetCurrentProcessExplicitAppUserModelID(
+            app_id
+        )
+
+        # Tk must remain a managed top-level on Windows.
+        try:
+            if bool(self.overrideredirect()):
+                self.overrideredirect(False)
+                self.update_idletasks()
+        except Exception:
+            try:
+                self.overrideredirect(False)
+                self.update_idletasks()
+            except Exception:
+                pass
+
+        try:
+            self.attributes(
+                "-toolwindow",
+                False,
+            )
+        except Exception:
+            pass
+
+        hwnd = self.windows_hwnd_v710()
+        if not hwnd:
+            return False
+
+        GWL_STYLE = -16
+        GWL_EXSTYLE = -20
+        GWLP_HWNDPARENT = -8
+
+        WS_CAPTION = 0x00C00000
+        WS_SYSMENU = 0x00080000
+        WS_THICKFRAME = 0x00040000
+        WS_MINIMIZEBOX = 0x00020000
+        WS_MAXIMIZEBOX = 0x00010000
+
+        WS_EX_TOOLWINDOW = 0x00000080
+        WS_EX_APPWINDOW = 0x00040000
+
+        SWP_NOSIZE = 0x0001
+        SWP_NOMOVE = 0x0002
+        SWP_NOZORDER = 0x0004
+        SWP_NOACTIVATE = 0x0010
+        SWP_FRAMECHANGED = 0x0020
+
+        get_long = getattr(
+            user32,
+            "GetWindowLongPtrW",
+            user32.GetWindowLongW,
+        )
+        set_long = getattr(
+            user32,
+            "SetWindowLongPtrW",
+            user32.SetWindowLongW,
+        )
+
+        get_long.restype = ctypes.c_ssize_t
+        set_long.restype = ctypes.c_ssize_t
+
+        # Managed window style, but without the native Windows titlebar.
+        style = int(
+            get_long(
+                hwnd,
+                GWL_STYLE,
+            )
+        )
+
+        style &= ~WS_CAPTION
+        style |= (
+            WS_SYSMENU
+            | WS_THICKFRAME
+            | WS_MINIMIZEBOX
+            | WS_MAXIMIZEBOX
+        )
+
+        set_long(
+            hwnd,
+            GWL_STYLE,
+            style,
+        )
+
+        exstyle = int(
+            get_long(
+                hwnd,
+                GWL_EXSTYLE,
+            )
+        )
+        exstyle &= ~WS_EX_TOOLWINDOW
+        exstyle |= WS_EX_APPWINDOW
+
+        set_long(
+            hwnd,
+            GWL_EXSTYLE,
+            exstyle,
+        )
+
+        # A window owned by another top-level is normally hidden from taskbar.
+        # Make sure the main OuterClient HWND is genuinely unowned.
+        try:
+            set_long(
+                hwnd,
+                GWLP_HWNDPARENT,
+                0,
+            )
+        except Exception:
+            pass
+
+        user32.SetWindowPos(
+            hwnd,
+            0,
+            0,
+            0,
+            0,
+            0,
+            SWP_NOMOVE
+            | SWP_NOSIZE
+            | SWP_NOZORDER
+            | SWP_NOACTIVATE
+            | SWP_FRAMECHANGED,
+        )
+
+        # Force the taskbar-visible managed window to stay shown.
+        try:
+            SW_SHOW = 5
+            user32.ShowWindow(
+                hwnd,
+                SW_SHOW,
+            )
+        except Exception:
+            pass
+
+        # Native taskbar / Alt+Tab icon.
+        if LOGO_ICO.exists():
+            IMAGE_ICON = 1
+            LR_LOADFROMFILE = 0x0010
+            LR_DEFAULTSIZE = 0x0040
+            WM_SETICON = 0x0080
+            ICON_SMALL = 0
+            ICON_BIG = 1
+
+            hicon = user32.LoadImageW(
+                0,
+                str(LOGO_ICO),
+                IMAGE_ICON,
+                0,
+                0,
+                LR_LOADFROMFILE
+                | LR_DEFAULTSIZE,
+            )
+
+            if hicon:
+                user32.SendMessageW(
+                    hwnd,
+                    WM_SETICON,
+                    ICON_SMALL,
+                    hicon,
+                )
+                user32.SendMessageW(
+                    hwnd,
+                    WM_SETICON,
+                    ICON_BIG,
+                    hicon,
+                )
+                self._windows_hicon_v710 = hicon
+
+        self._windows_taskbar_hwnd_v710 = hwnd
+        self._windows_taskbar_ready_v710 = True
+
+        try:
+            self.write_log(
+                f"Windows taskbar 7.1 ready: hwnd={hwnd:#x}, "
+                f"style={style:#x}, exstyle={exstyle:#x}"
+            )
+        except Exception:
+            pass
+
+        return True
+
+    except Exception as exc:
+        try:
+            self.write_log(
+                "Windows taskbar 7.1: "
+                + str(exc)
+            )
+        except Exception:
+            pass
+        return False
+
+
+def _v710_set_custom_override(self, enabled=True):
+    if sys.platform.startswith("win"):
+        # Windows: never enter override-redirect mode. It removes the normal
+        # shell identity/taskbar relationship. Win32 styles provide the
+        # borderless custom-titlebar effect instead.
+        try:
+            self.overrideredirect(False)
+        except Exception:
+            pass
+
+        self.after(
+            10,
+            self.apply_windows_taskbar_v710,
+        )
+        self.after(
+            80,
+            self.apply_windows_taskbar_v710,
+        )
+        self.after(
+            260,
+            self.apply_windows_taskbar_v710,
+        )
+        return None
+
+    return _V710_SET_OVERRIDE_BASE(
+        self,
+        enabled,
+    )
+
+
+def _v710_window_map(self, event=None):
+    if sys.platform.startswith("win"):
+        if (
+            event is not None
+            and getattr(event, "widget", None)
+            is not self
+        ):
+            return
+
+        self._custom_minimized = False
+
+        self.after(
+            5,
+            self.apply_windows_taskbar_v710,
+        )
+        self.after(
+            90,
+            self.apply_windows_taskbar_v710,
+        )
+        return
+
+    return _V710_MAP_BASE(
+        self,
+        event,
+    )
+
+
+def _v710_minimize(self):
+    if not sys.platform.startswith("win"):
+        return _V710_MINIMIZE_BASE(self)
+
+    self._custom_minimized = True
+
+    # Managed borderless window: normal iconify now keeps the taskbar entry.
+    self.apply_windows_taskbar_v710()
+
+    try:
+        self.iconify()
+    except Exception:
+        try:
+            self.state("iconic")
+        except Exception:
+            pass
+
+
+# ------------------------------------------------------------
+# Loader logos
+# ------------------------------------------------------------
+
+V710_LOADER_LOGO_URLS = {
+    "Fabric":
+        "https://github.com/FabricMC.png?size=128",
+    "Forge":
+        "https://github.com/MinecraftForge.png?size=128",
+    "NeoForge":
+        "https://github.com/neoforged.png?size=128",
+    "Quilt":
+        "https://github.com/QuiltMC.png?size=128",
+}
+
+
+def _v710_loader_logo_cache_dir(self):
+    path = (
+        Path.home()
+        / ".cache"
+        / "outerclient"
+        / "loader-logos"
+    )
+    path.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+    return path
+
+
+def _v710_loader_logo_path(self, loader):
+    return (
+        self.loader_logo_cache_dir_v710()
+        / (
+            re.sub(
+                r"[^A-Za-z0-9_.-]",
+                "_",
+                loader,
+            )
+            + ".png"
+        )
+    )
+
+
+def _v710_apply_loader_logo(self, loader, image):
+    card = getattr(
+        self,
+        "_create_loader_cards_v640",
+        {},
+    ).get(loader)
+
+    if not card:
+        return
+
+    badge = card.get("badge")
+    if badge is None:
+        return
+
+    try:
+        if not badge.winfo_exists():
+            return
+    except Exception:
+        return
+
+    try:
+        ctk_image = ctk.CTkImage(
+            light_image=image,
+            dark_image=image,
+            size=(34, 34),
+        )
+        badge._outerclient_loader_logo_v710 = (
+            ctk_image
+        )
+        badge.configure(
+            image=ctk_image,
+            text="",
+        )
+    except Exception:
+        pass
+
+
+def _v710_load_loader_logo_worker(self, loader):
+    try:
+        if loader == "Vanilla":
+            if LOGO_PNG.exists():
+                image = Image.open(
+                    LOGO_PNG
+                ).convert("RGBA")
+                self.qol_events_v710.put(
+                    (
+                        "loader_logo",
+                        loader,
+                        image,
+                    )
+                )
+            return
+
+        target = self.loader_logo_path_v710(
+            loader
+        )
+
+        if target.exists():
+            image = Image.open(
+                target
+            ).convert("RGBA")
+            self.qol_events_v710.put(
+                (
+                    "loader_logo",
+                    loader,
+                    image,
+                )
+            )
+            return
+
+        url = V710_LOADER_LOGO_URLS.get(
+            loader
+        )
+        if not url:
+            return
+
+        response = requests.get(
+            url,
+            timeout=12,
+            headers={
+                "User-Agent":
+                    "OuterClient/7.1",
+            },
+        )
+        response.raise_for_status()
+
+        image = Image.open(
+            BytesIO(
+                response.content
+            )
+        ).convert("RGBA")
+
+        # Square crop for consistent loader cards.
+        side = min(
+            image.width,
+            image.height,
+        )
+        left = (
+            image.width - side
+        ) // 2
+        top = (
+            image.height - side
+        ) // 2
+        image = image.crop(
+            (
+                left,
+                top,
+                left + side,
+                top + side,
+            )
+        )
+        image = image.resize(
+            (96, 96),
+            Image.Resampling.LANCZOS,
+        )
+        image.save(target)
+
+        self.qol_events_v710.put(
+            (
+                "loader_logo",
+                loader,
+                image,
+            )
+        )
+
+    except Exception as exc:
+        try:
+            self.write_log(
+                f"Loader logo {loader}: {exc}"
+            )
+        except Exception:
+            pass
+
+
+def _v710_refresh_loader_logos(self):
+    cards = getattr(
+        self,
+        "_create_loader_cards_v640",
+        {},
+    )
+
+    for loader in cards:
+        self.run_bg(
+            lambda name=loader:
+                self.load_loader_logo_worker_v710(
+                    name
+                )
+        )
+
+
+# ------------------------------------------------------------
+# Profile utilities
+# ------------------------------------------------------------
+
+def _v710_profile_portable_paths(self):
+    return (
+        "mods",
+        "resourcepacks",
+        "shaderpacks",
+        "config",
+        "saves",
+        "screenshots",
+        "options.txt",
+        "servers.dat",
+        ".outerclient",
+        ".outerclient-content.json",
+    )
+
+
+def _v710_duplicate_profile(self, profile_name):
+    profile = self.cfg.get(
+        "profiles",
+        {},
+    ).get(profile_name)
+
+    if not profile:
+        return
+
+    new_name = self.unique_profile_name(
+        f"{profile_name} Copy"
+    )
+
+    copied = copy.deepcopy(profile)
+    copied["launch_history"] = []
+    stats = copied.setdefault(
+        "play_stats",
+        {},
+    )
+    stats.update({
+        "launches": 0,
+        "seconds": 0,
+        "last_played": 0,
+        "last_exit_code": None,
+    })
+
+    self.cfg["profiles"][
+        new_name
+    ] = copied
+
+    source = self.profile_instance_dir(
+        profile_name
+    )
+    target = self.profile_instance_dir(
+        new_name
+    )
+    target.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+
+    try:
+        for relative in self.profile_portable_paths_v710():
+            src = source / relative
+            dst = target / relative
+
+            if src.is_file():
+                dst.parent.mkdir(
+                    parents=True,
+                    exist_ok=True,
+                )
+                shutil.copy2(
+                    src,
+                    dst,
+                )
+
+            elif src.is_dir():
+                shutil.copytree(
+                    src,
+                    dst,
+                    dirs_exist_ok=True,
+                )
+    except Exception as exc:
+        self.write_log(
+            "Duplicate profile files: "
+            + str(exc)
+        )
+
+    self.cfg["selected"] = new_name
+    save_config(self.cfg)
+
+    self.toast_v710(
+        self.t(
+            "v710_profile_duplicated",
+            name=new_name,
+        ),
+        "success",
+    )
+
+    self.show_profile_manager(
+        new_name
+    )
+
+
+def _v710_export_profile(self, profile_name=None):
+    profile_name = (
+        profile_name
+        or self.cfg.get("selected")
+    )
+
+    profile = self.cfg.get(
+        "profiles",
+        {},
+    ).get(profile_name)
+
+    if not profile:
+        return
+
+    target = filedialog.asksaveasfilename(
+        title=self.t(
+            "profile_export_title"
+        ),
+        defaultextension=".outerprofile",
+        filetypes=[
+            (
+                "OuterClient Profile",
+                "*.outerprofile",
+            ),
+            (
+                "ZIP archive",
+                "*.zip",
+            ),
+        ],
+        initialfile=(
+            f"{profile_name}.outerprofile"
+        ),
+    )
+
+    if not target:
+        return
+
+    manifest_profile = {}
+
+    for key in (
+        "version",
+        "loader",
+        *V710_PROFILE_FIELDS,
+    ):
+        if key in profile:
+            manifest_profile[key] = copy.deepcopy(
+                profile[key]
+            )
+
+    manifest = {
+        "format":
+            "OuterClientProfile",
+        "format_version":
+            2,
+        "name":
+            profile_name,
+        "profile":
+            manifest_profile,
+    }
+
+    instance = self.profile_instance_dir(
+        profile_name
+    )
+
+    try:
+        with zipfile.ZipFile(
+            target,
+            "w",
+            compression=zipfile.ZIP_DEFLATED,
+        ) as archive:
+            archive.writestr(
+                "profile.json",
+                json.dumps(
+                    manifest,
+                    ensure_ascii=False,
+                    indent=2,
+                ),
+            )
+
+            for relative in self.profile_portable_paths_v710():
+                source = (
+                    instance
+                    / relative
+                )
+
+                if source.is_file():
+                    archive.write(
+                        source,
+                        Path(
+                            "instance"
+                        )
+                        / relative,
+                    )
+
+                elif source.is_dir():
+                    for item in source.rglob("*"):
+                        if item.is_file():
+                            archive.write(
+                                item,
+                                Path("instance")
+                                / item.relative_to(
+                                    instance
+                                ),
+                            )
+
+        self.toast_v710(
+            self.t("v710_export_done"),
+            "success",
+        )
+
+    except Exception as exc:
+        messagebox.showerror(
+            "OuterClient",
+            f"{self.t('profile_export_title')}:\n{exc}",
+        )
+
+
+def _v710_import_profile(self):
+    source = filedialog.askopenfilename(
+        title=self.t(
+            "profile_import_title"
+        ),
+        filetypes=[
+            (
+                "OuterClient Profile",
+                "*.outerprofile *.zip",
+            ),
+            (
+                "All files",
+                "*.*",
+            ),
+        ],
+    )
+
+    if not source:
+        return
+
+    try:
+        with zipfile.ZipFile(
+            source,
+            "r",
+        ) as archive:
+            manifest = json.loads(
+                archive.read(
+                    "profile.json"
+                ).decode("utf-8")
+            )
+
+            if (
+                manifest.get("format")
+                != "OuterClientProfile"
+                or not isinstance(
+                    manifest.get(
+                        "profile"
+                    ),
+                    dict,
+                )
+            ):
+                raise RuntimeError(
+                    self.t(
+                        "profile_invalid"
+                    )
+                )
+
+            name = (
+                self.unique_import_profile_name(
+                    manifest.get("name")
+                    or "Imported"
+                )
+            )
+
+            incoming = copy.deepcopy(
+                manifest["profile"]
+            )
+
+            profile = {
+                "version":
+                    incoming.get(
+                        "version",
+                        "1.21.1",
+                    ),
+                "loader":
+                    incoming.get(
+                        "loader",
+                        "Vanilla",
+                    ),
+            }
+
+            for field in V710_PROFILE_FIELDS:
+                if field in incoming:
+                    profile[field] = (
+                        incoming[field]
+                    )
+
+            profile.setdefault(
+                "preset",
+                "Balanced",
+            )
+            profile.setdefault(
+                "ram",
+                0,
+            )
+            profile.setdefault(
+                "launch_history",
+                [],
+            )
+            profile.setdefault(
+                "jvm_args",
+                "",
+            )
+            profile.setdefault(
+                "game_args",
+                "",
+            )
+            profile.setdefault(
+                "resolution_width",
+                0,
+            )
+            profile.setdefault(
+                "resolution_height",
+                0,
+            )
+
+            self.cfg["profiles"][
+                name
+            ] = profile
+
+            destination = (
+                self.profile_instance_dir(
+                    name
+                )
+            )
+            destination.mkdir(
+                parents=True,
+                exist_ok=True,
+            )
+
+            for member in archive.infolist():
+                if (
+                    member.is_dir()
+                    or not member.filename.startswith(
+                        "instance/"
+                    )
+                ):
+                    continue
+
+                relative = member.filename[
+                    len("instance/"):
+                ]
+
+                if not relative:
+                    continue
+
+                target = safe_child(
+                    destination,
+                    relative,
+                )
+                target.parent.mkdir(
+                    parents=True,
+                    exist_ok=True,
+                )
+
+                with (
+                    archive.open(
+                        member,
+                        "r",
+                    )
+                    as src_file,
+                    target.open(
+                        "wb"
+                    )
+                    as dst_file,
+                ):
+                    shutil.copyfileobj(
+                        src_file,
+                        dst_file,
+                    )
+
+            self.cfg["selected"] = name
+            save_config(self.cfg)
+
+        self.toast_v710(
+            self.t(
+                "v710_import_done",
+                name=name,
+            ),
+            "success",
+        )
+        self.show_profiles()
+
+    except Exception as exc:
+        messagebox.showerror(
+            "OuterClient",
+            f"{self.t('profile_import_title')}:\n{exc}",
+        )
+
+
+def _v710_toggle_pin(self, profile_name):
+    pinned = list(
+        self.cfg.get(
+            "pinned_profiles",
+            [],
+        )
+    )
+
+    if profile_name in pinned:
+        pinned.remove(
+            profile_name
+        )
+    else:
+        pinned.insert(
+            0,
+            profile_name,
+        )
+
+    self.cfg[
+        "pinned_profiles"
+    ] = pinned[:3]
+    save_config(self.cfg)
+
+    self.show_profile_manager(
+        profile_name
+    )
+
+
+def _v710_open_screenshots(self, profile_name):
+    path = (
+        self.profile_instance_dir(
+            profile_name
+        )
+        / "screenshots"
+    )
+    path.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+    self.open_path_v710(path)
+
+
+def _v710_open_path(self, path):
+    path = Path(path)
+
+    try:
+        if sys.platform.startswith(
+            "win"
+        ):
+            os.startfile(
+                str(path)
+            )
+            return True
+
+        if sys.platform == "darwin":
+            return self.try_desktop_command_v700(
+                [
+                    "open",
+                    str(path),
+                ],
+                self.host_desktop_env_v700(),
+            )
+
+        env = self.host_desktop_env_v700()
+        for command in (
+            ["xdg-open", str(path)],
+            ["gio", "open", str(path)],
+        ):
+            binary = shutil.which(
+                command[0]
+            )
+            if not binary:
+                continue
+
+            command[0] = binary
+
+            if self.try_desktop_command_v700(
+                command,
+                env,
+            ):
+                return True
+
+    except Exception:
+        pass
+
+    return False
+
+
+def _v710_save_profile_settings(
+    self,
+    profile_name,
+    jvm_var,
+    game_var,
+    resolution_var,
+):
+    profile = self.cfg["profiles"][
+        profile_name
+    ]
+
+    profile["jvm_args"] = (
+        jvm_var.get().strip()
+    )
+    profile["game_args"] = (
+        game_var.get().strip()
+    )
+
+    value = (
+        resolution_var.get()
+        .strip()
+        .lower()
+    )
+
+    if (
+        not value
+        or value
+        == self.t(
+            "v710_resolution_default"
+        ).casefold()
+        or value
+        == "default"
+    ):
+        width = 0
+        height = 0
+    else:
+        match = re.match(
+            r"^\s*(\d{3,5})\s*[x×]\s*(\d{3,5})\s*$",
+            value,
+        )
+
+        if not match:
+            messagebox.showerror(
+                "OuterClient",
+                "Resolution format: 1920x1080",
+            )
+            return
+
+        width = int(
+            match.group(1)
+        )
+        height = int(
+            match.group(2)
+        )
+
+    profile[
+        "resolution_width"
+    ] = width
+    profile[
+        "resolution_height"
+    ] = height
+
+    save_config(self.cfg)
+
+    self.toast_v710(
+        self.t(
+            "v710_profile_settings_saved"
+        ),
+        "success",
+    )
+
+
+# ------------------------------------------------------------
+# Profile manager 7.1 settings / history
+# ------------------------------------------------------------
+
+def _v710_show_profile_manager(self, profile_name):
+    _V710_SHOW_MANAGER_BASE(
+        self,
+        profile_name,
+    )
+
+    if profile_name not in self.cfg.get(
+        "profiles",
+        {},
+    ):
+        return
+
+    try:
+        outer = self.content.winfo_children()[
+            0
+        ]
+    except Exception:
+        return
+
+    # Base layout: 0 header, 1 health, 2 categories, 3 actions,
+    # 4 hint, 5 list. Insert our settings at row 2.
+    for child in list(
+        outer.winfo_children()
+    ):
+        try:
+            info = child.grid_info()
+            row = int(
+                info.get(
+                    "row",
+                    -1,
+                )
+            )
+            if row >= 2:
+                child.grid_configure(
+                    row=row + 1
+                )
+        except Exception:
+            pass
+
+    try:
+        outer.grid_rowconfigure(
+            7,
+            weight=1,
+        )
+        outer.grid_rowconfigure(
+            6,
+            weight=0,
+        )
+    except Exception:
+        pass
+
+    profile = self.cfg["profiles"][
+        profile_name
+    ]
+
+    card = self.card(
+        outer,
+        13,
+    )
+    card.grid(
+        row=2,
+        column=0,
+        sticky="ew",
+        padx=28,
+        pady=(0, 8),
+    )
+    card.grid_columnconfigure(
+        0,
+        weight=1,
+    )
+
+    ctk.CTkLabel(
+        card,
+        text=self.t(
+            "v710_profile_advanced"
+        ),
+        text_color=MUTED,
+        font=ctk.CTkFont(
+            size=10,
+            weight="bold",
+        ),
+    ).grid(
+        row=0,
+        column=0,
+        columnspan=5,
+        sticky="w",
+        padx=16,
+        pady=(13, 8),
+    )
+
+    jvm_var = ctk.StringVar(
+        value=profile.get(
+            "jvm_args",
+            "",
+        )
+    )
+    game_var = ctk.StringVar(
+        value=profile.get(
+            "game_args",
+            "",
+        )
+    )
+
+    rw = int(
+        profile.get(
+            "resolution_width",
+            0,
+        )
+        or 0
+    )
+    rh = int(
+        profile.get(
+            "resolution_height",
+            0,
+        )
+        or 0
+    )
+
+    resolution_var = ctk.StringVar(
+        value=(
+            f"{rw}x{rh}"
+            if rw and rh
+            else self.t(
+                "v710_resolution_default"
+            )
+        )
+    )
+
+    fields = (
+        (
+            self.t(
+                "v710_jvm_args"
+            ),
+            jvm_var,
+        ),
+        (
+            self.t(
+                "v710_game_args"
+            ),
+            game_var,
+        ),
+        (
+            self.t(
+                "v710_resolution"
+            ),
+            resolution_var,
+        ),
+    )
+
+    for column, (
+        label,
+        variable,
+    ) in enumerate(fields):
+        wrap = ctk.CTkFrame(
+            card,
+            fg_color="transparent",
+        )
+        wrap.grid(
+            row=1,
+            column=column,
+            sticky="ew",
+            padx=(
+                16 if column == 0 else 5,
+                5 if column < 2 else 10,
+            ),
+            pady=(0, 10),
+        )
+        card.grid_columnconfigure(
+            column,
+            weight=1,
+        )
+
+        ctk.CTkLabel(
+            wrap,
+            text=label,
+            text_color=MUTED,
+            font=ctk.CTkFont(
+                size=9,
+                weight="bold",
+            ),
+        ).pack(
+            anchor="w",
+            pady=(0, 4),
+        )
+
+        ctk.CTkEntry(
+            wrap,
+            textvariable=variable,
+            height=36,
+            fg_color=SURFACE_2,
+            border_color=BORDER,
+        ).pack(
+            fill="x",
+        )
+
+    pinned = (
+        profile_name
+        in self.cfg.get(
+            "pinned_profiles",
+            [],
+        )
+    )
+
+    buttons = ctk.CTkFrame(
+        card,
+        fg_color="transparent",
+    )
+    buttons.grid(
+        row=2,
+        column=0,
+        columnspan=5,
+        sticky="ew",
+        padx=16,
+        pady=(0, 13),
+    )
+
+    button_defs = (
+        (
+            self.t(
+                "v710_save_profile_settings"
+            ),
+            lambda:
+                self.save_profile_settings_v710(
+                    profile_name,
+                    jvm_var,
+                    game_var,
+                    resolution_var,
+                ),
+            self.accent,
+        ),
+        (
+            self.t(
+                "v710_duplicate"
+            ),
+            lambda:
+                self.duplicate_profile_v710(
+                    profile_name
+                ),
+            SURFACE_3,
+        ),
+        (
+            self.t(
+                "v710_unpin"
+                if pinned
+                else "v710_pin"
+            ),
+            lambda:
+                self.toggle_profile_pin_v710(
+                    profile_name
+                ),
+            SURFACE_3,
+        ),
+        (
+            self.t(
+                "v710_export"
+            ),
+            lambda:
+                self.export_profile_v710(
+                    profile_name
+                ),
+            SURFACE_3,
+        ),
+        (
+            self.t(
+                "v710_open_screenshots"
+            ),
+            lambda:
+                self.open_screenshots_v710(
+                    profile_name
+                ),
+            SURFACE_3,
+        ),
+    )
+
+    for text, command, color in button_defs:
+        ctk.CTkButton(
+            buttons,
+            text=text,
+            height=34,
+            fg_color=color,
+            hover_color=self.accent_hover,
+            command=command,
+        ).pack(
+            side="left",
+            padx=(0, 6),
+        )
+
+    # Launch history is compact and non-blocking.
+    history = list(
+        profile.get(
+            "launch_history",
+            [],
+        )
+    )[-5:]
+    history_card = self.card(
+        outer,
+        12,
+    )
+    history_card.grid(
+        row=3,
+        column=0,
+        sticky="ew",
+        padx=28,
+        pady=(0, 8),
+    )
+    history_card.grid_columnconfigure(
+        0,
+        weight=1,
+    )
+
+    ctk.CTkLabel(
+        history_card,
+        text=self.t(
+            "v710_launch_history"
+        ),
+        text_color=MUTED,
+        font=ctk.CTkFont(
+            size=10,
+            weight="bold",
+        ),
+    ).grid(
+        row=0,
+        column=0,
+        sticky="w",
+        padx=16,
+        pady=(11, 5),
+    )
+
+    if not history:
+        ctk.CTkLabel(
+            history_card,
+            text=self.t(
+                "v710_no_history"
+            ),
+            text_color=MUTED,
+        ).grid(
+            row=1,
+            column=0,
+            sticky="w",
+            padx=16,
+            pady=(0, 11),
+        )
+    else:
+        for row, item in enumerate(
+            reversed(history),
+            start=1,
+        ):
+            started = int(
+                item.get(
+                    "started",
+                    0,
+                )
+                or 0
+            )
+
+            try:
+                date_text = datetime.fromtimestamp(
+                    started
+                ).strftime(
+                    "%d.%m.%Y %H:%M"
+                )
+            except Exception:
+                date_text = "?"
+
+            duration = self.format_duration_v6(
+                item.get(
+                    "seconds",
+                    0,
+                )
+            )
+            code = item.get(
+                "code",
+                "?",
+            )
+
+            ctk.CTkLabel(
+                history_card,
+                text=self.t(
+                    "v710_launch_history_line",
+                    date=date_text,
+                    duration=duration,
+                    code=code,
+                ),
+                text_color=TEXT,
+                anchor="w",
+            ).grid(
+                row=row,
+                column=0,
+                sticky="w",
+                padx=16,
+                pady=(0, 6),
+            )
+
+
+# ------------------------------------------------------------
+# Pinned profiles on dashboard
+# ------------------------------------------------------------
+
+def _v710_show_home(self):
+    pinned = [
+        name
+        for name in self.cfg.get(
+            "pinned_profiles",
+            [],
+        )
+        if name in self.cfg.get(
+            "profiles",
+            {},
+        )
+    ][:3]
+
+    if pinned:
+        ordered = {}
+
+        for name in pinned:
+            ordered[name] = self.cfg[
+                "profiles"
+            ][name]
+
+        for name, profile in self.cfg[
+            "profiles"
+        ].items():
+            if name not in ordered:
+                ordered[name] = profile
+
+        self.cfg["profiles"] = ordered
+
+    _V710_SHOW_HOME_BASE(self)
+
+    if pinned:
+        try:
+            page = self.content.winfo_children()[
+                0
+            ]
+            for child in page.winfo_children():
+                try:
+                    if int(
+                        child.grid_info().get(
+                            "row",
+                            -1,
+                        )
+                    ) == 1:
+                        labels = child.winfo_children()
+                        for widget in labels:
+                            try:
+                                if isinstance(
+                                    widget,
+                                    ctk.CTkLabel,
+                                ):
+                                    widget.configure(
+                                        text=self.t(
+                                            "v710_pinned_profiles"
+                                        )
+                                    )
+                                    break
+                            except Exception:
+                                pass
+                        break
+                except Exception:
+                    pass
+        except Exception:
+            pass
+
+
+# ------------------------------------------------------------
+# Explore status badges
+# ------------------------------------------------------------
+
+def _v710_project_status(self, hit, category):
+    if category == "Modpacki":
+        return None, None
+
+    profile_name = None
+
+    try:
+        profile_name = (
+            self.modrinth_profile.get()
+        )
+    except Exception:
+        profile_name = self.cfg.get(
+            "selected"
+        )
+
+    if profile_name not in self.cfg.get(
+        "profiles",
+        {},
+    ):
+        return None, None
+
+    profile = self.cfg["profiles"][
+        profile_name
+    ]
+
+    # Compatibility: only mark incompatible when the API gives enough data.
+    compatible = True
+
+    versions = hit.get(
+        "versions"
+    )
+
+    if (
+        isinstance(
+            versions,
+            list,
+        )
+        and versions
+        and profile.get(
+            "version"
+        )
+        not in versions
+    ):
+        compatible = False
+
+    loader = str(
+        profile.get(
+            "loader",
+            "Vanilla",
+        )
+    ).casefold()
+
+    categories = {
+        str(value).casefold()
+        for value in (
+            hit.get("categories")
+            or []
+        )
+    }
+
+    known_loaders = {
+        "fabric",
+        "forge",
+        "neoforge",
+        "quilt",
+    }
+
+    listed = (
+        categories
+        & known_loaders
+    )
+
+    if (
+        listed
+        and loader != "vanilla"
+        and loader not in listed
+    ):
+        compatible = False
+
+    if not compatible:
+        return (
+            self.t(
+                "v710_incompatible"
+            ),
+            "bad",
+        )
+
+    metadata = self.load_content_metadata(
+        profile_name
+    )
+
+    source = str(
+        hit.get(
+            "_source",
+            "modrinth",
+        )
+    ).casefold()
+
+    project_id = str(
+        hit.get("project_id")
+        or hit.get("id")
+        or ""
+    )
+
+    slug = str(
+        hit.get("slug")
+        or ""
+    ).casefold()
+
+    installed_rel = None
+
+    for rel, meta in metadata.items():
+        meta_source = str(
+            meta.get(
+                "source",
+                ""
+            )
+        ).casefold()
+
+        if source == "curseforge":
+            cf_id = str(
+                meta.get(
+                    "cf_mod_id",
+                    ""
+                )
+            )
+            hit_id = str(
+                hit.get(
+                    "cf_mod_id",
+                    hit.get("id", ""),
+                )
+            )
+
+            if (
+                meta_source
+                == "curseforge"
+                and hit_id
+                and cf_id == hit_id
+            ):
+                installed_rel = rel
+                break
+        else:
+            meta_id = str(
+                meta.get(
+                    "project_id",
+                    ""
+                )
+            )
+            meta_slug = str(
+                meta.get(
+                    "slug",
+                    ""
+                )
+            ).casefold()
+
+            if (
+                meta_source
+                == "modrinth"
+                and (
+                    (
+                        project_id
+                        and meta_id
+                        == project_id
+                    )
+                    or (
+                        slug
+                        and meta_slug
+                        == slug
+                    )
+                )
+            ):
+                installed_rel = rel
+                break
+
+    if installed_rel:
+        if (
+            profile_name,
+            installed_rel,
+        ) in self.profile_update_cache:
+            return (
+                self.t(
+                    "v710_update_available"
+                ),
+                "warning",
+            )
+
+        return (
+            self.t(
+                "v710_installed"
+            ),
+            "good",
+        )
+
+    return (
+        self.t(
+            "v710_compatible"
+        ),
+        "good",
+    )
+
+
+def _v710_modrinth_card(self, row, hit, category):
+    _V710_MODRINTH_CARD_BASE(
+        self,
+        row,
+        hit,
+        category,
+    )
+
+    try:
+        cards = self.modrinth_results.winfo_children()
+        card = cards[-1]
+
+        actions = None
+
+        for child in card.winfo_children():
+            try:
+                info = child.grid_info()
+                if int(
+                    info.get(
+                        "column",
+                        -1,
+                    )
+                ) == 2:
+                    actions = child
+                    break
+            except Exception:
+                pass
+
+        if actions is None:
+            return
+
+        text, state = self.project_status_v710(
+            hit,
+            category,
+        )
+
+        if not text:
+            return
+
+        color = {
+            "good": self.secondary,
+            "warning": "#E7A24C",
+            "bad": DANGER,
+        }.get(
+            state,
+            MUTED,
+        )
+
+        badge = ctk.CTkLabel(
+            actions,
+            text=text,
+            text_color=color,
+            fg_color=SURFACE_2,
+            corner_radius=8,
+            font=ctk.CTkFont(
+                size=9,
+                weight="bold",
+            ),
+        )
+
+        children = actions.winfo_children()
+
+        if children:
+            badge.pack(
+                before=children[0],
+                fill="x",
+                pady=(0, 6),
+                ipady=4,
+            )
+        else:
+            badge.pack(
+                fill="x",
+                pady=(0, 6),
+                ipady=4,
+            )
+
+        if state == "bad":
+            # Disable the first install button while keeping Details usable.
+            for child in actions.winfo_children():
+                try:
+                    nested = child.winfo_children()
+                except Exception:
+                    nested = []
+
+                for button in nested:
+                    if isinstance(
+                        button,
+                        ctk.CTkButton,
+                    ):
+                        try:
+                            button.configure(
+                                state="disabled"
+                            )
+                        except Exception:
+                            pass
+                        break
+
+                if nested:
+                    break
+
+    except Exception as exc:
+        try:
+            self.write_log(
+                "Explore status badge: "
+                + str(exc)
+            )
+        except Exception:
+            pass
+
+
+# ------------------------------------------------------------
+# Library bulk updates
+# ------------------------------------------------------------
+
+def _v710_library_check_updates(self):
+    profile = getattr(
+        self,
+        "library_profile_var_v710",
+        None,
+    )
+
+    if profile is None:
+        return
+
+    name = profile.get()
+
+    if name not in self.cfg.get(
+        "profiles",
+        {},
+    ):
+        return
+
+    self.check_profile_updates(
+        name
+    )
+
+
+def _v710_library_update_all(self):
+    profile = getattr(
+        self,
+        "library_profile_var_v710",
+        None,
+    )
+
+    if profile is None:
+        return
+
+    name = profile.get()
+
+    if name not in self.cfg.get(
+        "profiles",
+        {},
+    ):
+        return
+
+    self.toast_v710(
+        self.t(
+            "v710_toast_update_started"
+        ),
+        "info",
+    )
+
+    self.update_all_content(
+        name
+    )
+
+
+def _v710_show_library(self):
+    _V710_SHOW_LIBRARY_BASE(self)
+
+    try:
+        outer = self.content.winfo_children()[
+            0
+        ]
+        controls = None
+
+        for child in outer.winfo_children():
+            try:
+                if int(
+                    child.grid_info().get(
+                        "row",
+                        -1,
+                    )
+                ) == 1:
+                    controls = child
+                    break
+            except Exception:
+                pass
+
+        if controls is None:
+            return
+
+        selected = self.cfg.get(
+            "selected"
+        )
+
+        self.library_profile_var_v710 = (
+            ctk.StringVar(
+                value=selected
+            )
+        )
+
+        profile_menu = self.themed_option_menu(
+            controls,
+            variable=self.library_profile_var_v710,
+            values=list(
+                self.cfg[
+                    "profiles"
+                ].keys()
+            ),
+        )
+        profile_menu.grid(
+            row=1,
+            column=0,
+            sticky="w",
+            pady=(8, 0),
+        )
+
+        ctk.CTkButton(
+            controls,
+            text=self.t(
+                "v710_check_all_updates"
+            ),
+            height=36,
+            width=150,
+            fg_color=SURFACE_3,
+            hover_color=self.accent,
+            command=self.library_check_updates_v710,
+        ).grid(
+            row=1,
+            column=1,
+            sticky="w",
+            padx=(8, 0),
+            pady=(8, 0),
+        )
+
+        ctk.CTkButton(
+            controls,
+            text=self.t(
+                "v710_update_all_now"
+            ),
+            height=36,
+            width=140,
+            fg_color=self.accent,
+            hover_color=self.accent_hover,
+            command=self.library_update_all_v710,
+        ).grid(
+            row=1,
+            column=2,
+            sticky="w",
+            padx=(8, 0),
+            pady=(8, 0),
+        )
+
+    except Exception as exc:
+        self.write_log(
+            "Library 7.1 controls: "
+            + str(exc)
+        )
+
+
+# ------------------------------------------------------------
+# Launch arguments, resolution and launch history
+# ------------------------------------------------------------
+
+def _v710_split_args(self, value):
+    value = str(
+        value
+        or ""
+    ).strip()
+
+    if not value:
+        return []
+
+    try:
+        return shlex.split(
+            value,
+            posix=not sys.platform.startswith(
+                "win"
+            ),
+        )
+    except Exception:
+        # Invalid quoting should not make the whole launcher unusable.
+        return value.split()
+
+
+def _v710_launch_installed(
+    self,
+    launch_version,
+    instance,
+    profile_name,
+    server_address=None,
+    runtime=None,
+):
+    profile = self.cfg["profiles"][
+        profile_name
+    ]
+
+    mode = self.cfg.get(
+        "account_mode",
+        "Offline",
+    )
+    ram = self.profile_ram(
+        profile_name
+    )
+
+    if mode == "Microsoft":
+        if not self.auth:
+            raise RuntimeError(
+                self.t(
+                    "microsoft_not_authenticated"
+                )
+            )
+
+        auth = self.refresh_active_microsoft_account()
+
+        options = {
+            "username":
+                auth.get(
+                    "name",
+                    "Player",
+                ),
+            "uuid":
+                auth.get("id")
+                or auth.get(
+                    "uuid",
+                    "",
+                ),
+            "token":
+                auth.get(
+                    "access_token",
+                    "",
+                ),
+        }
+    else:
+        name = (
+            self.cfg.get(
+                "offline_name",
+                "Player",
+            ).strip()
+            or "Player"
+        )
+
+        options = {
+            "username": name,
+            "uuid":
+                java_offline_uuid(
+                    name
+                ),
+            "token": "0",
+        }
+
+    jvm_arguments = [
+        f"-Xmx{ram}M",
+        "-Xms1024M",
+    ]
+    jvm_arguments.extend(
+        self.split_launch_args_v710(
+            profile.get(
+                "jvm_args",
+                "",
+            )
+        )
+    )
+
+    options.update({
+        "jvmArguments":
+            jvm_arguments,
+        "gameDirectory":
+            str(instance),
+        "launcherName":
+            APP_NAME,
+        "launcherVersion":
+            APP_VERSION,
+    })
+
+    width = int(
+        profile.get(
+            "resolution_width",
+            0,
+        )
+        or 0
+    )
+    height = int(
+        profile.get(
+            "resolution_height",
+            0,
+        )
+        or 0
+    )
+
+    if width and height:
+        options.update({
+            "customResolution":
+                True,
+            "resolutionWidth":
+                str(width),
+            "resolutionHeight":
+                str(height),
+        })
+
+    manual = self.profile_manual_java(
+        profile_name
+    )
+
+    if (
+        not self.cfg.get(
+            "auto_java",
+            True,
+        )
+        and manual
+    ):
+        options[
+            "executablePath"
+        ] = manual["path"]
+        options[
+            "defaultExecutablePath"
+        ] = manual["path"]
+
+    elif runtime and runtime.get(
+        "path"
+    ):
+        options[
+            "defaultExecutablePath"
+        ] = runtime["path"]
+
+    else:
+        best = self.best_java_for_profile(
+            profile_name
+        )
+        if best:
+            options[
+                "defaultExecutablePath"
+            ] = best["path"]
+
+    if server_address:
+        address = server_address.strip()
+        host = address
+        port = None
+
+        if (
+            ":"
+            in address
+            and not address.startswith(
+                "["
+            )
+        ):
+            host, maybe_port = address.rsplit(
+                ":",
+                1,
+            )
+
+            if maybe_port.isdigit():
+                port = maybe_port
+
+        options["server"] = host
+        if port:
+            options["port"] = port
+
+    command = (
+        minecraft_launcher_lib.command
+        .get_minecraft_command(
+            launch_version,
+            str(instance),
+            options,
+        )
+    )
+
+    if not command:
+        raise RuntimeError(
+            "Minecraft command is empty."
+        )
+
+    command = [
+        str(item)
+        for item in command
+    ]
+
+    command.extend(
+        self.split_launch_args_v710(
+            profile.get(
+                "game_args",
+                "",
+            )
+        )
+    )
+
+    log_path = (
+        self.logs_dir()
+        / "latest-minecraft.log"
+    )
+
+    log_file = log_path.open(
+        "w",
+        encoding="utf-8",
+        errors="ignore",
+    )
+    self.minecraft_log_handle = log_file
+
+    env = os.environ.copy()
+
+    try:
+        java_command = Path(
+            command[0]
+        )
+        if java_command.exists():
+            env["JAVA_HOME"] = str(
+                java_command.parent.parent
+            )
+    except Exception:
+        pass
+
+    creationflags = 0
+    startupinfo = None
+
+    if sys.platform.startswith(
+        "win"
+    ):
+        creationflags = (
+            getattr(
+                subprocess,
+                "CREATE_NEW_PROCESS_GROUP",
+                0,
+            )
+            | getattr(
+                subprocess,
+                "CREATE_NO_WINDOW",
+                0x08000000,
+            )
+        )
+
+        try:
+            startupinfo = subprocess.STARTUPINFO()
+            startupinfo.dwFlags |= getattr(
+                subprocess,
+                "STARTF_USESHOWWINDOW",
+                1,
+            )
+            startupinfo.wShowWindow = 0
+        except Exception:
+            startupinfo = None
+
+    self.write_log(
+        "Command: "
+        + (
+            subprocess.list2cmdline(
+                command
+            )
+            if sys.platform.startswith(
+                "win"
+            )
+            else " ".join(command)
+        )
+    )
+
+    process = subprocess.Popen(
+        command,
+        cwd=str(instance),
+        stdout=log_file,
+        stderr=subprocess.STDOUT,
+        env=env,
+        shell=False,
+        creationflags=creationflags,
+        startupinfo=startupinfo,
+    )
+
+    self.minecraft_process = process
+
+    time.sleep(2.5)
+    code = process.poll()
+
+    if code is not None:
+        try:
+            log_file.flush()
+        except Exception:
+            pass
+
+        try:
+            tail = log_path.read_text(
+                encoding="utf-8",
+                errors="ignore",
+            )[-9000:]
+        except Exception:
+            tail = f"Exit code: {code}"
+
+        raise RuntimeError(
+            self.t(
+                "v53_launch_failed",
+                code=code,
+                log=tail,
+            )
+        )
+
+    stats = self.profile_play_stats_v6(
+        profile_name
+    )
+    stats["launches"] = int(
+        stats.get(
+            "launches",
+            0,
+        )
+        or 0
+    ) + 1
+    stats["last_played"] = int(
+        time.time()
+    )
+
+    started = int(
+        time.time()
+    )
+    self._v6_launch_started[
+        process.pid
+    ] = started
+    self._v710_launch_meta[
+        process.pid
+    ] = {
+        "started": started,
+        "launch_version":
+            launch_version,
+    }
+
+    save_config(self.cfg)
+
+    self.start_discord_presence(
+        profile_name
+    )
+
+    self.run_bg(
+        lambda:
+            self.monitor_minecraft_process(
+                process,
+                profile_name,
+                log_path,
+            )
+    )
+
+    self.events.put(
+        (
+            "status",
+            self.t(
+                "minecraft_launched"
+            ),
+        )
+    )
+
+
+def _v710_monitor_process(
+    self,
+    process,
+    profile_name,
+    log_path,
+):
+    code = process.wait()
+
+    now = int(
+        time.time()
+    )
+
+    meta = self._v710_launch_meta.pop(
+        process.pid,
+        {},
+    )
+
+    started = int(
+        meta.get(
+            "started",
+            now,
+        )
+        or now
+    )
+
+    seconds = max(
+        0,
+        now - started,
+    )
+
+    self._v6_launch_started.pop(
+        process.pid,
+        None,
+    )
+
+    stats = self.profile_play_stats_v6(
+        profile_name
+    )
+    stats["seconds"] = int(
+        stats.get(
+            "seconds",
+            0,
+        )
+        or 0
+    ) + seconds
+    stats["last_exit_code"] = int(
+        code
+    )
+
+    profile = self.cfg["profiles"][
+        profile_name
+    ]
+    history = profile.setdefault(
+        "launch_history",
+        [],
+    )
+    history.append({
+        "started": started,
+        "seconds": seconds,
+        "code": int(code),
+        "version":
+            meta.get(
+                "launch_version"
+            ),
+    })
+
+    del history[:-30]
+    save_config(self.cfg)
+
+    try:
+        handle = getattr(
+            self,
+            "minecraft_log_handle",
+            None,
+        )
+        if handle:
+            handle.flush()
+            handle.close()
+            self.minecraft_log_handle = None
+    except Exception:
+        pass
+
+    try:
+        text = Path(
+            log_path
+        ).read_text(
+            encoding="utf-8",
+            errors="ignore",
+        )[-30000:]
+    except Exception:
+        text = ""
+
+    self.minecraft_process = None
+
+    self.events.put(
+        (
+            "status",
+            self.t(
+                "ready"
+            ),
+        )
+    )
+
+    hint = self.analyze_crash(
+        text,
+        code,
+    )
+
+    if int(code) != 0:
+        self.qol_events_v710.put(
+            (
+                "crash",
+                {
+                    "code":
+                        int(code),
+                    "hint":
+                        hint,
+                    "profile":
+                        profile_name,
+                    "log_path":
+                        str(log_path),
+                },
+            )
+        )
+    else:
+        self.qol_events_v710.put(
+            (
+                "toast",
+                self.t(
+                    "ready"
+                ),
+                "success",
+            )
+        )
+
+
+# ------------------------------------------------------------
+# Crash detector
+# ------------------------------------------------------------
+
+def _v710_show_crash_detector(self, payload):
+    if not self.cfg.get(
+        "crash_popup",
+        True,
+    ):
+        return
+
+    old = getattr(
+        self,
+        "_crash_window_v710",
+        None,
+    )
+
+    if old is not None:
+        try:
+            old.destroy()
+        except Exception:
+            pass
+
+    win = ctk.CTkToplevel(
+        self
+    )
+    self._crash_window_v710 = win
+
+    win.title(
+        self.t(
+            "v710_crash_title"
+        )
+    )
+    win.geometry(
+        "640x390"
+    )
+    win.minsize(
+        560,
+        340,
+    )
+    win.configure(
+        fg_color=BG
+    )
+    win.transient(
+        self
+    )
+
+    ctk.CTkLabel(
+        win,
+        text="!",
+        width=58,
+        height=58,
+        corner_radius=18,
+        fg_color="#4A242B",
+        text_color="#FF8D9B",
+        font=ctk.CTkFont(
+            size=28,
+            weight="bold",
+        ),
+    ).pack(
+        anchor="w",
+        padx=24,
+        pady=(24, 10),
+    )
+
+    ctk.CTkLabel(
+        win,
+        text=self.t(
+            "v710_crash_title"
+        ),
+        text_color=TEXT,
+        font=ctk.CTkFont(
+            size=23,
+            weight="bold",
+        ),
+    ).pack(
+        anchor="w",
+        padx=24,
+    )
+
+    ctk.CTkLabel(
+        win,
+        text=self.t(
+            "v710_crash_body",
+            profile=payload.get(
+                "profile",
+                "?",
+            ),
+            code=payload.get(
+                "code",
+                "?",
+            ),
+            hint=payload.get(
+                "hint",
+                "",
+            ),
+        ),
+        text_color=MUTED,
+        justify="left",
+        anchor="w",
+        wraplength=580,
+    ).pack(
+        fill="x",
+        padx=24,
+        pady=(8, 18),
+    )
+
+    buttons = ctk.CTkFrame(
+        win,
+        fg_color="transparent",
+    )
+    buttons.pack(
+        fill="x",
+        padx=24,
+        pady=(0, 20),
+    )
+
+    ctk.CTkButton(
+        buttons,
+        text=self.t(
+            "v710_open_log"
+        ),
+        fg_color=SURFACE_3,
+        hover_color=self.accent,
+        command=lambda:
+            self.open_path_v710(
+                payload.get(
+                    "log_path"
+                )
+            ),
+    ).pack(
+        side="left",
+        padx=(0, 7),
+    )
+
+    ctk.CTkButton(
+        buttons,
+        text=self.t(
+            "v710_diagnostics"
+        ),
+        fg_color=SURFACE_3,
+        hover_color=self.accent,
+        command=lambda:
+            (
+                setattr(
+                    self,
+                    "diagnostics_profile_name_v61",
+                    payload.get(
+                        "profile"
+                    ),
+                ),
+                win.destroy(),
+                self.show_diagnostics(),
+            ),
+    ).pack(
+        side="left",
+        padx=(0, 7),
+    )
+
+    ctk.CTkButton(
+        buttons,
+        text=self.t(
+            "v710_repair_profile"
+        ),
+        fg_color=self.accent,
+        hover_color=self.accent_hover,
+        command=lambda:
+            (
+                self.cfg.__setitem__(
+                    "selected",
+                    payload.get(
+                        "profile"
+                    ),
+                ),
+                win.destroy(),
+                self.install_profile(),
+            ),
+    ).pack(
+        side="left",
+    )
+
+    try:
+        win.lift()
+        win.focus_force()
+    except Exception:
+        pass
+
+
+# ------------------------------------------------------------
+# Drag & drop .jar / .mrpack
+# ------------------------------------------------------------
+
+def _v710_choose_drop_profile(self, path):
+    old = getattr(
+        self,
+        "_drop_profile_window_v710",
+        None,
+    )
+    if old is not None:
+        try:
+            old.destroy()
+        except Exception:
+            pass
+
+    win = ctk.CTkToplevel(
+        self
+    )
+    self._drop_profile_window_v710 = win
+    win.title(
+        self.t(
+            "v710_drop_title"
+        )
+    )
+    win.geometry(
+        "560x500"
+    )
+    win.configure(
+        fg_color=BG
+    )
+    win.transient(
+        self
+    )
+
+    ctk.CTkLabel(
+        win,
+        text=self.t(
+            "v710_drop_choose_profile",
+            name=Path(path).name,
+        ),
+        text_color=TEXT,
+        font=ctk.CTkFont(
+            size=20,
+            weight="bold",
+        ),
+        wraplength=500,
+        justify="left",
+    ).pack(
+        anchor="w",
+        padx=22,
+        pady=(20, 10),
+    )
+
+    body = ctk.CTkScrollableFrame(
+        win,
+        fg_color=BG,
+        corner_radius=0,
+    )
+    body.pack(
+        fill="both",
+        expand=True,
+        padx=14,
+        pady=(0, 14),
+    )
+
+    for name, profile in self.cfg[
+        "profiles"
+    ].items():
+        icon = self.profile_icon_ctk(
+            name,
+            32,
+        )
+
+        button = ctk.CTkButton(
+            body,
+            text=(
+                f"{name}\n"
+                f"Minecraft {profile.get('version')} • "
+                f"{profile.get('loader')}"
+            ),
+            image=icon,
+            compound="left",
+            anchor="w",
+            height=58,
+            fg_color=SURFACE_2,
+            hover_color=self.accent,
+            command=lambda n=name:
+                self.install_dropped_jar_v710(
+                    path,
+                    n,
+                    win,
+                ),
+        )
+        button._outerclient_drop_icon_v710 = icon
+        button.pack(
+            fill="x",
+            padx=6,
+            pady=4,
+        )
+
+
+def _v710_install_dropped_jar(
+    self,
+    path,
+    profile_name,
+    window=None,
+):
+    path = Path(path)
+
+    if (
+        path.suffix.casefold()
+        != ".jar"
+        or not path.is_file()
+    ):
+        return
+
+    target_dir = (
+        self.profile_instance_dir(
+            profile_name
+        )
+        / "mods"
+    )
+    target_dir.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+
+    target = target_dir / path.name
+
+    try:
+        shutil.copy2(
+            path,
+            target,
+        )
+
+        if window is not None:
+            try:
+                window.destroy()
+            except Exception:
+                pass
+
+        self.run_bg(
+            lambda:
+                self.scan_profile_metadata(
+                    profile_name
+                )
+        )
+
+        self.toast_v710(
+            self.t(
+                "v710_drop_added",
+                name=path.name,
+                profile=profile_name,
+            ),
+            "success",
+        )
+
+    except Exception as exc:
+        messagebox.showerror(
+            "OuterClient",
+            str(exc),
+        )
+
+
+def _v710_install_local_mrpack_worker(self, path):
+    try:
+        path = Path(path)
+
+        with zipfile.ZipFile(
+            path,
+            "r",
+        ) as pack:
+            try:
+                index = json.loads(
+                    pack.read(
+                        "modrinth.index.json"
+                    ).decode(
+                        "utf-8"
+                    )
+                )
+            except KeyError:
+                raise RuntimeError(
+                    self.t(
+                        "mrpack_no_index"
+                    )
+                )
+
+            dependencies = index.get(
+                "dependencies",
+                {},
+            )
+
+            mc_version = dependencies.get(
+                "minecraft"
+            )
+            if not mc_version:
+                raise RuntimeError(
+                    "Modpack does not define Minecraft version."
+                )
+
+            loader = self.modpack_loader_from_dependencies(
+                dependencies
+            )
+
+            loader_version = None
+            key = {
+                "Fabric":
+                    "fabric-loader",
+                "Quilt":
+                    "quilt-loader",
+                "NeoForge":
+                    "neoforge",
+                "Forge":
+                    "forge",
+            }.get(loader)
+
+            if key:
+                loader_version = dependencies.get(
+                    key
+                )
+
+            title = (
+                index.get("name")
+                or path.stem
+            )
+            profile_name = self.unique_profile_name(
+                title
+            )
+            instance = self.profile_instance_dir(
+                profile_name
+            )
+            instance.mkdir(
+                parents=True,
+                exist_ok=True,
+            )
+
+            files = [
+                item
+                for item in index.get(
+                    "files",
+                    [],
+                )
+                if (
+                    item.get(
+                        "env",
+                        {},
+                    ).get(
+                        "client",
+                        "required",
+                    )
+                    != "unsupported"
+                )
+            ]
+
+            total = max(
+                1,
+                len(files),
+            )
+
+            for pos, item in enumerate(
+                files
+            ):
+                downloads = item.get(
+                    "downloads"
+                ) or []
+
+                if not downloads:
+                    continue
+
+                target = safe_child(
+                    instance,
+                    item.get(
+                        "path",
+                        "",
+                    ),
+                )
+
+                self.stream_download(
+                    downloads[0],
+                    target,
+                    item.get(
+                        "hashes",
+                        {},
+                    ),
+                    progress_callback=(
+                        lambda ratio, filename,
+                        p=pos, count=total:
+                            self.queue_bar_event(
+                                f"{title} • {filename}",
+                                (p + ratio) / count,
+                                count - p - 1,
+                            )
+                    ),
+                )
+
+            for prefix in (
+                "overrides/",
+                "client-overrides/",
+            ):
+                for member in pack.infolist():
+                    if (
+                        member.is_dir()
+                        or not member.filename.startswith(
+                            prefix
+                        )
+                    ):
+                        continue
+
+                    relative = member.filename[
+                        len(prefix):
+                    ]
+
+                    if not relative:
+                        continue
+
+                    target = safe_child(
+                        instance,
+                        relative,
+                    )
+                    target.parent.mkdir(
+                        parents=True,
+                        exist_ok=True,
+                    )
+
+                    with (
+                        pack.open(
+                            member,
+                            "r",
+                        ) as src,
+                        target.open(
+                            "wb"
+                        ) as dst,
+                    ):
+                        shutil.copyfileobj(
+                            src,
+                            dst,
+                        )
+
+            self.cfg["profiles"][
+                profile_name
+            ] = {
+                "version":
+                    mc_version,
+                "loader":
+                    loader,
+                "loader_version":
+                    loader_version,
+                "preset":
+                    "Balanced",
+                "ram":
+                    0,
+                "jvm_args":
+                    "",
+                "game_args":
+                    "",
+                "resolution_width":
+                    0,
+                "resolution_height":
+                    0,
+                "launch_history":
+                    [],
+            }
+
+            self.cfg[
+                "selected"
+            ] = profile_name
+            save_config(self.cfg)
+
+            self.qol_events_v710.put(
+                (
+                    "toast",
+                    self.t(
+                        "v710_drop_mrpack_done",
+                        profile=profile_name,
+                    ),
+                    "success",
+                )
+            )
+
+    except Exception as exc:
+        self.qol_events_v710.put(
+            (
+                "error",
+                f".mrpack:\n{exc}",
+            )
+        )
+
+
+def _v710_handle_drop(self, event):
+    try:
+        raw = str(
+            event.data
+        )
+        files = list(
+            self.tk.splitlist(
+                raw
+            )
+        )
+    except Exception:
+        return
+
+    for value in files:
+        path = Path(
+            value
+        )
+
+        suffix = path.suffix.casefold()
+
+        if suffix == ".jar":
+            self.choose_drop_profile_v710(
+                path
+            )
+            return
+
+        if suffix == ".mrpack":
+            self.run_bg(
+                lambda p=path:
+                    self.install_local_mrpack_worker_v710(
+                        p
+                    )
+            )
+            return
+
+
+def _v710_setup_drag_drop(self):
+    try:
+        from tkinterdnd2 import (
+            DND_FILES,
+            TkinterDnD,
+        )
+        from tkinterdnd2.TkinterDnD import (
+            DnDWrapper,
+        )
+
+        TkinterDnD._require(
+            self
+        )
+
+        for name in (
+            "drop_target_register",
+            "dnd_bind",
+        ):
+            if not hasattr(
+                self,
+                name,
+            ):
+                method = getattr(
+                    DnDWrapper,
+                    name,
+                )
+                setattr(
+                    self,
+                    name,
+                    method.__get__(
+                        self,
+                        self.__class__,
+                    ),
+                )
+
+        self.drop_target_register(
+            DND_FILES
+        )
+        self.dnd_bind(
+            "<<Drop>>",
+            self.handle_drop_v710,
+        )
+        self._dragdrop_ready_v710 = True
+        return True
+
+    except Exception as exc:
+        self._dragdrop_ready_v710 = False
+        try:
+            self.write_log(
+                "Drag & drop 7.1: "
+                + str(exc)
+            )
+        except Exception:
+            pass
+        return False
+
+
+# ------------------------------------------------------------
+# Appearance / compact mode
+# ------------------------------------------------------------
+
+def _v710_lighter_hex(self, value, amount=22):
+    try:
+        raw = value.lstrip("#")
+        r = int(
+            raw[0:2],
+            16,
+        )
+        g = int(
+            raw[2:4],
+            16,
+        )
+        b = int(
+            raw[4:6],
+            16,
+        )
+
+        r = min(
+            255,
+            r + amount,
+        )
+        g = min(
+            255,
+            g + amount,
+        )
+        b = min(
+            255,
+            b + amount,
+        )
+
+        return f"#{r:02X}{g:02X}{b:02X}"
+    except Exception:
+        return value
+
+
+def _v710_apply_interface_values(self):
+    mode = str(
+        self.cfg.get(
+            "appearance_mode",
+            "system",
+        )
+    ).casefold()
+
+    try:
+        ctk.set_appearance_mode(
+            "system"
+            if mode == "system"
+            else "dark"
+        )
+    except Exception:
+        pass
+
+    accent = str(
+        self.cfg.get(
+            "custom_accent",
+            "",
+        )
+        or ""
+    ).strip()
+
+    if re.fullmatch(
+        r"#[0-9A-Fa-f]{6}",
+        accent,
+    ):
+        self.accent = accent.upper()
+        self.accent_hover = (
+            self.lighter_hex_v710(
+                self.accent
+            )
+        )
+
+    compact = bool(
+        self.cfg.get(
+            "compact_mode",
+            False,
+        )
+    )
+
+    try:
+        if compact:
+            self.minsize(
+                900,
+                620,
+            )
+            self.geometry(
+                "1020x700"
+            )
+            if self.sidebar is not None:
+                self.sidebar.configure(
+                    width=185
+                )
+        else:
+            self.minsize(
+                1000,
+                700,
+            )
+            if (
+                self.winfo_width()
+                < 1100
+            ):
+                self.geometry(
+                    "1260x820"
+                )
+            if self.sidebar is not None:
+                self.sidebar.configure(
+                    width=220
+                )
+    except Exception:
+        pass
+
+
+def _v710_apply_interface_settings(
+    self,
+    compact_var,
+    system_var,
+    accent_var,
+):
+    accent = accent_var.get().strip()
+
+    if (
+        accent
+        and not re.fullmatch(
+            r"#[0-9A-Fa-f]{6}",
+            accent,
+        )
+    ):
+        messagebox.showerror(
+            "OuterClient",
+            self.t(
+                "v710_accent_invalid"
+            ),
+        )
+        return
+
+    self.cfg[
+        "compact_mode"
+    ] = bool(
+        compact_var.get()
+    )
+    self.cfg[
+        "appearance_mode"
+    ] = (
+        "system"
+        if system_var.get()
+        else "dark"
+    )
+    self.cfg[
+        "custom_accent"
+    ] = accent.upper()
+
+    save_config(self.cfg)
+    self.apply_interface_values_v710()
+
+    # Re-render so the custom accent reaches all newly created widgets.
+    self.show_settings()
+
+
+def _v710_show_settings(self):
+    captured = {}
+    original_page = self.page
+
+    def capture_page(*args, **kwargs):
+        page = original_page(
+            *args,
+            **kwargs,
+        )
+        captured["page"] = page
+        return page
+
+    self.page = capture_page
+
+    try:
+        _V710_SHOW_SETTINGS_BASE(
+            self
+        )
+    finally:
+        try:
+            delattr(
+                self,
+                "page",
+            )
+        except Exception:
+            self.page = original_page
+
+    page = captured.get(
+        "page"
+    )
+
+    if page is None:
+        return
+
+    card = self.card(
+        page,
+        14,
+    )
+    card.grid(
+        row=30,
+        column=0,
+        sticky="ew",
+        padx=36,
+        pady=(0, 28),
+    )
+    card.grid_columnconfigure(
+        1,
+        weight=1,
+    )
+
+    ctk.CTkLabel(
+        card,
+        text=self.t(
+            "v710_qol_settings"
+        ),
+        text_color=TEXT,
+        font=ctk.CTkFont(
+            size=18,
+            weight="bold",
+        ),
+    ).grid(
+        row=0,
+        column=0,
+        columnspan=3,
+        sticky="w",
+        padx=18,
+        pady=(15, 10),
+    )
+
+    compact_var = ctk.BooleanVar(
+        value=bool(
+            self.cfg.get(
+                "compact_mode",
+                False,
+            )
+        )
+    )
+    system_var = ctk.BooleanVar(
+        value=(
+            self.cfg.get(
+                "appearance_mode",
+                "system",
+            )
+            == "system"
+        )
+    )
+    accent_var = ctk.StringVar(
+        value=str(
+            self.cfg.get(
+                "custom_accent",
+                "",
+            )
+        )
+    )
+
+    ctk.CTkSwitch(
+        card,
+        text=self.t(
+            "v710_compact_mode"
+        ),
+        variable=compact_var,
+        progress_color=self.accent,
+    ).grid(
+        row=1,
+        column=0,
+        sticky="w",
+        padx=18,
+        pady=7,
+    )
+
+    ctk.CTkSwitch(
+        card,
+        text=self.t(
+            "v710_system_theme"
+        ),
+        variable=system_var,
+        progress_color=self.accent,
+    ).grid(
+        row=2,
+        column=0,
+        sticky="w",
+        padx=18,
+        pady=7,
+    )
+
+    ctk.CTkLabel(
+        card,
+        text=self.t(
+            "v710_custom_accent"
+        ),
+        text_color=MUTED,
+    ).grid(
+        row=1,
+        column=1,
+        sticky="w",
+        padx=(12, 6),
+    )
+
+    ctk.CTkEntry(
+        card,
+        textvariable=accent_var,
+        width=150,
+        height=36,
+        fg_color=SURFACE_2,
+        border_color=BORDER,
+        placeholder_text="#7C5CFC",
+    ).grid(
+        row=2,
+        column=1,
+        sticky="w",
+        padx=(12, 6),
+    )
+
+    ctk.CTkButton(
+        card,
+        text=self.t(
+            "v710_apply_interface"
+        ),
+        height=38,
+        fg_color=self.accent,
+        hover_color=self.accent_hover,
+        command=lambda:
+            self.apply_interface_settings_v710(
+                compact_var,
+                system_var,
+                accent_var,
+            ),
+    ).grid(
+        row=1,
+        column=2,
+        rowspan=2,
+        padx=18,
+    )
+
+
+# ------------------------------------------------------------
+# QoL event queue
+# ------------------------------------------------------------
+
+def _v710_process_qol_events(self):
+    try:
+        while True:
+            event = self.qol_events_v710.get_nowait()
+            kind = event[0]
+
+            if kind == "toast":
+                self.toast_v710(
+                    event[1],
+                    event[2]
+                    if len(event) > 2
+                    else "info",
+                )
+
+            elif kind == "crash":
+                self.show_crash_detector_v710(
+                    event[1]
+                )
+
+            elif kind == "loader_logo":
+                self.apply_loader_logo_v710(
+                    event[1],
+                    event[2],
+                )
+
+            elif kind == "error":
+                messagebox.showerror(
+                    "OuterClient",
+                    event[1],
+                )
+
+    except queue.Empty:
+        pass
+
+    try:
+        self.after(
+            90,
+            self.process_qol_events_v710,
+        )
+    except Exception:
+        pass
+
+
+# ------------------------------------------------------------
+# What's New
+# ------------------------------------------------------------
+
+def _v710_show_whats_new(self, mark_seen=True):
+    self.set_active_page(
+        "whats_new"
+    )
+    self.clear_content()
+
+    outer = ctk.CTkScrollableFrame(
+        self.content,
+        fg_color=BG,
+        corner_radius=0,
+        scrollbar_button_color=SURFACE_3,
+        scrollbar_button_hover_color=BORDER,
+    )
+    outer.grid(
+        row=0,
+        column=0,
+        sticky="nsew",
+    )
+    outer.grid_columnconfigure(
+        0,
+        weight=1,
+    )
+
+    self.page_header(
+        outer,
+        self.t(
+            "v710_whats_new_eyebrow"
+        ),
+        self.t(
+            "v61_whats_new_title"
+        ),
+        self.t(
+            "v61_whats_new_subtitle"
+        ),
+    )
+
+    self._whats_new_state_v63 = {
+        "header":
+            self.t(
+                "v61_whats_new_title"
+            ),
+        "versions": [
+            "7.1.0",
+            "7.0",
+            "6.4.1",
+            "6.4.0",
+            "6.3.9",
+            "6.3.8",
+        ],
+        "current":
+            "7.1.0",
+    }
+
+    self.release_card_v63(
+        outer,
+        1,
+        self.t(
+            "v61_current_version"
+        ),
+        self.t(
+            "v710_whats_new_title"
+        ),
+        self.t(
+            "v710_whats_new_date"
+        ),
+        [
+            self.t(
+                "v710_change_windows_taskbar"
+            ),
+            self.t(
+                "v710_change_profiles"
+            ),
+            self.t(
+                "v710_change_mods"
+            ),
+            self.t(
+                "v710_change_crash"
+            ),
+            self.t(
+                "v710_change_qol"
+            ),
+            self.t(
+                "v710_change_loader_logos"
+            ),
+        ],
+        current=True,
+    )
+
+    self.release_card_v63(
+        outer,
+        2,
+        self.t(
+            "v61_previous_version"
+        ),
+        self.t(
+            "v700_whats_new_title"
+        ),
+        self.t(
+            "v700_whats_new_date"
+        ),
+        [
+            self.t(
+                "v700_change_links"
+            ),
+            self.t(
+                "v700_change_link_fallback"
+            ),
+        ],
+    )
+
+    if mark_seen:
+        self.mark_whats_new_seen_v62()
+
+
+# ------------------------------------------------------------
+# Init / bindings
+# ------------------------------------------------------------
+
+def _v710_init(self):
+    self.qol_events_v710 = queue.Queue()
+    self._toast_widget_v710 = None
+    self._crash_window_v710 = None
+    self._v710_launch_meta = {}
+    self._dragdrop_ready_v710 = False
+    self._windows_taskbar_ready_v710 = False
+    self._windows_hicon_v710 = None
+
+    _V710_INIT_BASE(self)
+
+    self.apply_interface_values_v710()
+
+    self.after(
+        90,
+        self.process_qol_events_v710,
+    )
+
+    self.after(
+        280,
+        self.setup_drag_drop_v710,
+    )
+
+    if sys.platform.startswith("win"):
+        self.after(
+            40,
+            self.apply_windows_taskbar_v710,
+        )
+        self.after(
+            250,
+            self.apply_windows_taskbar_v710,
+        )
+        self.after(
+            900,
+            self.apply_windows_taskbar_v710,
+        )
+
+    # Loader cards may already exist if the startup page was profile creation
+    # in a restored session; normally this is a no-op.
+    self.after(
+        400,
+        self.refresh_loader_logos_v710,
+    )
+
+
+# Windows
+OuterClient.windows_hwnd_v710 = _v710_windows_hwnd
+OuterClient.apply_windows_taskbar_v710 = _v710_apply_windows_taskbar
+OuterClient.set_custom_override_v5101 = _v710_set_custom_override
+OuterClient.custom_on_map_v5101 = _v710_window_map
+OuterClient.custom_minimize_v5101 = _v710_minimize
+
+# Toast/event
+OuterClient.toast_v710 = _v710_toast
+OuterClient.process_qol_events_v710 = _v710_process_qol_events
+
+# Loader logos
+OuterClient.loader_logo_cache_dir_v710 = _v710_loader_logo_cache_dir
+OuterClient.loader_logo_path_v710 = _v710_loader_logo_path
+OuterClient.apply_loader_logo_v710 = _v710_apply_loader_logo
+OuterClient.load_loader_logo_worker_v710 = _v710_load_loader_logo_worker
+OuterClient.refresh_loader_logos_v710 = _v710_refresh_loader_logos
+
+# Profiles
+OuterClient.profile_portable_paths_v710 = _v710_profile_portable_paths
+OuterClient.duplicate_profile_v710 = _v710_duplicate_profile
+OuterClient.export_profile_v710 = _v710_export_profile
+OuterClient.export_selected_profile = _v710_export_profile
+OuterClient.import_profile_bundle = _v710_import_profile
+OuterClient.toggle_profile_pin_v710 = _v710_toggle_pin
+OuterClient.open_screenshots_v710 = _v710_open_screenshots
+OuterClient.open_path_v710 = _v710_open_path
+OuterClient.save_profile_settings_v710 = _v710_save_profile_settings
+OuterClient.show_profile_manager = _v710_show_profile_manager
+OuterClient.show_home = _v710_show_home
+
+# Explore / Library
+OuterClient.project_status_v710 = _v710_project_status
+OuterClient.modrinth_card = _v710_modrinth_card
+OuterClient.library_check_updates_v710 = _v710_library_check_updates
+OuterClient.library_update_all_v710 = _v710_library_update_all
+OuterClient.show_content_library_v6 = _v710_show_library
+
+# Launch / crash
+OuterClient.split_launch_args_v710 = _v710_split_args
+OuterClient.launch_installed_v54 = _v710_launch_installed
+OuterClient.monitor_minecraft_process = _v710_monitor_process
+OuterClient.show_crash_detector_v710 = _v710_show_crash_detector
+
+# Drag/drop
+OuterClient.choose_drop_profile_v710 = _v710_choose_drop_profile
+OuterClient.install_dropped_jar_v710 = _v710_install_dropped_jar
+OuterClient.install_local_mrpack_worker_v710 = _v710_install_local_mrpack_worker
+OuterClient.handle_drop_v710 = _v710_handle_drop
+OuterClient.setup_drag_drop_v710 = _v710_setup_drag_drop
+
+# Appearance
+OuterClient.lighter_hex_v710 = _v710_lighter_hex
+OuterClient.apply_interface_values_v710 = _v710_apply_interface_values
+OuterClient.apply_interface_settings_v710 = _v710_apply_interface_settings
+OuterClient.show_settings = _v710_show_settings
+
+# Changelog / init
+OuterClient.show_whats_new_v61 = _v710_show_whats_new
+OuterClient.__init__ = _v710_init
+
+
+
+# 7.1 profile-create logo hook.
+_V710_CREATE_PROFILE_BASE = OuterClient.open_create_profile
+
+
+def _v710_open_create_profile(self):
+    result = _V710_CREATE_PROFILE_BASE(self)
+    self.after(
+        80,
+        self.refresh_loader_logos_v710,
+    )
+    return result
+
+
+OuterClient.open_create_profile = _v710_open_create_profile
 
 
 

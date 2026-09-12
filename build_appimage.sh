@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-VERSION="7.0"
+VERSION="7.1.0"
 
 python3 -m venv .build-venv
 source .build-venv/bin/activate
@@ -34,6 +34,7 @@ pyinstaller \
   --collect-all customtkinter \
   --collect-all minecraft_launcher_lib \
   --collect-all PIL \
+  --collect-all tkinterdnd2 \
   --hidden-import PIL.ImageTk \
   --hidden-import PIL._tkinter_finder \
   outerclient.py
@@ -54,7 +55,7 @@ Terminal=false
 StartupNotify=true
 StartupWMClass=Outerclient
 X-KDE-StartupNotify=true
-X-AppImage-Version=7.0
+X-AppImage-Version=7.1.0
 EOF
 
 cat > AppDir/AppRun <<'EOF'

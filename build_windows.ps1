@@ -1,6 +1,6 @@
 $ErrorActionPreference = "Stop"
 
-$Version = "7.0"
+$Version = "7.1.0"
 
 py -3.13 -m venv .build-venv
 & .\.build-venv\Scripts\Activate.ps1
@@ -25,6 +25,7 @@ pyinstaller `
   --collect-all customtkinter `
   --collect-all minecraft_launcher_lib `
   --collect-all PIL `
+  --collect-all tkinterdnd2 `
   --hidden-import PIL.ImageTk `
   --hidden-import PIL._tkinter_finder `
   outerclient.py

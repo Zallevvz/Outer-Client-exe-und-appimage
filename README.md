@@ -1,4 +1,4 @@
-# OuterClient 7.0
+# OuterClient 7.1.0
 
 ## Fixes and optimization
 - What's New is persisted in `~/.outerclient-state.json` and opens automatically only once per release.
@@ -13,8 +13,8 @@
 
 ## Build
 GitHub Actions:
-`Build and Release OuterClient 7.0`
+`Build and Release OuterClient 7.1.0`
 
 Expected artifacts:
-- `OuterClient-v7.0-x86_64.AppImage`
-- `OuterClient-v7.0.exe`
+- `OuterClient-v7.1.0-x86_64.AppImage`
+- `OuterClient-v7.1.0.exe`
