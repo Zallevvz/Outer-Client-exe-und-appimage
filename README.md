@@ -1,4 +1,4 @@
-# OuterClient 6.3.4
+# OuterClient 6.3.5
 
 ## Fixes and optimization
 - What's New is persisted in `~/.outerclient-state.json` and opens automatically only once per release.
@@ -13,8 +13,8 @@
 
 ## Build
 GitHub Actions:
-`Build and Release OuterClient 6.3.4`
+`Build and Release OuterClient 6.3.5`
 
 Expected artifacts:
-- `OuterClient-v6.3.4-x86_64.AppImage`
-- `OuterClient-v6.3.4.exe`
+- `OuterClient-v6.3.5-x86_64.AppImage`
+- `OuterClient-v6.3.5.exe`

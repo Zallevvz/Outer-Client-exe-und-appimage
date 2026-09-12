@@ -38,7 +38,7 @@ except Exception:
 
 
 APP_NAME = "OuterClient"
-APP_VERSION = "6.3.4"
+APP_VERSION = "6.3.5"
 CONFIG_PATH = Path.home() / ".outerclient.json"
 REDIRECT_URI = "http://localhost:8765/callback"
 MICROSOFT_CLIENT_ID = "fb14d1c4-7d14-4a35-99a7-3f921f7a1e77"
@@ -614,6 +614,11 @@ TEXTS = {
         "v634_whats_new_date": "Wrzesień 2026",
         "v634_change_diagnostics": "Naprawiono Diagnostykę: nowy wybór profilu jest budowany bezpośrednio, bez zawodnego przeszukiwania wnętrza CTkScrollableFrame.",
         "v634_change_ci": "Przebudowano smoke test GitHub Actions — testuje realne błędy uruchomienia i callbacków, a nie zależne od Xvfb szczegóły geometrii widgetów.",
+        "v635_whats_new_eyebrow": "OUTERCLIENT 6.3.5",
+        "v635_whats_new_title": "OuterClient 6.3.5",
+        "v635_whats_new_date": "Wrzesień 2026",
+        "v635_change_taskbar": "Naprawiono sekcję „Pasek zadań / dock” u źródła: jest dodawana do prawdziwej przewijanej strony, a nie do wrappera CTkScrollableFrame.",
+        "v635_change_titlebar": "Customowy pasek KDE używa teraz dedykowanej reguły KWin „bez obramowania”, dzięki czemu okno pozostaje normalnie zarządzane, ale bez natywnego paska.",
         "v58_update_checking": "Sprawdzanie aktualizacji OuterClient…",
         "v58_update_failed": "Nie udało się sprawdzić aktualizacji: {error}",
         "v58_latest": "Masz najnowszą wersję OuterClient ({version}).",
@@ -1207,6 +1212,11 @@ TEXTS = {
         "v634_whats_new_date": "September 2026",
         "v634_change_diagnostics": "Fixed Diagnostics: the new profile selector is now built directly instead of relying on fragile CTkScrollableFrame child discovery.",
         "v634_change_ci": "Rebuilt the GitHub Actions smoke test so it blocks on real startup/callback failures rather than Xvfb-dependent widget geometry details.",
+        "v635_whats_new_eyebrow": "OUTERCLIENT 6.3.5",
+        "v635_whats_new_title": "OuterClient 6.3.5",
+        "v635_whats_new_date": "September 2026",
+        "v635_change_taskbar": "Fixed the Taskbar / dock section at the source: it is now added to the actual scrollable page instead of the CTkScrollableFrame wrapper.",
+        "v635_change_titlebar": "The KDE custom title bar now uses a dedicated KWin no-border rule, keeping the window normally managed while removing the native decoration.",
         "v5_change_profile": "Change profile",
         "v5_previous": "Previous",
         "v5_next": "Next",
@@ -1597,7 +1607,7 @@ class OuterClient(ctk.CTk):
                 try:
                     import ctypes
                     ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(
-                        "OuterClient.Launcher.6.3.4"
+                        "OuterClient.Launcher.6.3.5"
                     )
                 except Exception:
                     pass
@@ -34178,6 +34188,463 @@ OuterClient.show_diagnostics = _v634_show_diagnostics
 OuterClient.set_active_page = _v634_set_active_page
 OuterClient.show_whats_new_v61 = _v634_show_whats_new
 OuterClient.__init__ = _v634_init
+
+
+
+# ============================================================
+# OuterClient 6.3.5
+# - real scroll-flow fix for Taskbar / dock
+# - real KDE no-border rule for the custom titlebar
+# ============================================================
+
+_V635_INIT_BASE = OuterClient.__init__
+
+
+def _v635_show_system_tools(self):
+    # Capture the actual CTkScrollableFrame returned by self.page().
+    # self.content.winfo_children()[0] is the wrapper frame and must not
+    # receive scroll-content cards.
+    original_page_method = self.page
+    captured = {}
+
+    def capture_page(*args, **kwargs):
+        page = original_page_method(*args, **kwargs)
+        captured["page"] = page
+        return page
+
+    self.page = capture_page
+    try:
+        _V63_SYSTEM_TOOLS_BASE(self)
+    finally:
+        try:
+            delattr(self, "page")
+        except Exception:
+            self.page = original_page_method
+
+    page = captured.get("page")
+    if page is None:
+        self.write_log("System Tools: real scrollable page was not captured")
+        return
+
+    self._system_tools_real_page_v635 = page
+    self._system_tools_layout_v635 = {
+        "java_row": 2,
+        "updates_row": 3,
+        "shortcut_row": 4,
+        "taskbar_row": 5,
+    }
+
+    card = self.card(page, 14)
+    self._taskbar_card_v635 = card
+    card.grid(
+        row=5,
+        column=0,
+        sticky="ew",
+        padx=36,
+        pady=(0, 24),
+    )
+
+    ctk.CTkLabel(
+        card,
+        text=self.t("v62_taskbar_title"),
+        text_color=TEXT,
+        font=ctk.CTkFont(size=19, weight="bold"),
+    ).pack(anchor="w", padx=20, pady=(16, 3))
+
+    ctk.CTkLabel(
+        card,
+        text=self.t("v62_taskbar_desc"),
+        text_color=MUTED,
+        anchor="w",
+        justify="left",
+        wraplength=850,
+    ).pack(anchor="w", padx=20, pady=(0, 12))
+
+    buttons = ctk.CTkFrame(card, fg_color="transparent")
+    buttons.pack(fill="x", padx=20, pady=(0, 16))
+
+    ctk.CTkButton(
+        buttons,
+        text=self.t("v62_taskbar_add"),
+        fg_color=self.accent,
+        hover_color=self.accent_hover,
+        command=self.start_taskbar_pin_v63,
+    ).pack(side="left")
+
+    ctk.CTkButton(
+        buttons,
+        text=self.t("v62_taskbar_open_apps"),
+        fg_color=SURFACE_3,
+        hover_color=self.accent,
+        command=self.open_app_location_v62,
+    ).pack(side="left", padx=8)
+
+
+def _v635_is_kde(self):
+    desktop = (
+        os.environ.get("XDG_CURRENT_DESKTOP", "")
+        + " "
+        + os.environ.get("DESKTOP_SESSION", "")
+    ).casefold()
+    return "kde" in desktop or "plasma" in desktop
+
+
+def _v635_read_kconfig(self, group, key, default=""):
+    reader = shutil.which("kreadconfig6") or shutil.which("kreadconfig5")
+    if not reader:
+        return default
+
+    try:
+        result = subprocess.run(
+            [
+                reader,
+                "--file", "kwinrulesrc",
+                "--group", group,
+                "--key", key,
+            ],
+            capture_output=True,
+            text=True,
+            timeout=3,
+        )
+        if result.returncode == 0:
+            value = result.stdout.strip()
+            return value if value else default
+    except Exception:
+        pass
+
+    return default
+
+
+def _v635_write_kconfig(self, group, key, value):
+    writer = shutil.which("kwriteconfig6") or shutil.which("kwriteconfig5")
+    if not writer:
+        return False
+
+    try:
+        result = subprocess.run(
+            [
+                writer,
+                "--file", "kwinrulesrc",
+                "--group", str(group),
+                "--key", str(key),
+                str(value),
+            ],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            timeout=3,
+        )
+        return result.returncode == 0
+    except Exception:
+        return False
+
+
+def _v635_reconfigure_kwin(self):
+    qdbus = shutil.which("qdbus6") or shutil.which("qdbus")
+    if not qdbus:
+        return False
+
+    variants = (
+        [qdbus, "org.kde.KWin", "/KWin", "reconfigure"],
+        [qdbus, "org.kde.KWin", "/KWin", "org.kde.KWin.reconfigure"],
+    )
+
+    for command in variants:
+        try:
+            result = subprocess.run(
+                command,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                timeout=4,
+            )
+            if result.returncode == 0:
+                return True
+        except Exception:
+            pass
+
+    return False
+
+
+def _v635_install_kwin_rule(self):
+    if not sys.platform.startswith("linux"):
+        return False
+    if os.environ.get("OUTERCLIENT_SMOKE_TEST") == "1":
+        return False
+    if not self.is_kde_v635():
+        return False
+
+    writer = shutil.which("kwriteconfig6") or shutil.which("kwriteconfig5")
+    if not writer:
+        return False
+
+    rule_id = "outerclient-noborder"
+
+    rules_raw = self.read_kconfig_v635("General", "rules", "")
+    rule_ids = [
+        item.strip()
+        for item in rules_raw.split(",")
+        if item.strip()
+    ]
+
+    if not rule_ids:
+        try:
+            count = int(
+                self.read_kconfig_v635("General", "count", "0") or "0"
+            )
+        except Exception:
+            count = 0
+
+        if count > 0:
+            rule_ids = [str(i) for i in range(1, count + 1)]
+
+    if rule_id not in rule_ids:
+        rule_ids.append(rule_id)
+
+    # Dedicated rule: only window decoration is changed.
+    # Taskbar, Alt+Tab, focus, minimize and maximize remain WM-managed.
+    values = {
+        "Description": "OuterClient custom title bar",
+        "wmclass": "outerclient",
+        "wmclassmatch": "2",
+        "wmclasscomplete": "false",
+        "types": "1",
+        "noborder": "true",
+        "noborderrule": "2",
+    }
+
+    ok = True
+    for key, value in values.items():
+        ok = self.write_kconfig_v635(rule_id, key, value) and ok
+
+    ok = (
+        self.write_kconfig_v635(
+            "General",
+            "rules",
+            ",".join(rule_ids),
+        )
+        and ok
+    )
+
+    ok = (
+        self.write_kconfig_v635(
+            "General",
+            "count",
+            str(len(rule_ids)),
+        )
+        and ok
+    )
+
+    if ok:
+        self.reconfigure_kwin_v635()
+        self._kwin_rule_ready_v635 = True
+
+    return ok
+
+
+def _v635_apply_motif_backup(self):
+    try:
+        return bool(self.apply_motif_x11_v633())
+    except Exception:
+        return False
+
+
+def _v635_finish_custom_titlebar(self):
+    self.set_topmost_false_v63()
+
+    try:
+        self.update_idletasks()
+    except Exception:
+        pass
+
+    self.apply_motif_backup_v635()
+    self.apply_window_identity_v63()
+    self.show_custom_titlebar_layout_v63()
+    self._linux_custom_titlebar_ready_v635 = True
+
+
+def _v635_apply_linux_custom_titlebar(self, force=False):
+    if not sys.platform.startswith("linux"):
+        return _V632_LINUX_WINDOW_BASE(self, force)
+
+    if os.environ.get("OUTERCLIENT_SMOKE_TEST") == "1":
+        self.set_topmost_false_v63()
+        return
+
+    self.set_topmost_false_v63()
+
+    # Keep the window normally managed by KWin.
+    try:
+        self.overrideredirect(False)
+    except Exception:
+        pass
+
+    try:
+        self.attributes("-type", "normal")
+    except Exception:
+        pass
+
+    try:
+        self.update_idletasks()
+    except Exception:
+        pass
+
+    kde_rule = self.install_kwin_rule_v635()
+    motif = self.apply_motif_backup_v635()
+
+    if force and not getattr(self, "_linux_remapped_v635", False):
+        self._linux_remapped_v635 = True
+
+        # Avoid a temporary native+custom double bar while KWin reloads rules.
+        self.show_native_titlebar_layout_v63()
+
+        try:
+            self.withdraw()
+        except Exception:
+            pass
+
+        def remap():
+            if kde_rule:
+                self.reconfigure_kwin_v635()
+
+            self.apply_motif_backup_v635()
+
+            try:
+                self.deiconify()
+            except Exception:
+                pass
+
+            self.after(120, self.finish_custom_titlebar_v635)
+            self.after(350, self.finish_custom_titlebar_v635)
+
+        self.after(40, remap)
+        return
+
+    if kde_rule or motif:
+        self.after(80, self.finish_custom_titlebar_v635)
+    else:
+        # Never leave a persistent double titlebar if decoration removal
+        # isn't supported.
+        self.show_native_titlebar_layout_v63()
+
+
+def _v635_linux_map(self, event=None):
+    if not sys.platform.startswith("linux"):
+        return _V63_WINDOW_MAP_BASE(self, event)
+
+    if event is not None and getattr(event, "widget", None) is not self:
+        return
+
+    self.set_topmost_false_v63()
+
+    if os.environ.get("OUTERCLIENT_SMOKE_TEST") == "1":
+        return
+
+    self.after(
+        90,
+        lambda: self.apply_linux_custom_titlebar_v635(force=False),
+    )
+
+
+def _v635_show_whats_new(self, mark_seen=True):
+    self.set_active_page("whats_new")
+    self.clear_content()
+
+    outer = ctk.CTkScrollableFrame(
+        self.content,
+        fg_color=BG,
+        corner_radius=0,
+        scrollbar_button_color=SURFACE_3,
+        scrollbar_button_hover_color=BORDER,
+    )
+    outer.grid(row=0, column=0, sticky="nsew")
+    outer.grid_columnconfigure(0, weight=1)
+
+    self.page_header(
+        outer,
+        self.t("v635_whats_new_eyebrow"),
+        self.t("v61_whats_new_title"),
+        self.t("v61_whats_new_subtitle"),
+    )
+
+    self._whats_new_state_v63 = {
+        "header": self.t("v61_whats_new_title"),
+        "versions": [
+            "6.3.5", "6.3.4", "6.3.3", "6.3.2",
+            "6.3.1", "6.3", "6.2", "6.1", "6.0",
+        ],
+        "current": "6.3.5",
+    }
+
+    self.release_card_v63(
+        outer,
+        1,
+        self.t("v61_current_version"),
+        self.t("v635_whats_new_title"),
+        self.t("v635_whats_new_date"),
+        [
+            self.t("v635_change_taskbar"),
+            self.t("v635_change_titlebar"),
+        ],
+        current=True,
+    )
+
+    self.release_card_v63(
+        outer,
+        2,
+        self.t("v61_previous_version"),
+        self.t("v634_whats_new_title"),
+        self.t("v634_whats_new_date"),
+        [
+            self.t("v634_change_diagnostics"),
+            self.t("v634_change_ci"),
+        ],
+    )
+
+    if mark_seen:
+        self.mark_whats_new_seen_v62()
+
+
+def _v635_init(self):
+    self._kwin_rule_ready_v635 = False
+    self._linux_remapped_v635 = False
+    self._linux_custom_titlebar_ready_v635 = False
+
+    _V635_INIT_BASE(self)
+
+    self.set_topmost_false_v63()
+
+    if sys.platform.startswith("linux"):
+        self.after(
+            110,
+            lambda: self.apply_linux_custom_titlebar_v635(force=True),
+        )
+
+
+OuterClient.show_system_tools_settings = _v635_show_system_tools
+
+OuterClient.is_kde_v635 = _v635_is_kde
+OuterClient.read_kconfig_v635 = _v635_read_kconfig
+OuterClient.write_kconfig_v635 = _v635_write_kconfig
+OuterClient.reconfigure_kwin_v635 = _v635_reconfigure_kwin
+OuterClient.install_kwin_rule_v635 = _v635_install_kwin_rule
+OuterClient.apply_motif_backup_v635 = _v635_apply_motif_backup
+OuterClient.finish_custom_titlebar_v635 = _v635_finish_custom_titlebar
+OuterClient.apply_linux_custom_titlebar_v635 = _v635_apply_linux_custom_titlebar
+
+# Redirect every historical Linux titlebar entry point so delayed callbacks
+# from older versions cannot restore the old behavior.
+OuterClient.apply_linux_custom_titlebar_v633 = _v635_apply_linux_custom_titlebar
+OuterClient.apply_linux_titlebar_v632 = _v635_apply_linux_custom_titlebar
+OuterClient.apply_linux_window_mode_v631 = _v635_apply_linux_custom_titlebar
+OuterClient.apply_linux_window_mode_v63 = _v635_apply_linux_custom_titlebar
+OuterClient.apply_linux_titlebar_v62 = _v635_apply_linux_custom_titlebar
+OuterClient.apply_linux_managed_titlebar_v61 = _v635_apply_linux_custom_titlebar
+OuterClient.apply_borderless_once_v5103 = _v635_apply_linux_custom_titlebar
+OuterClient.force_borderless_v5102 = _v635_apply_linux_custom_titlebar
+OuterClient.reapply_custom_titlebar_v633 = _v635_finish_custom_titlebar
+OuterClient.custom_on_map_v5101 = _v635_linux_map
+
+OuterClient.show_whats_new_v61 = _v635_show_whats_new
+OuterClient.__init__ = _v635_init
 
 
 

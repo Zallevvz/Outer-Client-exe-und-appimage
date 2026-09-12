@@ -1,0 +1,50 @@
+OuterClient 6.3.5 — validation report
+
+ROOT CAUSE 1: TASKBAR / DOCK OVERLAY
+The previous implementation rediscovered the System Tools page with:
+    self.content.winfo_children()[0]
+
+For CTkScrollableFrame this can be its outer wrapper instead of the actual
+scrolling content. The Taskbar / dock card was therefore attached outside the
+real scroll flow and could overlap Updates / Shortcut.
+
+6.3.5 captures the exact page object returned by self.page() while the stable
+System Tools page is built, then places Taskbar / dock on that same page:
+    Java       row 2
+    Updates    row 3
+    Shortcut   row 4
+    Taskbar    row 5
+
+ROOT CAUSE 2: KDE DOUBLE TITLEBAR
+The older KWin JavaScript fallback tried to set:
+    window.noBorder = true
+
+That is not a reliable application-side setter in current KWin. 6.3.5 instead
+adds a dedicated KWin window rule for OuterClient:
+    wmclass=outerclient
+    wmclassmatch=2
+    noborder=true
+    noborderrule=2
+
+The rule only removes the native decoration. The main Tk window remains
+normally managed, preserving taskbar/dock, Alt+Tab, focus, minimize/maximize.
+
+Motif hints remain as a secondary X11/XWayland fallback.
+
+VALIDATION
+- Python compile: OK
+- AST parse: OK
+- full module-level binding-chain import: OK
+- final System Tools binding: _v635_show_system_tools
+- final Linux titlebar binding: _v635_apply_linux_custom_titlebar
+- old delayed Linux titlebar aliases redirected to 6.3.5: OK
+- PL/EN translation parity: OK
+- literal translation lookup coverage: OK
+- GitHub Actions YAML parse: OK
+- release smoke test has no Xvfb geometry/layout assertions
+- Linux scripts bash -n: OK
+- ZIP integrity: OK
+
+ARTIFACTS
+- OuterClient-v6.3.5-x86_64.AppImage
+- OuterClient-v6.3.5.exe
