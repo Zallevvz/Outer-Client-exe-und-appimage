@@ -38,7 +38,7 @@ except Exception:
 
 
 APP_NAME = "OuterClient"
-APP_VERSION = "6.3.2"
+APP_VERSION = "6.3.3"
 CONFIG_PATH = Path.home() / ".outerclient.json"
 REDIRECT_URI = "http://localhost:8765/callback"
 MICROSOFT_CLIENT_ID = "fb14d1c4-7d14-4a35-99a7-3f921f7a1e77"
@@ -603,6 +603,12 @@ TEXTS = {
         "v632_whats_new_date": "Wrzesień 2026",
         "v632_change_explore_profile": "Przebudowano wybór profilu w Eksploruj jako bezramkowy popup przypięty do karty profilu — nie zależy już od place() wewnątrz głównego okna.",
         "v632_change_titlebar": "Dodano kontrolę rzeczywistych dekoracji KWin/X11. OuterClient nigdy nie pokazuje jednocześnie natywnego i customowego paska.",
+        "v633_whats_new_eyebrow": "OUTERCLIENT 6.3.3",
+        "v633_whats_new_title": "OuterClient 6.3.3",
+        "v633_whats_new_date": "Wrzesień 2026",
+        "v633_change_diagnostics": "Przebudowano wybór profilu w Diagnostyce — karta z ikoną, wersją i loaderem oraz wygodny popup z profilami.",
+        "v633_change_titlebar": "Wzmocniono customowy pasek na Linuxie/KDE: Motif + fallback KWin no-border, bez trybu always-on-top.",
+        "v633_change_taskbar": "Sekcja „Pasek zadań / dock” jest zwykłą częścią przewijanej strony i nie nakłada się już na pozostałe karty.",
         "v58_update_checking": "Sprawdzanie aktualizacji OuterClient…",
         "v58_update_failed": "Nie udało się sprawdzić aktualizacji: {error}",
         "v58_latest": "Masz najnowszą wersję OuterClient ({version}).",
@@ -1185,6 +1191,12 @@ TEXTS = {
         "v632_whats_new_date": "September 2026",
         "v632_change_explore_profile": "Rebuilt the Explore profile selector as a borderless popup anchored to the profile card, so it no longer depends on place() inside the main window.",
         "v632_change_titlebar": "Added real KWin/X11 frame-decoration detection. OuterClient never shows native and custom title bars at the same time.",
+        "v633_whats_new_eyebrow": "OUTERCLIENT 6.3.3",
+        "v633_whats_new_title": "OuterClient 6.3.3",
+        "v633_whats_new_date": "September 2026",
+        "v633_change_diagnostics": "Rebuilt the Diagnostics profile selector with a profile icon, version/loader metadata and a clean popup list.",
+        "v633_change_titlebar": "Strengthened the custom Linux/KDE title bar using Motif plus a KWin no-border fallback, without always-on-top behavior.",
+        "v633_change_taskbar": "The Taskbar / dock section now lives in the normal scroll flow and no longer overlaps the other settings cards.",
         "v5_change_profile": "Change profile",
         "v5_previous": "Previous",
         "v5_next": "Next",
@@ -1575,7 +1587,7 @@ class OuterClient(ctk.CTk):
                 try:
                     import ctypes
                     ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(
-                        "OuterClient.Launcher.6.3.2"
+                        "OuterClient.Launcher.6.3.3"
                     )
                 except Exception:
                     pass
@@ -32851,6 +32863,806 @@ OuterClient.custom_on_map_v5101 = _v632_linux_map
 
 OuterClient.show_whats_new_v61 = _v632_show_whats_new
 OuterClient.__init__ = _v632_init
+
+
+
+# ============================================================
+# OuterClient 6.3.3
+# - richer Diagnostics profile selector
+# - custom Linux/KDE titlebar with managed-window no-border fallback
+# - Taskbar/dock card in normal scroll flow
+# ============================================================
+
+_V633_INIT_BASE = OuterClient.__init__
+_V633_DIAGNOSTICS_BASE = OuterClient.show_diagnostics
+_V633_SET_ACTIVE_PAGE_BASE = OuterClient.set_active_page
+_V633_WHATS_NEW_BASE = OuterClient.show_whats_new_v61
+
+
+# ---------- Diagnostics selector ----------
+
+def _v633_destroy_diag_popup(self):
+    popup = getattr(self, "diagnostic_profile_popup_v633", None)
+    if popup is not None:
+        try:
+            popup.destroy()
+        except Exception:
+            pass
+    self.diagnostic_profile_popup_v633 = None
+
+
+def _v633_diag_popup_geometry(self, target, width, height):
+    self.update_idletasks()
+
+    x = int(target.winfo_rootx())
+    y = int(target.winfo_rooty() + target.winfo_height() + 5)
+
+    try:
+        screen_w = int(self.winfo_screenwidth())
+        screen_h = int(self.winfo_screenheight())
+
+        if x + width > screen_w - 8:
+            x = max(8, screen_w - width - 8)
+
+        if y + height > screen_h - 8:
+            y = max(8, int(target.winfo_rooty()) - height - 5)
+    except Exception:
+        pass
+
+    return x, y
+
+
+def _v633_select_diag_profile(self, profile_name):
+    if profile_name not in self.cfg.get("profiles", {}):
+        return
+
+    self.destroy_diag_popup_v633()
+    self.select_diagnostic_profile_v61(profile_name)
+
+
+def _v633_toggle_diag_popup(self):
+    if getattr(self, "active_page", None) != "diagnostics":
+        return
+
+    existing = getattr(self, "diagnostic_profile_popup_v633", None)
+    if existing is not None:
+        try:
+            if existing.winfo_exists():
+                self.destroy_diag_popup_v633()
+                return
+        except Exception:
+            self.destroy_diag_popup_v633()
+
+    profiles = self.cfg.get("profiles", {})
+    if not profiles:
+        return
+
+    target = getattr(self, "diagnostic_profile_selector_card_v633", None)
+    if target is None:
+        return
+
+    popup = ctk.CTkToplevel(self)
+    self.diagnostic_profile_popup_v633 = popup
+
+    popup.withdraw()
+    popup.overrideredirect(True)
+
+    try:
+        popup.transient(self)
+    except Exception:
+        pass
+
+    popup.configure(fg_color=SURFACE)
+
+    body = ctk.CTkFrame(
+        popup,
+        fg_color=SURFACE,
+        corner_radius=12,
+        border_width=1,
+        border_color=self.accent,
+    )
+    body.pack(fill="both", expand=True)
+
+    current = self.diagnostic_profile_name_v61()
+
+    width = max(360, int(target.winfo_width()))
+    natural_height = 18 + len(profiles) * 64 + 14
+    height = min(max(90, natural_height), 430)
+
+    if natural_height > 430:
+        holder = ctk.CTkScrollableFrame(
+            body,
+            fg_color="transparent",
+            corner_radius=0,
+            height=396,
+            scrollbar_button_color=SURFACE_3,
+            scrollbar_button_hover_color=BORDER,
+        )
+        holder.pack(fill="both", expand=True, padx=5, pady=5)
+    else:
+        holder = body
+
+    for profile_name, profile in profiles.items():
+        image = self.profile_icon_ctk(profile_name, 36)
+        active = profile_name == current
+
+        button = ctk.CTkButton(
+            holder,
+            text=(
+                f"{'✓  ' if active else ''}{profile_name}\n"
+                f"Minecraft {profile.get('version', '?')} • {profile.get('loader', '?')}"
+            ),
+            image=image,
+            compound="left",
+            anchor="w",
+            height=58,
+            corner_radius=10,
+            fg_color=self.accent if active else SURFACE_2,
+            hover_color=self.accent_hover if active else SURFACE_3,
+            border_width=1,
+            border_color=self.accent if active else BORDER,
+            command=lambda n=profile_name: self.select_diag_profile_v633(n),
+        )
+        button._outerclient_diag_image_v633 = image
+        button.pack(fill="x", padx=7, pady=(7, 0))
+
+    x, y = self.diag_popup_geometry_v633(target, width, height)
+    popup.geometry(f"{width}x{height}+{x}+{y}")
+    popup.deiconify()
+    popup.lift()
+
+    # Temporary lift only; never keep the popup or launcher always-on-top.
+    try:
+        popup.attributes("-topmost", True)
+        popup.after(
+            70,
+            lambda: popup.attributes("-topmost", False)
+            if popup.winfo_exists()
+            else None,
+        )
+    except Exception:
+        pass
+
+    try:
+        popup.focus_force()
+        popup.bind("<Escape>", lambda _event: self.destroy_diag_popup_v633())
+        popup.bind(
+            "<FocusOut>",
+            lambda _event: self.after(80, self.close_diag_popup_if_unfocused_v633),
+        )
+    except Exception:
+        pass
+
+
+def _v633_close_diag_popup_if_unfocused(self):
+    popup = getattr(self, "diagnostic_profile_popup_v633", None)
+    if popup is None:
+        return
+
+    try:
+        if not popup.winfo_exists():
+            self.diagnostic_profile_popup_v633 = None
+            return
+
+        if popup.focus_get() is None:
+            self.destroy_diag_popup_v633()
+    except Exception:
+        self.destroy_diag_popup_v633()
+
+
+def _v633_show_diagnostics(self):
+    _V633_DIAGNOSTICS_BASE(self)
+
+    pages = self.content.winfo_children()
+    outer = pages[0] if pages else None
+    if outer is None:
+        return
+
+    selector_wrap = None
+    for child in outer.winfo_children():
+        try:
+            if int(child.grid_info().get("row", -1)) == 0:
+                selector_wrap = child
+                break
+        except Exception:
+            pass
+
+    if selector_wrap is None:
+        return
+
+    for child in list(selector_wrap.winfo_children()):
+        try:
+            child.destroy()
+        except Exception:
+            pass
+
+    selector_wrap.grid_columnconfigure(0, weight=0)
+    selector_wrap.grid_columnconfigure(1, weight=1)
+
+    name = self.diagnostic_profile_name_v61()
+    profile = self.cfg.get("profiles", {}).get(name, {})
+
+    card = ctk.CTkFrame(
+        selector_wrap,
+        fg_color=SURFACE,
+        corner_radius=13,
+        border_width=1,
+        border_color=BORDER,
+        cursor="hand2",
+    )
+    card.grid(row=0, column=0, sticky="w")
+    card.grid_columnconfigure(1, weight=1)
+
+    self.diagnostic_profile_selector_card_v633 = card
+
+    image = self.profile_icon_ctk(name, 46)
+
+    icon = ctk.CTkLabel(
+        card,
+        text="",
+        image=image,
+        width=58,
+        height=58,
+        fg_color=SURFACE_2,
+        corner_radius=11,
+    )
+    icon._outerclient_diag_selector_image_v633 = image
+    icon.grid(
+        row=0,
+        column=0,
+        rowspan=3,
+        padx=(10, 11),
+        pady=10,
+    )
+
+    label = ctk.CTkLabel(
+        card,
+        text=self.t("v61_diag_profile"),
+        text_color=MUTED,
+        font=ctk.CTkFont(size=9, weight="bold"),
+        anchor="w",
+    )
+    label.grid(
+        row=0,
+        column=1,
+        sticky="sw",
+        pady=(9, 0),
+    )
+
+    name_label = ctk.CTkLabel(
+        card,
+        text=name,
+        text_color=TEXT,
+        font=ctk.CTkFont(size=14, weight="bold"),
+        anchor="w",
+    )
+    name_label.grid(
+        row=1,
+        column=1,
+        sticky="w",
+        pady=(1, 0),
+    )
+
+    meta = ctk.CTkLabel(
+        card,
+        text=(
+            f"Minecraft {profile.get('version', '?')} • "
+            f"{profile.get('loader', '?')}"
+        ),
+        text_color=MUTED,
+        font=ctk.CTkFont(size=10),
+        anchor="w",
+    )
+    meta.grid(
+        row=2,
+        column=1,
+        sticky="nw",
+        pady=(1, 9),
+    )
+
+    arrow = ctk.CTkButton(
+        card,
+        text="⌄",
+        width=42,
+        height=42,
+        corner_radius=10,
+        fg_color=SURFACE_2,
+        hover_color=self.accent,
+        command=self.toggle_diag_profile_popup_v633,
+    )
+    arrow.grid(
+        row=0,
+        column=2,
+        rowspan=3,
+        padx=(14, 10),
+        pady=10,
+    )
+
+    self.diagnostic_profile_button_v633 = arrow
+
+    for widget in (card, icon, label, name_label, meta):
+        widget.bind(
+            "<Button-1>",
+            lambda _event: self.toggle_diag_profile_popup_v633(),
+        )
+
+    ctk.CTkLabel(
+        selector_wrap,
+        text=self.t("v61_diag_profile_hint"),
+        text_color=MUTED,
+        anchor="w",
+        justify="left",
+        font=ctk.CTkFont(size=10),
+    ).grid(
+        row=0,
+        column=1,
+        sticky="w",
+        padx=(16, 0),
+    )
+
+
+# ---------- System tools: normal scroll-flow taskbar card ----------
+
+def _v633_show_system_tools(self):
+    # Use the pre-taskbar base page. This already includes:
+    # Java Manager (row 2), updates (row 3), shortcut (row 4).
+    _V63_SYSTEM_TOOLS_BASE(self)
+
+    pages = self.content.winfo_children()
+    page = pages[0] if pages else None
+    if page is None:
+        return
+
+    # Explicit spacer + later row guarantees the taskbar card cannot sit on
+    # top of the shortcut card, regardless of CTkScrollableFrame internals.
+    try:
+        page.grid_rowconfigure(5, minsize=10, weight=0)
+    except Exception:
+        pass
+
+    # Stable logical layout marker for diagnostics/CI. Do not inspect
+    # CTkScrollableFrame internals to infer rows.
+    self._system_tools_layout_v633 = {
+        "java_row": 2,
+        "updates_row": 3,
+        "shortcut_row": 4,
+        "spacer_row": 5,
+        "taskbar_row": 6,
+    }
+
+    card = self.card(page, 14)
+    card.grid(
+        row=6,
+        column=0,
+        sticky="ew",
+        padx=36,
+        pady=(0, 24),
+    )
+
+    ctk.CTkLabel(
+        card,
+        text=self.t("v62_taskbar_title"),
+        text_color=TEXT,
+        font=ctk.CTkFont(size=19, weight="bold"),
+    ).pack(anchor="w", padx=20, pady=(16, 3))
+
+    ctk.CTkLabel(
+        card,
+        text=self.t("v62_taskbar_desc"),
+        text_color=MUTED,
+        anchor="w",
+        justify="left",
+        wraplength=850,
+    ).pack(anchor="w", padx=20, pady=(0, 12))
+
+    buttons = ctk.CTkFrame(card, fg_color="transparent")
+    buttons.pack(fill="x", padx=20, pady=(0, 16))
+
+    ctk.CTkButton(
+        buttons,
+        text=self.t("v62_taskbar_add"),
+        fg_color=self.accent,
+        hover_color=self.accent_hover,
+        command=self.start_taskbar_pin_v63,
+    ).pack(side="left")
+
+    ctk.CTkButton(
+        buttons,
+        text=self.t("v62_taskbar_open_apps"),
+        fg_color=SURFACE_3,
+        hover_color=self.accent,
+        command=self.open_app_location_v62,
+    ).pack(side="left", padx=8)
+
+    if not self.java_installations:
+        self.run_bg(self.detect_java_installations)
+
+
+# ---------- Linux/KDE custom titlebar ----------
+
+def _v633_apply_motif_x11(self):
+    if not sys.platform.startswith("linux"):
+        return False
+
+    success = False
+
+    # First try the normal xprop route on every Tk/client/frame candidate.
+    if shutil.which("xprop"):
+        for window_id in self.x11_window_ids_v63():
+            try:
+                result = subprocess.run(
+                    [
+                        "xprop",
+                        "-id",
+                        str(window_id),
+                        "-f",
+                        "_MOTIF_WM_HINTS",
+                        "32c",
+                        "-set",
+                        "_MOTIF_WM_HINTS",
+                        "2, 0, 0, 0, 0",
+                    ],
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                    timeout=2,
+                )
+                success = success or result.returncode == 0
+            except Exception:
+                pass
+
+    # Then set the same property directly through Xlib. This avoids shell
+    # parsing differences and is useful under KDE/XWayland.
+    try:
+        import ctypes
+        import ctypes.util
+
+        lib_name = ctypes.util.find_library("X11")
+        if lib_name:
+            x11 = ctypes.cdll.LoadLibrary(lib_name)
+
+            x11.XOpenDisplay.argtypes = [ctypes.c_char_p]
+            x11.XOpenDisplay.restype = ctypes.c_void_p
+
+            x11.XInternAtom.argtypes = [
+                ctypes.c_void_p,
+                ctypes.c_char_p,
+                ctypes.c_int,
+            ]
+            x11.XInternAtom.restype = ctypes.c_ulong
+
+            x11.XChangeProperty.argtypes = [
+                ctypes.c_void_p,
+                ctypes.c_ulong,
+                ctypes.c_ulong,
+                ctypes.c_ulong,
+                ctypes.c_int,
+                ctypes.c_int,
+                ctypes.POINTER(ctypes.c_ubyte),
+                ctypes.c_int,
+            ]
+            x11.XChangeProperty.restype = ctypes.c_int
+
+            x11.XFlush.argtypes = [ctypes.c_void_p]
+            x11.XFlush.restype = ctypes.c_int
+            x11.XCloseDisplay.argtypes = [ctypes.c_void_p]
+            x11.XCloseDisplay.restype = ctypes.c_int
+
+            display = x11.XOpenDisplay(None)
+            if display:
+                atom = x11.XInternAtom(
+                    display,
+                    b"_MOTIF_WM_HINTS",
+                    False,
+                )
+
+                hints = (ctypes.c_ulong * 5)(
+                    2,  # MWM_HINTS_DECORATIONS
+                    0,
+                    0,  # decorations = none
+                    0,
+                    0,
+                )
+
+                data = ctypes.cast(
+                    hints,
+                    ctypes.POINTER(ctypes.c_ubyte),
+                )
+
+                for window_id in self.x11_window_ids_v63():
+                    try:
+                        xid = int(str(window_id), 0)
+                    except Exception:
+                        continue
+
+                    result = x11.XChangeProperty(
+                        display,
+                        xid,
+                        atom,
+                        atom,
+                        32,
+                        0,  # PropModeReplace
+                        data,
+                        5,
+                    )
+                    success = success or result == 0
+
+                x11.XFlush(display)
+                x11.XCloseDisplay(display)
+    except Exception as exc:
+        self.write_log("X11 Motif hint: " + str(exc))
+
+    return success
+
+
+def _v633_kwin_noborder(self):
+    desktop = (
+        os.environ.get("XDG_CURRENT_DESKTOP", "")
+        + " "
+        + os.environ.get("DESKTOP_SESSION", "")
+    ).lower()
+
+    if "kde" not in desktop and "plasma" not in desktop:
+        return False
+
+    qdbus = shutil.which("qdbus6") or shutil.which("qdbus")
+    if not qdbus:
+        return False
+
+    try:
+        cache = Path.home() / ".cache" / "outerclient"
+        cache.mkdir(parents=True, exist_ok=True)
+
+        script = cache / "kwin_outerclient_noborder.js"
+        script.write_text(
+            """
+function outerClientNoBorder(window) {
+    try {
+        var cls = String(window.resourceClass || "").toLowerCase();
+        var name = String(window.caption || "").toLowerCase();
+        if (cls.indexOf("outerclient") >= 0 || name.indexOf("outerclient") >= 0) {
+            window.noBorder = true;
+        }
+    } catch (e) {}
+}
+
+try {
+    var windows = workspace.stackingOrder;
+    for (var i = 0; i < windows.length; ++i) {
+        outerClientNoBorder(windows[i]);
+    }
+    workspace.windowAdded.connect(outerClientNoBorder);
+} catch (e) {}
+""".strip(),
+            encoding="utf-8",
+        )
+
+        load = subprocess.run(
+            [
+                qdbus,
+                "org.kde.KWin",
+                "/Scripting",
+                "org.kde.kwin.Scripting.loadScript",
+                str(script),
+                f"outerclient-noborder-{os.getpid()}",
+            ],
+            capture_output=True,
+            text=True,
+            timeout=3,
+        )
+
+        if load.returncode != 0:
+            return False
+
+        script_id = load.stdout.strip().splitlines()[-1].strip()
+        if not script_id.isdigit():
+            return False
+
+        run = subprocess.run(
+            [
+                qdbus,
+                "org.kde.KWin",
+                f"/Scripting/Script{script_id}",
+                "org.kde.kwin.Script.run",
+            ],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            timeout=3,
+        )
+
+        return run.returncode == 0
+    except Exception as exc:
+        self.write_log("KWin no-border fallback: " + str(exc))
+        return False
+
+
+def _v633_reapply_custom_titlebar(self):
+    if not sys.platform.startswith("linux"):
+        return
+
+    if os.environ.get("OUTERCLIENT_SMOKE_TEST") == "1":
+        self.set_topmost_false_v63()
+        return
+
+    self.set_topmost_false_v63()
+    self.apply_motif_x11_v633()
+    self.kwin_noborder_v633()
+    self.apply_window_identity_v63()
+    self.show_custom_titlebar_layout_v63()
+
+
+def _v633_apply_linux_custom_titlebar(self, force=False):
+    if not sys.platform.startswith("linux"):
+        return _V632_LINUX_WINDOW_BASE(self, force)
+
+    if os.environ.get("OUTERCLIENT_SMOKE_TEST") == "1":
+        self.set_topmost_false_v63()
+        return
+
+    self.set_topmost_false_v63()
+
+    # Keep the client WM-managed: taskbar/dock, Alt+Tab and normal focus stay
+    # intact. Only the WM decoration is removed.
+    try:
+        self.overrideredirect(False)
+    except Exception:
+        pass
+
+    try:
+        self.update_idletasks()
+    except Exception:
+        pass
+
+    self.apply_motif_x11_v633()
+    self.kwin_noborder_v633()
+    self.apply_window_identity_v63()
+    self.show_custom_titlebar_layout_v63()
+
+    if force and not getattr(self, "_linux_custom_remap_v633", False):
+        self._linux_custom_remap_v633 = True
+
+        try:
+            self.withdraw()
+        except Exception:
+            pass
+
+        def remap():
+            self.apply_motif_x11_v633()
+            try:
+                self.deiconify()
+            except Exception:
+                pass
+
+            self.after(80, self.reapply_custom_titlebar_v633)
+            self.after(250, self.reapply_custom_titlebar_v633)
+
+        self.after(25, remap)
+    else:
+        self.after(80, self.reapply_custom_titlebar_v633)
+
+
+def _v633_linux_map(self, event=None):
+    if not sys.platform.startswith("linux"):
+        return _V63_WINDOW_MAP_BASE(self, event)
+
+    if event is not None and getattr(event, "widget", None) is not self:
+        return
+
+    self.set_topmost_false_v63()
+
+    if os.environ.get("OUTERCLIENT_SMOKE_TEST") == "1":
+        return
+
+    self.after(70, self.reapply_custom_titlebar_v633)
+
+
+# ---------- page lifecycle / What's New ----------
+
+def _v633_set_active_page(self, page):
+    if getattr(self, "active_page", None) == "diagnostics" and page != "diagnostics":
+        self.destroy_diag_popup_v633()
+
+    return _V633_SET_ACTIVE_PAGE_BASE(self, page)
+
+
+def _v633_show_whats_new(self, mark_seen=True):
+    self.set_active_page("whats_new")
+    self.clear_content()
+
+    outer = ctk.CTkScrollableFrame(
+        self.content,
+        fg_color=BG,
+        corner_radius=0,
+        scrollbar_button_color=SURFACE_3,
+        scrollbar_button_hover_color=BORDER,
+    )
+    outer.grid(row=0, column=0, sticky="nsew")
+    outer.grid_columnconfigure(0, weight=1)
+
+    self.page_header(
+        outer,
+        self.t("v633_whats_new_eyebrow"),
+        self.t("v61_whats_new_title"),
+        self.t("v61_whats_new_subtitle"),
+    )
+
+    self._whats_new_state_v63 = {
+        "header": self.t("v61_whats_new_title"),
+        "versions": ["6.3.3", "6.3.2", "6.3.1", "6.3", "6.2", "6.1", "6.0"],
+        "current": "6.3.3",
+    }
+
+    self.release_card_v63(
+        outer,
+        1,
+        self.t("v61_current_version"),
+        self.t("v633_whats_new_title"),
+        self.t("v633_whats_new_date"),
+        [
+            self.t("v633_change_diagnostics"),
+            self.t("v633_change_titlebar"),
+            self.t("v633_change_taskbar"),
+        ],
+        current=True,
+    )
+
+    self.release_card_v63(
+        outer,
+        2,
+        self.t("v61_previous_version"),
+        self.t("v632_whats_new_title"),
+        self.t("v632_whats_new_date"),
+        [
+            self.t("v632_change_explore_profile"),
+            self.t("v632_change_titlebar"),
+        ],
+    )
+
+    if mark_seen:
+        self.mark_whats_new_seen_v62()
+
+
+def _v633_init(self):
+    self.diagnostic_profile_popup_v633 = None
+    self._linux_custom_remap_v633 = False
+
+    _V633_INIT_BASE(self)
+
+    self.set_topmost_false_v63()
+
+    if sys.platform.startswith("linux"):
+        # Start showing the custom bar immediately, then remove KWin's frame.
+        self.show_custom_titlebar_layout_v63()
+        self.after(
+            120,
+            lambda: self.apply_linux_custom_titlebar_v633(force=True),
+        )
+
+
+OuterClient.destroy_diag_popup_v633 = _v633_destroy_diag_popup
+OuterClient.diag_popup_geometry_v633 = _v633_diag_popup_geometry
+OuterClient.select_diag_profile_v633 = _v633_select_diag_profile
+OuterClient.toggle_diag_profile_popup_v633 = _v633_toggle_diag_popup
+OuterClient.close_diag_popup_if_unfocused_v633 = _v633_close_diag_popup_if_unfocused
+OuterClient.show_diagnostics = _v633_show_diagnostics
+
+OuterClient.show_system_tools_settings = _v633_show_system_tools
+
+OuterClient.apply_motif_x11_v633 = _v633_apply_motif_x11
+OuterClient.kwin_noborder_v633 = _v633_kwin_noborder
+OuterClient.reapply_custom_titlebar_v633 = _v633_reapply_custom_titlebar
+OuterClient.apply_linux_custom_titlebar_v633 = _v633_apply_linux_custom_titlebar
+OuterClient.apply_linux_titlebar_v632 = _v633_apply_linux_custom_titlebar
+OuterClient.apply_linux_window_mode_v631 = _v633_apply_linux_custom_titlebar
+OuterClient.apply_linux_window_mode_v63 = _v633_apply_linux_custom_titlebar
+OuterClient.apply_linux_titlebar_v62 = _v633_apply_linux_custom_titlebar
+OuterClient.apply_linux_managed_titlebar_v61 = _v633_apply_linux_custom_titlebar
+OuterClient.apply_borderless_once_v5103 = _v633_apply_linux_custom_titlebar
+OuterClient.force_borderless_v5102 = _v633_apply_linux_custom_titlebar
+OuterClient.custom_on_map_v5101 = _v633_linux_map
+
+OuterClient.set_active_page = _v633_set_active_page
+OuterClient.show_whats_new_v61 = _v633_show_whats_new
+OuterClient.__init__ = _v633_init
 
 
 

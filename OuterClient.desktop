@@ -10,4 +10,4 @@ Categories=Game;
 StartupNotify=true
 StartupWMClass=Outerclient
 X-KDE-StartupNotify=true
-X-AppImage-Version=6.3.2
+X-AppImage-Version=6.3.3

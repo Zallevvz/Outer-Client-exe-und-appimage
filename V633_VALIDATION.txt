@@ -1,0 +1,31 @@
+OuterClient 6.3.3 — validation report
+
+CHANGES
+- Diagnostics profile selector rebuilt as a richer profile card with icon, name,
+  Minecraft version and loader.
+- Diagnostics selector opens a dedicated borderless profile popup.
+- Linux/KDE custom titlebar is forced through managed-window no-border paths:
+  _MOTIF_WM_HINTS via xprop and direct Xlib, plus a KWin scripting fallback.
+- The launcher itself is explicitly kept non-topmost.
+- Old scheduled 6.3.2 titlebar callbacks are redirected to the 6.3.3 implementation,
+  so they cannot restore the native-only bar after startup.
+- Taskbar / dock card is added to normal scroll flow below the existing Shortcut card.
+- System Tools layout marker: Java row 2, updates row 3, shortcut row 4,
+  spacer row 5, taskbar row 6.
+
+VALIDATION
+- Python compile: OK
+- AST parse: OK
+- module-level binding chain: OK
+- final method binding order: OK
+- PL/EN translation parity: OK
+- literal translation lookups: OK
+- GitHub Actions YAML parse: OK
+- Linux shell scripts bash -n: OK
+- GitHub smoke test checks the richer Diagnostics selector.
+- GitHub smoke test checks the logical System Tools row order without relying on
+  CustomTkinter scrollable-frame internals.
+
+ARTIFACTS
+- Linux: OuterClient-v6.3.3-x86_64.AppImage
+- Windows: OuterClient-v6.3.3.exe
