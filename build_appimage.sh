@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-VERSION="6.4.0"
+VERSION="6.4.1"
 
 python3 -m venv .build-venv
 source .build-venv/bin/activate
@@ -54,7 +54,7 @@ Terminal=false
 StartupNotify=true
 StartupWMClass=Outerclient
 X-KDE-StartupNotify=true
-X-AppImage-Version=6.4.0
+X-AppImage-Version=6.4.1
 EOF
 
 cat > AppDir/AppRun <<'EOF'

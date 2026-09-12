@@ -38,7 +38,7 @@ except Exception:
 
 
 APP_NAME = "OuterClient"
-APP_VERSION = "6.4.0"
+APP_VERSION = "6.4.1"
 CONFIG_PATH = Path.home() / ".outerclient.json"
 REDIRECT_URI = "http://localhost:8765/callback"
 MICROSOFT_CLIENT_ID = "fb14d1c4-7d14-4a35-99a7-3f921f7a1e77"
@@ -673,6 +673,10 @@ TEXTS = {
         "v640_login_no_game": "To konto Microsoft nie posiada Minecraft: Java Edition.",
         "v640_login_expired": "Sesja Microsoft wygasła. Zaloguj konto ponownie.",
         "v640_login_wait": "Oczekiwanie na logowanie Microsoft w przeglądarce…",
+        "v641_whats_new_eyebrow": "OUTERCLIENT 6.4.1",
+        "v641_whats_new_title": "OuterClient 6.4.1",
+        "v641_whats_new_date": "Wrzesień 2026",
+        "v641_change_version_picker": "Naprawiono wybór wersji Minecrafta przy tworzeniu profilu. Selektor jest teraz rozwijany wewnątrz formularza zamiast jako zawodny overlay nad CTkScrollableFrame.",
         "v58_update_checking": "Sprawdzanie aktualizacji OuterClient…",
         "v58_update_failed": "Nie udało się sprawdzić aktualizacji: {error}",
         "v58_latest": "Masz najnowszą wersję OuterClient ({version}).",
@@ -1325,6 +1329,10 @@ TEXTS = {
         "v640_login_no_game": "This Microsoft account does not own Minecraft: Java Edition.",
         "v640_login_expired": "The Microsoft session expired. Sign in again.",
         "v640_login_wait": "Waiting for Microsoft sign-in in your browser…",
+        "v641_whats_new_eyebrow": "OUTERCLIENT 6.4.1",
+        "v641_whats_new_title": "OuterClient 6.4.1",
+        "v641_whats_new_date": "September 2026",
+        "v641_change_version_picker": "Fixed Minecraft version selection while creating a profile. The selector now expands inside the form instead of using a fragile overlay above CTkScrollableFrame.",
         "v5_change_profile": "Change profile",
         "v5_previous": "Previous",
         "v5_next": "Next",
@@ -1715,7 +1723,7 @@ class OuterClient(ctk.CTk):
                 try:
                     import ctypes
                     ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(
-                        "OuterClient.Launcher.6.4.0"
+                        "OuterClient.Launcher.6.4.1"
                     )
                 except Exception:
                     pass
@@ -37773,6 +37781,7 @@ def _v640_open_create_profile(self):
         fields,
         fg_color="transparent",
     )
+    self._create_version_wrap_v641 = version_wrap
     version_wrap.grid(
         row=2,
         column=0,
@@ -39173,6 +39182,497 @@ OuterClient.render_java_manager = _v640_render_java_manager
 
 OuterClient.show_whats_new_v61 = _v640_show_whats_new
 OuterClient.__init__ = _v640_init
+
+
+
+# ============================================================
+# OuterClient 6.4.1
+# Reliable Minecraft version selector
+# ============================================================
+
+_V641_INIT_BASE = OuterClient.__init__
+
+
+def _v641_close_version_picker(self):
+    panel = getattr(
+        self,
+        "_create_version_panel_v641",
+        None,
+    )
+
+    if panel is not None:
+        try:
+            if panel.winfo_exists():
+                panel.grid_remove()
+        except Exception:
+            pass
+
+    self._create_version_picker_open_v640 = False
+
+    button = getattr(
+        self,
+        "_create_version_button_v640",
+        None,
+    )
+
+    if button is not None:
+        try:
+            current = self._create_version_var_v640.get()
+            button.configure(
+                text=f"Minecraft {current}                         ⌄"
+            )
+        except Exception:
+            pass
+
+
+def _v641_render_version_picker(self):
+    results = getattr(
+        self,
+        "_create_version_results_v641",
+        None,
+    )
+
+    if results is None:
+        return
+
+    try:
+        if not results.winfo_exists():
+            return
+    except Exception:
+        return
+
+    for child in results.winfo_children():
+        try:
+            child.destroy()
+        except Exception:
+            pass
+
+    search_var = getattr(
+        self,
+        "_create_version_search_v641",
+        None,
+    )
+
+    query = (
+        search_var.get().strip().casefold()
+        if search_var is not None
+        else ""
+    )
+
+    versions = self.create_versions_v640()
+
+    if query:
+        versions = [
+            value
+            for value in versions
+            if query in value.casefold()
+        ]
+
+    # Enough results for normal usage, but never construct hundreds of CTk
+    # widgets at once.
+    versions = versions[:120]
+
+    if not versions:
+        ctk.CTkLabel(
+            results,
+            text=self.t("v640_no_versions"),
+            text_color=MUTED,
+            anchor="w",
+        ).grid(
+            row=0,
+            column=0,
+            sticky="ew",
+            padx=10,
+            pady=14,
+        )
+        results.grid_columnconfigure(0, weight=1)
+        return
+
+    selected = self._create_version_var_v640.get()
+
+    for row, version in enumerate(versions):
+        active = version == selected
+
+        button = ctk.CTkButton(
+            results,
+            text=(
+                f"✓  {version}"
+                if active
+                else f"    {version}"
+            ),
+            height=34,
+            corner_radius=8,
+            anchor="w",
+            fg_color=(
+                self.accent
+                if active
+                else "transparent"
+            ),
+            hover_color=(
+                self.accent_hover
+                if active
+                else SURFACE_3
+            ),
+            border_width=0,
+            text_color=(
+                "white"
+                if active
+                else TEXT
+            ),
+            command=lambda value=version:
+                self.select_create_version_v640(value),
+        )
+        button.grid(
+            row=row,
+            column=0,
+            sticky="ew",
+            padx=4,
+            pady=2,
+        )
+
+    results.grid_columnconfigure(0, weight=1)
+
+
+def _v641_build_version_panel(self):
+    parent = getattr(
+        self,
+        "_create_version_wrap_v641",
+        None,
+    )
+
+    if parent is None:
+        raise RuntimeError(
+            "Minecraft version selector parent is missing."
+        )
+
+    panel = ctk.CTkFrame(
+        parent,
+        fg_color="#111824",
+        corner_radius=11,
+        border_width=1,
+        border_color=self.accent,
+    )
+    panel.grid(
+        row=2,
+        column=0,
+        sticky="ew",
+        pady=(7, 0),
+    )
+    panel.grid_columnconfigure(0, weight=1)
+
+    top = ctk.CTkFrame(
+        panel,
+        fg_color="transparent",
+    )
+    top.grid(
+        row=0,
+        column=0,
+        sticky="ew",
+        padx=10,
+        pady=(10, 7),
+    )
+    top.grid_columnconfigure(0, weight=1)
+
+    search_var = ctk.StringVar()
+    self._create_version_search_v641 = search_var
+
+    search = ctk.CTkEntry(
+        top,
+        textvariable=search_var,
+        placeholder_text=self.t("v640_search_version"),
+        height=38,
+        fg_color=SURFACE_2,
+        border_color=BORDER,
+    )
+    search.grid(
+        row=0,
+        column=0,
+        sticky="ew",
+    )
+    self._create_version_search_entry_v641 = search
+
+    ctk.CTkButton(
+        top,
+        text="×",
+        width=38,
+        height=38,
+        corner_radius=9,
+        fg_color=SURFACE_3,
+        hover_color="#512933",
+        command=self.close_version_picker_v640,
+    ).grid(
+        row=0,
+        column=1,
+        padx=(8, 0),
+    )
+
+    # Fixed-height scrolling area: compact, predictable and independent from
+    # the root window / Canvas stacking order.
+    results_holder = ctk.CTkFrame(
+        panel,
+        fg_color="transparent",
+        height=265,
+    )
+    results_holder.grid(
+        row=1,
+        column=0,
+        sticky="ew",
+        padx=8,
+        pady=(0, 9),
+    )
+    results_holder.grid_propagate(False)
+    results_holder.grid_rowconfigure(0, weight=1)
+    results_holder.grid_columnconfigure(0, weight=1)
+
+    results = ctk.CTkScrollableFrame(
+        results_holder,
+        fg_color="transparent",
+        corner_radius=0,
+        scrollbar_button_color=SURFACE_3,
+        scrollbar_button_hover_color=BORDER,
+    )
+    results.grid(
+        row=0,
+        column=0,
+        sticky="nsew",
+    )
+
+    self._create_version_results_v641 = results
+    self._create_version_panel_v641 = panel
+
+    def changed(*_args):
+        old = getattr(
+            self,
+            "_create_version_search_after_v641",
+            None,
+        )
+
+        if old is not None:
+            try:
+                self.after_cancel(old)
+            except Exception:
+                pass
+
+        self._create_version_search_after_v641 = self.after(
+            80,
+            self.render_version_picker_v640,
+        )
+
+    search_var.trace_add(
+        "write",
+        changed,
+    )
+
+    return panel
+
+
+def _v641_toggle_version_picker(self):
+    button = getattr(
+        self,
+        "_create_version_button_v640",
+        None,
+    )
+
+    parent = getattr(
+        self,
+        "_create_version_wrap_v641",
+        None,
+    )
+
+    if button is None or parent is None:
+        # If this ever happens, fail visibly in logs instead of silently doing
+        # nothing like 6.4.0.
+        try:
+            self.write_log(
+                "Version picker 6.4.1: button or parent missing"
+            )
+        except Exception:
+            pass
+        return
+
+    if getattr(
+        self,
+        "_create_version_picker_open_v640",
+        False,
+    ):
+        self.close_version_picker_v640()
+        return
+
+    panel = getattr(
+        self,
+        "_create_version_panel_v641",
+        None,
+    )
+
+    try:
+        valid = panel is not None and panel.winfo_exists()
+    except Exception:
+        valid = False
+
+    if not valid:
+        panel = self.build_version_panel_v641()
+    else:
+        panel.grid(
+            row=2,
+            column=0,
+            sticky="ew",
+            pady=(7, 0),
+        )
+
+    self._create_version_picker_open_v640 = True
+
+    try:
+        current = self._create_version_var_v640.get()
+        button.configure(
+            text=f"Minecraft {current}                         ⌃"
+        )
+    except Exception:
+        pass
+
+    search_var = getattr(
+        self,
+        "_create_version_search_v641",
+        None,
+    )
+
+    if search_var is not None:
+        try:
+            search_var.set("")
+        except Exception:
+            pass
+
+    self.render_version_picker_v640()
+
+    try:
+        self._create_version_search_entry_v641.focus_set()
+    except Exception:
+        pass
+
+    try:
+        self.update_idletasks()
+    except Exception:
+        pass
+
+
+def _v641_select_create_version(self, version):
+    if not version:
+        return
+
+    self._create_version_var_v640.set(str(version))
+
+    button = getattr(
+        self,
+        "_create_version_button_v640",
+        None,
+    )
+
+    if button is not None:
+        try:
+            button.configure(
+                text=f"Minecraft {version}                         ⌄"
+            )
+        except Exception:
+            pass
+
+    self.close_version_picker_v640()
+    self.update_create_summary_v640()
+
+
+def _v641_show_whats_new(self, mark_seen=True):
+    self.set_active_page("whats_new")
+    self.clear_content()
+
+    outer = ctk.CTkScrollableFrame(
+        self.content,
+        fg_color=BG,
+        corner_radius=0,
+        scrollbar_button_color=SURFACE_3,
+        scrollbar_button_hover_color=BORDER,
+    )
+    outer.grid(
+        row=0,
+        column=0,
+        sticky="nsew",
+    )
+    outer.grid_columnconfigure(0, weight=1)
+
+    self.page_header(
+        outer,
+        self.t("v641_whats_new_eyebrow"),
+        self.t("v61_whats_new_title"),
+        self.t("v61_whats_new_subtitle"),
+    )
+
+    self._whats_new_state_v63 = {
+        "header": self.t("v61_whats_new_title"),
+        "versions": [
+            "6.4.1",
+            "6.4.0",
+            "6.3.9",
+            "6.3.8",
+            "6.3.7",
+            "6.3.6",
+            "6.3.5",
+            "6.3.4",
+            "6.3.3",
+            "6.3.2",
+            "6.3.1",
+            "6.3",
+            "6.2",
+            "6.1",
+            "6.0",
+        ],
+        "current": "6.4.1",
+    }
+
+    self.release_card_v63(
+        outer,
+        1,
+        self.t("v61_current_version"),
+        self.t("v641_whats_new_title"),
+        self.t("v641_whats_new_date"),
+        [self.t("v641_change_version_picker")],
+        current=True,
+    )
+
+    self.release_card_v63(
+        outer,
+        2,
+        self.t("v61_previous_version"),
+        self.t("v640_whats_new_title"),
+        self.t("v640_whats_new_date"),
+        [
+            self.t("v640_change_profiles"),
+            self.t("v640_change_launch"),
+            self.t("v640_change_microsoft"),
+            self.t("v640_change_java"),
+        ],
+    )
+
+    if mark_seen:
+        self.mark_whats_new_seen_v62()
+
+
+def _v641_init(self):
+    self._create_version_panel_v641 = None
+    self._create_version_wrap_v641 = None
+    self._create_version_results_v641 = None
+    self._create_version_search_v641 = None
+    self._create_version_search_after_v641 = None
+
+    _V641_INIT_BASE(self)
+
+
+OuterClient.build_version_panel_v641 = _v641_build_version_panel
+
+# Replace only the broken version-picker behavior.
+OuterClient.close_version_picker_v640 = _v641_close_version_picker
+OuterClient.render_version_picker_v640 = _v641_render_version_picker
+OuterClient.toggle_version_picker_v640 = _v641_toggle_version_picker
+OuterClient.select_create_version_v640 = _v641_select_create_version
+
+OuterClient.show_whats_new_v61 = _v641_show_whats_new
+OuterClient.__init__ = _v641_init
 
 
 

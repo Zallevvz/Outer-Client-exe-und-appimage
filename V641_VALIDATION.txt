@@ -1,0 +1,41 @@
+OuterClient 6.4.1 — version picker bugfix
+
+ROOT CAUSE
+The 6.4.0 Minecraft version selector created its dropdown as a CTkFrame child
+of self.content and positioned it with place()/lift(). The New Profile page is
+inside CTkScrollableFrame/Canvas, so that overlay could end up behind the
+scrollable page. The button callback ran, but visually nothing appeared.
+
+FIX
+- The selector no longer uses a self.content overlay.
+- The New Profile page stores the exact version_wrap frame.
+- The picker is created directly inside version_wrap.
+- Opening uses grid(); closing uses grid_remove().
+- The loader cards naturally move down while the version picker is open.
+- The picker has a fixed 265 px scrolling area instead of becoming a giant
+  screen-height dropdown.
+- Search remains available.
+- Search rendering is debounced.
+- Selecting a version closes the picker and refreshes the Java/loader summary.
+
+REGRESSIONS PRESERVED
+- Minecraft launch core from 6.4.0 unchanged.
+- Microsoft login 2.0 from 6.4.0 unchanged.
+- Java Manager 2.0 from 6.4.0 unchanged.
+- Custom KDE titlebar from 6.3.8 unchanged.
+- KWin/native maximize from 6.3.9 unchanged.
+
+VALIDATION
+- Python compile: OK
+- AST parse: OK
+- active version-picker bindings: 6.4.1
+- active picker contains no self.content/place/lift overlay code
+- in-form scroll panel: OK
+- PL/EN translation parity: OK
+- GitHub Actions YAML parse: OK
+- Linux scripts bash -n: OK
+- ZIP integrity: OK
+
+ARTIFACTS
+- OuterClient-v6.4.1-x86_64.AppImage
+- OuterClient-v6.4.1.exe
