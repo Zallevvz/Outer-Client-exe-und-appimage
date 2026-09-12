@@ -38,7 +38,7 @@ except Exception:
 
 
 APP_NAME = "OuterClient"
-APP_VERSION = "6.3.7"
+APP_VERSION = "6.3.8"
 CONFIG_PATH = Path.home() / ".outerclient.json"
 REDIRECT_URI = "http://localhost:8765/callback"
 MICROSOFT_CLIENT_ID = "fb14d1c4-7d14-4a35-99a7-3f921f7a1e77"
@@ -627,6 +627,10 @@ TEXTS = {
         "v637_whats_new_title": "OuterClient 6.3.7",
         "v637_whats_new_date": "Wrzesień 2026",
         "v637_change_titlebar": "Pasek KDE został przebudowany jeszcze raz: jednorazowy skrypt KWin wybiera dokładnie okno OuterClient po PID-ie, ustawia je jako aktywne i wywołuje systemową akcję „Window No Border”. Dzięki temu customowy pasek działa bez wyłączania zarządzania oknem.",
+        "v638_whats_new_eyebrow": "OUTERCLIENT 6.3.8",
+        "v638_whats_new_title": "OuterClient 6.3.8",
+        "v638_whats_new_date": "Wrzesień 2026",
+        "v638_change_titlebar": "Naprawiono uruchamianie skryptu KWin: OuterClient nie wymaga już qdbus6. Automatycznie używa qdbus6, dbus-send albo gdbus i dopiero po wykonaniu systemowej akcji „Window No Border” pokazuje customowy pasek.",
         "v58_update_checking": "Sprawdzanie aktualizacji OuterClient…",
         "v58_update_failed": "Nie udało się sprawdzić aktualizacji: {error}",
         "v58_latest": "Masz najnowszą wersję OuterClient ({version}).",
@@ -1233,6 +1237,10 @@ TEXTS = {
         "v637_whats_new_title": "OuterClient 6.3.7",
         "v637_whats_new_date": "September 2026",
         "v637_change_titlebar": "Rebuilt KDE title-bar handling again: a one-shot KWin script targets the exact OuterClient window by PID, makes it active and invokes KWin's own “Window No Border” action. The window stays normally managed while the custom bar is used.",
+        "v638_whats_new_eyebrow": "OUTERCLIENT 6.3.8",
+        "v638_whats_new_title": "OuterClient 6.3.8",
+        "v638_whats_new_date": "September 2026",
+        "v638_change_titlebar": "Fixed KWin script execution: OuterClient no longer requires qdbus6. It automatically uses qdbus6, dbus-send or gdbus and shows the custom bar only after KWin's “Window No Border” action is executed.",
         "v5_change_profile": "Change profile",
         "v5_previous": "Previous",
         "v5_next": "Next",
@@ -1623,7 +1631,7 @@ class OuterClient(ctk.CTk):
                 try:
                     import ctypes
                     ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(
-                        "OuterClient.Launcher.6.3.7"
+                        "OuterClient.Launcher.6.3.8"
                     )
                 except Exception:
                     pass
@@ -35700,6 +35708,647 @@ OuterClient.custom_on_map_v5101 = _v637_linux_map
 
 OuterClient.show_whats_new_v61 = _v637_show_whats_new
 OuterClient.__init__ = _v637_init
+
+
+
+# ============================================================
+# OuterClient 6.3.8
+# KDE custom titlebar DBus reliability fix.
+# No qt6-tools/qdbus6 requirement:
+#   qdbus6 -> dbus-send -> gdbus
+# ============================================================
+
+_V638_INIT_BASE = OuterClient.__init__
+
+
+def _v638_kwin_dbus_tools(self):
+    tools = []
+
+    qdbus = (
+        shutil.which("qdbus6")
+        or shutil.which("qdbus-qt6")
+        or shutil.which("qdbus")
+    )
+    if qdbus:
+        tools.append(("qdbus", qdbus))
+
+    dbus_send = shutil.which("dbus-send")
+    if dbus_send:
+        tools.append(("dbus-send", dbus_send))
+
+    gdbus = shutil.which("gdbus")
+    if gdbus:
+        tools.append(("gdbus", gdbus))
+
+    return tools
+
+
+def _v638_parse_script_id(self, text):
+    raw = str(text or "")
+
+    # qdbus:  "2"
+    # dbus-send: "int32 2"
+    # gdbus: "(2,)"
+    matches = re.findall(r"(?<![A-Za-z])(\d+)(?![A-Za-z])", raw)
+    if not matches:
+        return None
+
+    try:
+        return int(matches[-1])
+    except Exception:
+        return None
+
+
+def _v638_dbus_load_script_with(self, backend, binary, script_path, script_name):
+    try:
+        if backend == "qdbus":
+            result = subprocess.run(
+                [
+                    binary,
+                    "org.kde.KWin",
+                    "/Scripting",
+                    "org.kde.kwin.Scripting.loadScript",
+                    str(script_path),
+                    str(script_name),
+                ],
+                capture_output=True,
+                text=True,
+                timeout=5,
+            )
+
+        elif backend == "dbus-send":
+            result = subprocess.run(
+                [
+                    binary,
+                    "--session",
+                    "--dest=org.kde.KWin",
+                    "--print-reply=literal",
+                    "/Scripting",
+                    "org.kde.kwin.Scripting.loadScript",
+                    f"string:{script_path}",
+                    f"string:{script_name}",
+                ],
+                capture_output=True,
+                text=True,
+                timeout=5,
+            )
+
+        elif backend == "gdbus":
+            result = subprocess.run(
+                [
+                    binary,
+                    "call",
+                    "--session",
+                    "--dest",
+                    "org.kde.KWin",
+                    "--object-path",
+                    "/Scripting",
+                    "--method",
+                    "org.kde.kwin.Scripting.loadScript",
+                    str(script_path),
+                    str(script_name),
+                ],
+                capture_output=True,
+                text=True,
+                timeout=5,
+            )
+        else:
+            return None
+
+        output = (result.stdout or "") + "\n" + (result.stderr or "")
+
+        if result.returncode != 0:
+            self.write_log(
+                f"KWin DBus {backend} loadScript failed: {output.strip()}"
+            )
+            return None
+
+        script_id = self.parse_script_id_v638(output)
+        if script_id is None:
+            self.write_log(
+                f"KWin DBus {backend} returned no script id: {output.strip()}"
+            )
+            return None
+
+        return script_id
+
+    except Exception as exc:
+        self.write_log(f"KWin DBus {backend} load exception: {exc}")
+        return None
+
+
+def _v638_dbus_simple_call(self, backend, binary, path, method, *args):
+    try:
+        if backend == "qdbus":
+            command = [
+                binary,
+                "org.kde.KWin",
+                str(path),
+                str(method),
+            ]
+            command.extend(str(arg) for arg in args)
+
+        elif backend == "dbus-send":
+            command = [
+                binary,
+                "--session",
+                "--dest=org.kde.KWin",
+                "--print-reply=literal",
+                str(path),
+                str(method),
+            ]
+            command.extend(f"string:{arg}" for arg in args)
+
+        elif backend == "gdbus":
+            command = [
+                binary,
+                "call",
+                "--session",
+                "--dest",
+                "org.kde.KWin",
+                "--object-path",
+                str(path),
+                "--method",
+                str(method),
+            ]
+            command.extend(str(arg) for arg in args)
+
+        else:
+            return False
+
+        result = subprocess.run(
+            command,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.PIPE,
+            text=True,
+            timeout=5,
+        )
+
+        if result.returncode == 0:
+            return True
+
+        self.write_log(
+            f"KWin DBus {backend} {method} failed: "
+            + (result.stderr or "").strip()
+        )
+        return False
+
+    except Exception as exc:
+        self.write_log(f"KWin DBus {backend} {method} exception: {exc}")
+        return False
+
+
+def _v638_kwin_script_source(self):
+    pid = int(os.getpid())
+
+    return f"""
+(function() {{
+    const targetPid = {pid};
+
+    function isOuterClient(w) {{
+        if (!w || !w.managed) {{
+            return false;
+        }}
+
+        const cls = String(w.resourceClass || "").toLowerCase();
+        const name = String(w.resourceName || "").toLowerCase();
+        const caption = String(w.caption || "").toLowerCase();
+
+        if (Number(w.pid) === targetPid && !w.transient) {{
+            return true;
+        }}
+
+        return (
+            !w.transient &&
+            (
+                cls.indexOf("outerclient") >= 0 ||
+                name.indexOf("outerclient") >= 0 ||
+                caption.indexOf("outerclient 6.3.8") >= 0
+            )
+        );
+    }}
+
+    let target = null;
+    const windows = workspace.stackingOrder;
+
+    for (let i = 0; i < windows.length; ++i) {{
+        const w = windows[i];
+
+        if (!isOuterClient(w)) {{
+            continue;
+        }}
+
+        target = w;
+
+        if (Number(w.pid) === targetPid) {{
+            break;
+        }}
+    }}
+
+    if (!target) {{
+        print("OuterClient 6.3.8: target window not found");
+        return;
+    }}
+
+    target.skipTaskbar = false;
+    target.skipPager = false;
+    target.skipSwitcher = false;
+
+    try {{
+        workspace.raiseWindow(target);
+    }} catch (e) {{}}
+
+    function applyNoBorder() {{
+        try {{
+            if (workspace.activeWindow !== target) {{
+                workspace.activeWindow = target;
+            }}
+
+            if (!target.noBorder) {{
+                workspace.slotWindowNoBorder();
+            }}
+
+            print(
+                "OuterClient 6.3.8: noBorder=" + String(target.noBorder)
+            );
+        }} catch (e) {{
+            print("OuterClient 6.3.8: " + String(e));
+        }}
+    }}
+
+    if (workspace.activeWindow === target) {{
+        applyNoBorder();
+        return;
+    }}
+
+    // Some KWin configurations do not switch activeWindow synchronously.
+    // Run once immediately and once when KWin confirms activation.
+    let handled = false;
+
+    workspace.windowActivated.connect(function(w) {{
+        if (handled || w !== target) {{
+            return;
+        }}
+
+        handled = true;
+        applyNoBorder();
+    }});
+
+    workspace.activeWindow = target;
+    applyNoBorder();
+}})();
+""".strip()
+
+
+def _v638_run_kwin_no_border(self):
+    if not sys.platform.startswith("linux"):
+        return False
+
+    if os.environ.get("OUTERCLIENT_SMOKE_TEST") == "1":
+        return False
+
+    if not self.is_kde_v635():
+        return False
+
+    tools = self.kwin_dbus_tools_v638()
+    if not tools:
+        self.write_log(
+            "KWin 6.3.8: no DBus CLI found (qdbus/dbus-send/gdbus)"
+        )
+        return False
+
+    cache = Path.home() / ".cache" / "outerclient"
+    cache.mkdir(parents=True, exist_ok=True)
+
+    script_path = cache / f"kwin-titlebar-{os.getpid()}-638.js"
+    script_name = f"outerclient-titlebar-638-{os.getpid()}"
+
+    try:
+        script_path.write_text(
+            self.kwin_script_source_v638(),
+            encoding="utf-8",
+        )
+    except Exception as exc:
+        self.write_log("KWin 6.3.8 script write: " + str(exc))
+        return False
+
+    for backend, binary in tools:
+        # Unload same-name stale script first. Failure is harmless.
+        self.dbus_simple_call_v638(
+            backend,
+            binary,
+            "/Scripting",
+            "org.kde.kwin.Scripting.unloadScript",
+            script_name,
+        )
+
+        script_id = self.dbus_load_script_with_v638(
+            backend,
+            binary,
+            script_path,
+            script_name,
+        )
+        if script_id is None:
+            continue
+
+        # KWin 6 supports per-script run. Some installations also require the
+        # scripting subsystem to be started, so do both; the script itself is
+        # idempotent because it only toggles when target.noBorder is false.
+        self.dbus_simple_call_v638(
+            backend,
+            binary,
+            "/Scripting",
+            "org.kde.kwin.Scripting.start",
+        )
+
+        ran = self.dbus_simple_call_v638(
+            backend,
+            binary,
+            f"/Scripting/Script{script_id}",
+            "org.kde.kwin.Script.run",
+        )
+
+        if not ran:
+            # `start` may already have executed it. Treat the loaded script as
+            # usable and verify the actual border state in the next callback.
+            self.write_log(
+                f"KWin 6.3.8: per-script run failed via {backend}; "
+                "will verify state after Scripting.start"
+            )
+
+        self._kwin_dbus_backend_v638 = backend
+        self._kwin_script_id_v638 = script_id
+        self._kwin_script_name_v638 = script_name
+        self._kwin_script_path_v638 = script_path
+        self._kwin_script_success_v638 = True
+
+        self.write_log(
+            f"KWin 6.3.8: script loaded with {backend}, id={script_id}"
+        )
+
+        def cleanup(
+            backend=backend,
+            binary=binary,
+            script_id=script_id,
+            script_name=script_name,
+            script_path=script_path,
+        ):
+            self.dbus_simple_call_v638(
+                backend,
+                binary,
+                f"/Scripting/Script{script_id}",
+                "org.kde.kwin.Script.stop",
+            )
+            self.dbus_simple_call_v638(
+                backend,
+                binary,
+                "/Scripting",
+                "org.kde.kwin.Scripting.unloadScript",
+                script_name,
+            )
+            try:
+                script_path.unlink(missing_ok=True)
+            except Exception:
+                pass
+
+        self.after(1400, cleanup)
+        return True
+
+    self.write_log("KWin 6.3.8: every DBus backend failed")
+    return False
+
+
+def _v638_probe_titlebar(self):
+    if not sys.platform.startswith("linux"):
+        return
+
+    state = self.native_decoration_state_v636()
+
+    if state is False:
+        self.show_custom_titlebar_layout_v63()
+        self._linux_titlebar_mode_v638 = "custom"
+        self.set_topmost_false_v63()
+        return
+
+    # On Wayland/XWayland _NET_FRAME_EXTENTS may not be available even though
+    # the KWin script successfully toggled noBorder. A successfully executed
+    # KWin script is therefore accepted after two delayed probes.
+    probes = getattr(self, "_titlebar_probes_v638", 0)
+    self._titlebar_probes_v638 = probes + 1
+
+    if state is None and getattr(
+        self,
+        "_kwin_script_success_v638",
+        False,
+    ) and probes >= 1:
+        self.show_custom_titlebar_layout_v63()
+        self._linux_titlebar_mode_v638 = "custom"
+        self.set_topmost_false_v63()
+        return
+
+    if state is True and probes < 3:
+        self.run_kwin_no_border_v638()
+        self.after(300, self.probe_titlebar_v638)
+        return
+
+    if state is None and probes < 3:
+        self.after(250, self.probe_titlebar_v638)
+        return
+
+    # Never show two bars.
+    self.show_native_titlebar_layout_v63()
+    self._linux_titlebar_mode_v638 = "native"
+    self.set_topmost_false_v63()
+
+
+def _v638_apply_linux_titlebar(self, force=False):
+    if not sys.platform.startswith("linux"):
+        return _V632_LINUX_WINDOW_BASE(self, force)
+
+    if os.environ.get("OUTERCLIENT_SMOKE_TEST") == "1":
+        self.set_topmost_false_v63()
+        return
+
+    self.set_topmost_false_v63()
+
+    try:
+        self.overrideredirect(False)
+    except Exception:
+        pass
+
+    try:
+        self.attributes("-type", "normal")
+    except Exception:
+        pass
+
+    # Exactly one bar while KWin is being changed.
+    self.show_native_titlebar_layout_v63()
+
+    try:
+        self.update_idletasks()
+    except Exception:
+        pass
+
+    try:
+        self.apply_motif_to_real_clients_v636()
+    except Exception:
+        pass
+
+    if force and not getattr(
+        self,
+        "_linux_titlebar_remap_done_v638",
+        False,
+    ):
+        self._linux_titlebar_remap_done_v638 = True
+
+        try:
+            self.withdraw()
+        except Exception:
+            pass
+
+        def remap():
+            try:
+                self.deiconify()
+                self.lift()
+                self.focus_force()
+                self.update_idletasks()
+            except Exception:
+                pass
+
+            self.after(120, self.run_kwin_no_border_v638)
+            self.after(420, self.probe_titlebar_v638)
+
+        self.after(45, remap)
+        return
+
+    self.run_kwin_no_border_v638()
+    self.after(320, self.probe_titlebar_v638)
+
+
+def _v638_linux_map(self, event=None):
+    if not sys.platform.startswith("linux"):
+        return _V63_WINDOW_MAP_BASE(self, event)
+
+    if event is not None and getattr(event, "widget", None) is not self:
+        return
+
+    self.set_topmost_false_v63()
+
+    if os.environ.get("OUTERCLIENT_SMOKE_TEST") == "1":
+        return
+
+    def repair():
+        state = self.native_decoration_state_v636()
+
+        if (
+            getattr(self, "_linux_titlebar_mode_v638", "") == "custom"
+            and state is not True
+        ):
+            self.show_custom_titlebar_layout_v63()
+            return
+
+        self.apply_linux_titlebar_v638(force=False)
+
+    self.after(170, repair)
+
+
+def _v638_show_whats_new(self, mark_seen=True):
+    self.set_active_page("whats_new")
+    self.clear_content()
+
+    outer = ctk.CTkScrollableFrame(
+        self.content,
+        fg_color=BG,
+        corner_radius=0,
+        scrollbar_button_color=SURFACE_3,
+        scrollbar_button_hover_color=BORDER,
+    )
+    outer.grid(row=0, column=0, sticky="nsew")
+    outer.grid_columnconfigure(0, weight=1)
+
+    self.page_header(
+        outer,
+        self.t("v638_whats_new_eyebrow"),
+        self.t("v61_whats_new_title"),
+        self.t("v61_whats_new_subtitle"),
+    )
+
+    self._whats_new_state_v63 = {
+        "header": self.t("v61_whats_new_title"),
+        "versions": [
+            "6.3.8", "6.3.7", "6.3.6", "6.3.5", "6.3.4",
+            "6.3.3", "6.3.2", "6.3.1", "6.3", "6.2", "6.1", "6.0",
+        ],
+        "current": "6.3.8",
+    }
+
+    self.release_card_v63(
+        outer,
+        1,
+        self.t("v61_current_version"),
+        self.t("v638_whats_new_title"),
+        self.t("v638_whats_new_date"),
+        [self.t("v638_change_titlebar")],
+        current=True,
+    )
+
+    self.release_card_v63(
+        outer,
+        2,
+        self.t("v61_previous_version"),
+        self.t("v637_whats_new_title"),
+        self.t("v637_whats_new_date"),
+        [self.t("v637_change_titlebar")],
+    )
+
+    if mark_seen:
+        self.mark_whats_new_seen_v62()
+
+
+def _v638_init(self):
+    self._linux_titlebar_mode_v638 = "probing"
+    self._linux_titlebar_remap_done_v638 = False
+    self._kwin_script_success_v638 = False
+    self._titlebar_probes_v638 = 0
+
+    _V638_INIT_BASE(self)
+
+    self.set_topmost_false_v63()
+
+    if sys.platform.startswith("linux"):
+        self.show_native_titlebar_layout_v63()
+        self.after(
+            150,
+            lambda: self.apply_linux_titlebar_v638(force=True),
+        )
+
+
+OuterClient.kwin_dbus_tools_v638 = _v638_kwin_dbus_tools
+OuterClient.parse_script_id_v638 = _v638_parse_script_id
+OuterClient.dbus_load_script_with_v638 = _v638_dbus_load_script_with
+OuterClient.dbus_simple_call_v638 = _v638_dbus_simple_call
+OuterClient.kwin_script_source_v638 = _v638_kwin_script_source
+OuterClient.run_kwin_no_border_v638 = _v638_run_kwin_no_border
+OuterClient.probe_titlebar_v638 = _v638_probe_titlebar
+OuterClient.apply_linux_titlebar_v638 = _v638_apply_linux_titlebar
+
+# Redirect every historical titlebar callback to 6.3.8.
+OuterClient.apply_linux_titlebar_v637 = _v638_apply_linux_titlebar
+OuterClient.apply_linux_titlebar_v636 = _v638_apply_linux_titlebar
+OuterClient.apply_linux_custom_titlebar_v635 = _v638_apply_linux_titlebar
+OuterClient.apply_linux_custom_titlebar_v633 = _v638_apply_linux_titlebar
+OuterClient.apply_linux_titlebar_v632 = _v638_apply_linux_titlebar
+OuterClient.apply_linux_window_mode_v631 = _v638_apply_linux_titlebar
+OuterClient.apply_linux_window_mode_v63 = _v638_apply_linux_titlebar
+OuterClient.apply_linux_titlebar_v62 = _v638_apply_linux_titlebar
+OuterClient.apply_linux_managed_titlebar_v61 = _v638_apply_linux_titlebar
+OuterClient.apply_borderless_once_v5103 = _v638_apply_linux_titlebar
+OuterClient.force_borderless_v5102 = _v638_apply_linux_titlebar
+OuterClient.reapply_custom_titlebar_v633 = _v638_probe_titlebar
+OuterClient.custom_on_map_v5101 = _v638_linux_map
+
+OuterClient.show_whats_new_v61 = _v638_show_whats_new
+OuterClient.__init__ = _v638_init
 
 
 

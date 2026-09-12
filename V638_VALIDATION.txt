@@ -1,0 +1,22 @@
+OuterClient 6.3.8 validation
+
+Primary fix:
+- KDE custom-titlebar scripting no longer depends on qdbus6/qt6-tools.
+- Runtime backend order: qdbus6/qdbus-qt6/qdbus -> dbus-send -> gdbus.
+- KWin script targets the main OuterClient window by PID.
+- It keeps taskbar/pager/switcher enabled.
+- It invokes workspace.slotWindowNoBorder() only while a native border exists.
+- Custom titlebar is shown only after the borderless transition is accepted.
+- Native-only fallback remains, so two bars are never intentionally shown.
+
+Validation:
+- Python compile/AST: OK
+- PL/EN translations: OK
+- final method bindings: OK
+- GitHub Actions YAML: OK
+- Linux shell syntax: OK
+- release smoke test remains non-visual
+
+Artifacts:
+- OuterClient-v6.3.8-x86_64.AppImage
+- OuterClient-v6.3.8.exe
