@@ -1,0 +1,53 @@
+OuterClient 6.3.7 — validation report
+
+KDE CUSTOM TITLEBAR FIX
+
+6.3.6 could still fall back to the native KDE titlebar because it relied on
+frame probing plus a global shortcut / window-rule route.
+
+6.3.7 targets the exact KWin-managed OuterClient window with a one-shot
+KWin script:
+
+- matches the main window by the current process PID
+- requires a KWin-managed window
+- sets workspace.activeWindow to that exact window
+- keeps skipTaskbar=false and skipPager=false
+- checks target.noBorder
+- calls workspace.slotWindowNoBorder() only when a native border is present
+
+This uses KWin's own window-manager action rather than assigning the read-only
+noBorder property from the application.
+
+The main Tk window remains normally managed:
+- KDE taskbar entry remains available
+- Alt+Tab remains available
+- normal minimize/maximize/focus behavior remains available
+
+OuterClient starts with only the native bar while KWin is changing decoration.
+The custom OuterClient bar is shown only after the no-border action succeeds or
+the borderless state is confirmed. If decoration removal fails, it falls back
+to one native bar rather than showing two bars.
+
+RETAINED FIXES
+- 6.3.5 real scroll-parent fix for Taskbar / dock
+- 6.3.4 Diagnostics rebuild
+- non-flaky GitHub Actions AppImage smoke test
+
+VALIDATION
+- Python compile: OK
+- AST parse: OK
+- complete module-level binding chain: OK
+- exact PID-based KWin target logic: OK
+- workspace.activeWindow targeting: OK
+- workspace.slotWindowNoBorder action: OK
+- no direct assignment to Window.noBorder: OK
+- final Linux titlebar binding: _v637_apply_linux_titlebar
+- final Linux map binding: _v637_linux_map
+- PL/EN translation parity: OK
+- GitHub Actions YAML parse: OK
+- bash -n Linux scripts: OK
+- ZIP integrity: OK
+
+ARTIFACTS
+- OuterClient-v6.3.7-x86_64.AppImage
+- OuterClient-v6.3.7.exe

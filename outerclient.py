@@ -38,7 +38,7 @@ except Exception:
 
 
 APP_NAME = "OuterClient"
-APP_VERSION = "6.3.6"
+APP_VERSION = "6.3.7"
 CONFIG_PATH = Path.home() / ".outerclient.json"
 REDIRECT_URI = "http://localhost:8765/callback"
 MICROSOFT_CLIENT_ID = "fb14d1c4-7d14-4a35-99a7-3f921f7a1e77"
@@ -623,6 +623,10 @@ TEXTS = {
         "v636_whats_new_title": "OuterClient 6.3.6",
         "v636_whats_new_date": "Wrzesień 2026",
         "v636_change_titlebar": "Przebudowano pasek KDE: OuterClient wykrywa rzeczywiste okno X11/XWayland i w razie potrzeby wywołuje natywną akcję KWin „Window No Border”. Customowy pasek pojawia się dopiero po usunięciu dekoracji systemowej.",
+        "v637_whats_new_eyebrow": "OUTERCLIENT 6.3.7",
+        "v637_whats_new_title": "OuterClient 6.3.7",
+        "v637_whats_new_date": "Wrzesień 2026",
+        "v637_change_titlebar": "Pasek KDE został przebudowany jeszcze raz: jednorazowy skrypt KWin wybiera dokładnie okno OuterClient po PID-ie, ustawia je jako aktywne i wywołuje systemową akcję „Window No Border”. Dzięki temu customowy pasek działa bez wyłączania zarządzania oknem.",
         "v58_update_checking": "Sprawdzanie aktualizacji OuterClient…",
         "v58_update_failed": "Nie udało się sprawdzić aktualizacji: {error}",
         "v58_latest": "Masz najnowszą wersję OuterClient ({version}).",
@@ -1225,6 +1229,10 @@ TEXTS = {
         "v636_whats_new_title": "OuterClient 6.3.6",
         "v636_whats_new_date": "September 2026",
         "v636_change_titlebar": "Rebuilt KDE title-bar handling: OuterClient discovers the real X11/XWayland client and, when needed, invokes KWin's native “Window No Border” action. The custom bar is shown only after native decoration is gone.",
+        "v637_whats_new_eyebrow": "OUTERCLIENT 6.3.7",
+        "v637_whats_new_title": "OuterClient 6.3.7",
+        "v637_whats_new_date": "September 2026",
+        "v637_change_titlebar": "Rebuilt KDE title-bar handling again: a one-shot KWin script targets the exact OuterClient window by PID, makes it active and invokes KWin's own “Window No Border” action. The window stays normally managed while the custom bar is used.",
         "v5_change_profile": "Change profile",
         "v5_previous": "Previous",
         "v5_next": "Next",
@@ -1615,7 +1623,7 @@ class OuterClient(ctk.CTk):
                 try:
                     import ctypes
                     ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(
-                        "OuterClient.Launcher.6.3.6"
+                        "OuterClient.Launcher.6.3.7"
                     )
                 except Exception:
                     pass
@@ -35210,6 +35218,488 @@ OuterClient.custom_on_map_v5101 = _v636_linux_map
 
 OuterClient.show_whats_new_v61 = _v636_show_whats_new
 OuterClient.__init__ = _v636_init
+
+
+
+# ============================================================
+# OuterClient 6.3.7
+# KDE titlebar: target the exact KWin Window via scripting API.
+# ============================================================
+
+_V637_INIT_BASE = OuterClient.__init__
+
+
+def _v637_qdbus_binary(self):
+    return (
+        shutil.which("qdbus6")
+        or shutil.which("qdbus-qt6")
+        or shutil.which("qdbus")
+    )
+
+
+def _v637_kwin_script_source(self):
+    pid = int(os.getpid())
+
+    # KWin 6 scripting API:
+    # - workspace.activeWindow is read/write
+    # - Window.pid/resourceClass/caption are readable
+    # - workspace.slotWindowNoBorder() is the WM-owned border toggle
+    #
+    # We deliberately do NOT assign window.noBorder because that property is
+    # owned by KWin and documented as read-only for applications/scripts.
+    return f"""
+(function() {{
+    const targetPid = {pid};
+
+    function isOuterClient(w) {{
+        if (!w || !w.managed) {{
+            return false;
+        }}
+
+        const cls = String(w.resourceClass || "").toLowerCase();
+        const name = String(w.resourceName || "").toLowerCase();
+        const caption = String(w.caption || "").toLowerCase();
+
+        if (Number(w.pid) === targetPid) {{
+            return true;
+        }}
+
+        return (
+            cls.indexOf("outerclient") >= 0 ||
+            name.indexOf("outerclient") >= 0 ||
+            caption.indexOf("outerclient 6.3.7") >= 0
+        );
+    }}
+
+    let target = null;
+    const windows = workspace.stackingOrder;
+
+    for (let i = 0; i < windows.length; ++i) {{
+        const w = windows[i];
+
+        if (!isOuterClient(w)) {{
+            continue;
+        }}
+
+        target = w;
+
+        // Prefer the exact process match if several OuterClient-like windows
+        // exist (for example a transient popup).
+        if (Number(w.pid) === targetPid && !w.transient) {{
+            break;
+        }}
+    }}
+
+    if (!target) {{
+        return;
+    }}
+
+    // Keep normal taskbar / Alt+Tab integration.
+    target.skipTaskbar = false;
+    target.skipPager = false;
+
+    // The KWin action operates on activeWindow, so target this exact window.
+    workspace.activeWindow = target;
+
+    // Toggle only when a native decoration is currently present.
+    if (!target.noBorder) {{
+        workspace.slotWindowNoBorder();
+    }}
+}})();
+""".strip()
+
+
+def _v637_run_kwin_no_border_script(self):
+    if not sys.platform.startswith("linux"):
+        return False
+
+    if os.environ.get("OUTERCLIENT_SMOKE_TEST") == "1":
+        return False
+
+    if not self.is_kde_v635():
+        return False
+
+    qdbus = self.qdbus_binary_v637()
+    if not qdbus:
+        self.write_log("KWin 6.3.7: qdbus not found")
+        return False
+
+    cache = Path.home() / ".cache" / "outerclient"
+    cache.mkdir(parents=True, exist_ok=True)
+
+    script_path = cache / f"kwin-titlebar-{os.getpid()}.js"
+    script_name = f"outerclient-titlebar-{os.getpid()}"
+
+    try:
+        script_path.write_text(
+            self.kwin_script_source_v637(),
+            encoding="utf-8",
+        )
+    except Exception as exc:
+        self.write_log("KWin 6.3.7 script write: " + str(exc))
+        return False
+
+    # Clean any same-name leftover from an earlier attempt in this process.
+    try:
+        subprocess.run(
+            [
+                qdbus,
+                "org.kde.KWin",
+                "/Scripting",
+                "org.kde.kwin.Scripting.unloadScript",
+                script_name,
+            ],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            timeout=3,
+        )
+    except Exception:
+        pass
+
+    try:
+        loaded = subprocess.run(
+            [
+                qdbus,
+                "org.kde.KWin",
+                "/Scripting",
+                "org.kde.kwin.Scripting.loadScript",
+                str(script_path),
+                script_name,
+            ],
+            capture_output=True,
+            text=True,
+            timeout=4,
+        )
+
+        if loaded.returncode != 0:
+            self.write_log(
+                "KWin 6.3.7 loadScript failed: "
+                + (loaded.stderr or loaded.stdout or "").strip()
+            )
+            return False
+
+        match = re.search(r"\d+", loaded.stdout or "")
+        if not match:
+            self.write_log(
+                "KWin 6.3.7 loadScript returned no id: "
+                + (loaded.stdout or "").strip()
+            )
+            return False
+
+        script_id = match.group(0)
+
+        run = subprocess.run(
+            [
+                qdbus,
+                "org.kde.KWin",
+                f"/Scripting/Script{script_id}",
+                "org.kde.kwin.Script.run",
+            ],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.PIPE,
+            text=True,
+            timeout=4,
+        )
+
+        if run.returncode != 0:
+            self.write_log(
+                "KWin 6.3.7 Script.run failed: "
+                + (run.stderr or "").strip()
+            )
+            return False
+
+        self._kwin_script_success_v637 = True
+
+        # One-shot script; clean it up after KWin has executed it.
+        def cleanup():
+            try:
+                subprocess.run(
+                    [
+                        qdbus,
+                        "org.kde.KWin",
+                        f"/Scripting/Script{script_id}",
+                        "org.kde.kwin.Script.stop",
+                    ],
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                    timeout=2,
+                )
+            except Exception:
+                pass
+
+            try:
+                subprocess.run(
+                    [
+                        qdbus,
+                        "org.kde.KWin",
+                        "/Scripting",
+                        "org.kde.kwin.Scripting.unloadScript",
+                        script_name,
+                    ],
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                    timeout=2,
+                )
+            except Exception:
+                pass
+
+            try:
+                script_path.unlink(missing_ok=True)
+            except Exception:
+                pass
+
+        self.after(900, cleanup)
+        return True
+
+    except Exception as exc:
+        self.write_log("KWin 6.3.7 script: " + str(exc))
+        return False
+
+
+def _v637_probe_after_kwin_script(self):
+    if not sys.platform.startswith("linux"):
+        return
+
+    state = self.native_decoration_state_v636()
+
+    if state is False:
+        # Confirmed borderless. Switch to the OuterClient titlebar.
+        self.show_custom_titlebar_layout_v63()
+        self._linux_titlebar_mode_v637 = "custom"
+        self.set_topmost_false_v63()
+        return
+
+    retries = getattr(self, "_kwin_border_retry_v637", 0)
+
+    if state is True and retries < 2:
+        # KWin still reports a frame. Run the targeted action once more; the
+        # script itself only toggles when target.noBorder is false.
+        self._kwin_border_retry_v637 = retries + 1
+        self.run_kwin_no_border_script_v637()
+        self.after(260, self.probe_after_kwin_script_v637)
+        return
+
+    if state is None and getattr(
+        self,
+        "_kwin_script_success_v637",
+        False,
+    ):
+        # Tk on Plasma normally runs through XWayland, but if frame extents
+        # cannot be queried, a successful targeted KWin script is a stronger
+        # signal than the old global-shortcut approach.
+        self.show_custom_titlebar_layout_v63()
+        self._linux_titlebar_mode_v637 = "custom"
+        self.set_topmost_false_v63()
+        return
+
+    # Safety: do not ever display native + custom at the same time.
+    self.show_native_titlebar_layout_v63()
+    self._linux_titlebar_mode_v637 = "native"
+    self.set_topmost_false_v63()
+
+
+def _v637_apply_linux_titlebar(self, force=False):
+    if not sys.platform.startswith("linux"):
+        return _V632_LINUX_WINDOW_BASE(self, force)
+
+    if os.environ.get("OUTERCLIENT_SMOKE_TEST") == "1":
+        self.set_topmost_false_v63()
+        return
+
+    self.set_topmost_false_v63()
+
+    # Keep a normal managed window. This is the reason the launcher remains in
+    # KDE's taskbar and Alt+Tab while using the custom titlebar.
+    try:
+        self.overrideredirect(False)
+    except Exception:
+        pass
+
+    try:
+        self.attributes("-type", "normal")
+    except Exception:
+        pass
+
+    # During negotiation show only the native bar. The custom bar is enabled
+    # only after KWin has removed its decoration.
+    self.show_native_titlebar_layout_v63()
+
+    try:
+        self.update_idletasks()
+    except Exception:
+        pass
+
+    # Motif is a cheap first attempt on XWayland and does not hurt if KWin
+    # ignores it.
+    try:
+        self.apply_motif_to_real_clients_v636()
+    except Exception:
+        pass
+
+    if force and not getattr(
+        self,
+        "_linux_titlebar_remap_done_v637",
+        False,
+    ):
+        self._linux_titlebar_remap_done_v637 = True
+
+        try:
+            self.withdraw()
+        except Exception:
+            pass
+
+        def remap():
+            try:
+                self.deiconify()
+                self.lift()
+                self.focus_force()
+                self.update_idletasks()
+            except Exception:
+                pass
+
+            # Give KWin a moment to fully manage the remapped client, then
+            # target that exact KWin Window by PID.
+            self.after(120, self.run_kwin_no_border_script_v637)
+            self.after(360, self.probe_after_kwin_script_v637)
+
+        self.after(45, remap)
+        return
+
+    self.run_kwin_no_border_script_v637()
+    self.after(260, self.probe_after_kwin_script_v637)
+
+
+def _v637_linux_map(self, event=None):
+    if not sys.platform.startswith("linux"):
+        return _V63_WINDOW_MAP_BASE(self, event)
+
+    if event is not None and getattr(event, "widget", None) is not self:
+        return
+
+    self.set_topmost_false_v63()
+
+    if os.environ.get("OUTERCLIENT_SMOKE_TEST") == "1":
+        return
+
+    # If the custom bar was already established, only repair the native frame
+    # when KWin recreated it after minimize/restore.
+    def repair_if_needed():
+        state = self.native_decoration_state_v636()
+
+        if (
+            getattr(self, "_linux_titlebar_mode_v637", "") == "custom"
+            and state is not True
+        ):
+            self.show_custom_titlebar_layout_v63()
+            return
+
+        self.apply_linux_titlebar_v637(force=False)
+
+    self.after(160, repair_if_needed)
+
+
+def _v637_show_whats_new(self, mark_seen=True):
+    self.set_active_page("whats_new")
+    self.clear_content()
+
+    outer = ctk.CTkScrollableFrame(
+        self.content,
+        fg_color=BG,
+        corner_radius=0,
+        scrollbar_button_color=SURFACE_3,
+        scrollbar_button_hover_color=BORDER,
+    )
+    outer.grid(row=0, column=0, sticky="nsew")
+    outer.grid_columnconfigure(0, weight=1)
+
+    self.page_header(
+        outer,
+        self.t("v637_whats_new_eyebrow"),
+        self.t("v61_whats_new_title"),
+        self.t("v61_whats_new_subtitle"),
+    )
+
+    self._whats_new_state_v63 = {
+        "header": self.t("v61_whats_new_title"),
+        "versions": [
+            "6.3.7",
+            "6.3.6",
+            "6.3.5",
+            "6.3.4",
+            "6.3.3",
+            "6.3.2",
+            "6.3.1",
+            "6.3",
+            "6.2",
+            "6.1",
+            "6.0",
+        ],
+        "current": "6.3.7",
+    }
+
+    self.release_card_v63(
+        outer,
+        1,
+        self.t("v61_current_version"),
+        self.t("v637_whats_new_title"),
+        self.t("v637_whats_new_date"),
+        [self.t("v637_change_titlebar")],
+        current=True,
+    )
+
+    self.release_card_v63(
+        outer,
+        2,
+        self.t("v61_previous_version"),
+        self.t("v636_whats_new_title"),
+        self.t("v636_whats_new_date"),
+        [self.t("v636_change_titlebar")],
+    )
+
+    if mark_seen:
+        self.mark_whats_new_seen_v62()
+
+
+def _v637_init(self):
+    self._linux_titlebar_mode_v637 = "probing"
+    self._linux_titlebar_remap_done_v637 = False
+    self._kwin_script_success_v637 = False
+    self._kwin_border_retry_v637 = 0
+
+    _V637_INIT_BASE(self)
+
+    self.set_topmost_false_v63()
+
+    if sys.platform.startswith("linux"):
+        self.show_native_titlebar_layout_v63()
+        self.after(
+            140,
+            lambda: self.apply_linux_titlebar_v637(force=True),
+        )
+
+
+OuterClient.qdbus_binary_v637 = _v637_qdbus_binary
+OuterClient.kwin_script_source_v637 = _v637_kwin_script_source
+OuterClient.run_kwin_no_border_script_v637 = _v637_run_kwin_no_border_script
+OuterClient.probe_after_kwin_script_v637 = _v637_probe_after_kwin_script
+OuterClient.apply_linux_titlebar_v637 = _v637_apply_linux_titlebar
+
+# Every historical callback now lands on the 6.3.7 implementation.
+OuterClient.apply_linux_titlebar_v636 = _v637_apply_linux_titlebar
+OuterClient.apply_linux_custom_titlebar_v635 = _v637_apply_linux_titlebar
+OuterClient.apply_linux_custom_titlebar_v633 = _v637_apply_linux_titlebar
+OuterClient.apply_linux_titlebar_v632 = _v637_apply_linux_titlebar
+OuterClient.apply_linux_window_mode_v631 = _v637_apply_linux_titlebar
+OuterClient.apply_linux_window_mode_v63 = _v637_apply_linux_titlebar
+OuterClient.apply_linux_titlebar_v62 = _v637_apply_linux_titlebar
+OuterClient.apply_linux_managed_titlebar_v61 = _v637_apply_linux_titlebar
+OuterClient.apply_borderless_once_v5103 = _v637_apply_linux_titlebar
+OuterClient.force_borderless_v5102 = _v637_apply_linux_titlebar
+OuterClient.reapply_custom_titlebar_v633 = _v637_probe_after_kwin_script
+OuterClient.custom_on_map_v5101 = _v637_linux_map
+
+OuterClient.show_whats_new_v61 = _v637_show_whats_new
+OuterClient.__init__ = _v637_init
 
 
 
