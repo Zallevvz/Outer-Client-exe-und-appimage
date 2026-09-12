@@ -1,0 +1,50 @@
+OuterClient 6.3.9 — fullscreen/maximize validation
+
+ROOT CAUSE
+The custom maximize button was still bound to the old v5.10.1 implementation.
+That implementation manually stretched the Tk root with geometry(width x height
++ x + y). On KDE this bypassed KWin's normal maximize pipeline and caused:
+- custom titlebar/layout desynchronization
+- stale CustomTkinter canvas geometry
+- partially drawn cards/buttons after a large one-step resize
+- imperfect handling of KDE panel/work-area geometry
+
+6.3.9 FIX
+1. KDE maximization is handled by KWin itself.
+   A one-shot KWin script finds the main OuterClient window by PID and calls:
+       target.setMaximize(true, true)
+   Restore calls:
+       target.setMaximize(false, false)
+
+2. The existing working 6.3.8 custom-titlebar/no-border implementation is kept.
+
+3. The maximize button no longer normally uses manual geometry() on KDE.
+
+4. Windows/non-KDE fallbacks prefer native WM/Tk maximize state.
+
+5. Manual work-area geometry remains only as a last-resort fallback.
+
+6. Root <Configure> events are debounced. After the window settles, visible
+   CustomTkinter widgets are redrawn and scrollable-frame scrollregions are
+   refreshed. This prevents partially rendered CTk canvases after maximize,
+   restore or manual resize.
+
+VALIDATION
+- Python compile: OK
+- AST parse: OK
+- final maximize binding: _v639_toggle_maximize
+- KWin maximize API: target.setMaximize(desired, desired)
+- normal KDE path contains no manual geometry() maximize
+- debounced root Configure handler: OK
+- CTk widget redraw pass: OK
+- CTkScrollableFrame scrollregion refresh: OK
+- existing 6.3.8 titlebar binding preserved
+- PL/EN translation parity: OK
+- GitHub Actions YAML parse: OK
+- release smoke test remains non-visual
+- bash -n Linux scripts: OK
+- ZIP integrity: OK
+
+ARTIFACTS
+- OuterClient-v6.3.9-x86_64.AppImage
+- OuterClient-v6.3.9.exe

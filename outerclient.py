@@ -38,7 +38,7 @@ except Exception:
 
 
 APP_NAME = "OuterClient"
-APP_VERSION = "6.3.8"
+APP_VERSION = "6.3.9"
 CONFIG_PATH = Path.home() / ".outerclient.json"
 REDIRECT_URI = "http://localhost:8765/callback"
 MICROSOFT_CLIENT_ID = "fb14d1c4-7d14-4a35-99a7-3f921f7a1e77"
@@ -631,6 +631,11 @@ TEXTS = {
         "v638_whats_new_title": "OuterClient 6.3.8",
         "v638_whats_new_date": "Wrzesień 2026",
         "v638_change_titlebar": "Naprawiono uruchamianie skryptu KWin: OuterClient nie wymaga już qdbus6. Automatycznie używa qdbus6, dbus-send albo gdbus i dopiero po wykonaniu systemowej akcji „Window No Border” pokazuje customowy pasek.",
+        "v639_whats_new_eyebrow": "OUTERCLIENT 6.3.9",
+        "v639_whats_new_title": "OuterClient 6.3.9",
+        "v639_whats_new_date": "Wrzesień 2026",
+        "v639_change_maximize": "Naprawiono maksymalizację: na KDE rozmiarem okna zarządza teraz KWin przez Window.setMaximize(), zamiast ręcznego ustawiania geometry().",
+        "v639_change_redraw": "Dodano bezpieczny redraw po maksymalizacji, przywróceniu i zmianie rozmiaru, aby karty, przyciski i paski CustomTkinter nie zostawały częściowo narysowane.",
         "v58_update_checking": "Sprawdzanie aktualizacji OuterClient…",
         "v58_update_failed": "Nie udało się sprawdzić aktualizacji: {error}",
         "v58_latest": "Masz najnowszą wersję OuterClient ({version}).",
@@ -1241,6 +1246,11 @@ TEXTS = {
         "v638_whats_new_title": "OuterClient 6.3.8",
         "v638_whats_new_date": "September 2026",
         "v638_change_titlebar": "Fixed KWin script execution: OuterClient no longer requires qdbus6. It automatically uses qdbus6, dbus-send or gdbus and shows the custom bar only after KWin's “Window No Border” action is executed.",
+        "v639_whats_new_eyebrow": "OUTERCLIENT 6.3.9",
+        "v639_whats_new_title": "OuterClient 6.3.9",
+        "v639_whats_new_date": "September 2026",
+        "v639_change_maximize": "Fixed maximization: on KDE the window is now maximized by KWin through Window.setMaximize() instead of manually forcing geometry().",
+        "v639_change_redraw": "Added a safe redraw pass after maximize, restore and resize so CustomTkinter cards, buttons and bars cannot remain partially rendered.",
         "v5_change_profile": "Change profile",
         "v5_previous": "Previous",
         "v5_next": "Next",
@@ -1631,7 +1641,7 @@ class OuterClient(ctk.CTk):
                 try:
                     import ctypes
                     ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(
-                        "OuterClient.Launcher.6.3.8"
+                        "OuterClient.Launcher.6.3.9"
                     )
                 except Exception:
                     pass
@@ -36349,6 +36359,546 @@ OuterClient.custom_on_map_v5101 = _v638_linux_map
 
 OuterClient.show_whats_new_v61 = _v638_show_whats_new
 OuterClient.__init__ = _v638_init
+
+
+
+# ============================================================
+# OuterClient 6.3.9
+# Maximize / resize fix
+# ============================================================
+
+_V639_INIT_BASE = OuterClient.__init__
+
+
+def _v639_kwin_maximize_script_source(self, maximize):
+    pid = int(os.getpid())
+    desired = "true" if maximize else "false"
+
+    return f"""
+(function() {{
+    const targetPid = {pid};
+    const desired = {desired};
+
+    function isOuterClient(w) {{
+        if (!w || !w.managed || w.transient) {{
+            return false;
+        }}
+
+        const cls = String(w.resourceClass || "").toLowerCase();
+        const name = String(w.resourceName || "").toLowerCase();
+        const caption = String(w.caption || "").toLowerCase();
+
+        if (Number(w.pid) === targetPid) {{
+            return true;
+        }}
+
+        return (
+            cls.indexOf("outerclient") >= 0 ||
+            name.indexOf("outerclient") >= 0 ||
+            caption.indexOf("outerclient 6.3.9") >= 0
+        );
+    }}
+
+    let target = null;
+    const windows = workspace.stackingOrder;
+
+    for (let i = 0; i < windows.length; ++i) {{
+        const w = windows[i];
+
+        if (!isOuterClient(w)) {{
+            continue;
+        }}
+
+        target = w;
+
+        if (Number(w.pid) === targetPid) {{
+            break;
+        }}
+    }}
+
+    if (!target) {{
+        print("OuterClient 6.3.9 maximize: target not found");
+        return;
+    }}
+
+    target.skipTaskbar = false;
+    target.skipPager = false;
+    target.skipSwitcher = false;
+
+    // This is the KWin-owned maximize API. It preserves the proper work area,
+    // KDE panel struts, taskbar behavior and restore geometry.
+    target.setMaximize(desired, desired);
+
+    try {{
+        workspace.raiseWindow(target);
+        workspace.activeWindow = target;
+    }} catch (e) {{}}
+
+    print(
+        "OuterClient 6.3.9 maximize=" + String(desired)
+    );
+}})();
+""".strip()
+
+
+def _v639_run_kwin_maximize(self, maximize):
+    tools = self.kwin_dbus_tools_v638()
+
+    if not tools:
+        self.write_log(
+            "KWin maximize 6.3.9: no DBus CLI available"
+        )
+        return False
+
+    cache = Path.home() / ".cache" / "outerclient"
+    cache.mkdir(parents=True, exist_ok=True)
+
+    script_path = (
+        cache
+        / f"kwin-maximize-{os.getpid()}-{int(bool(maximize))}.js"
+    )
+    script_name = (
+        f"outerclient-maximize-{os.getpid()}-{int(bool(maximize))}"
+    )
+
+    try:
+        script_path.write_text(
+            self.kwin_maximize_script_source_v639(maximize),
+            encoding="utf-8",
+        )
+    except Exception as exc:
+        self.write_log(
+            "KWin maximize 6.3.9 script write: " + str(exc)
+        )
+        return False
+
+    for backend, binary in tools:
+        # Remove an old script with the same name if necessary.
+        try:
+            self.dbus_simple_call_v638(
+                backend,
+                binary,
+                "/Scripting",
+                "org.kde.kwin.Scripting.unloadScript",
+                script_name,
+            )
+        except Exception:
+            pass
+
+        script_id = self.dbus_load_script_with_v638(
+            backend,
+            binary,
+            script_path,
+            script_name,
+        )
+
+        if script_id is None:
+            continue
+
+        # Starting the scripting subsystem is harmless when already active.
+        try:
+            self.dbus_simple_call_v638(
+                backend,
+                binary,
+                "/Scripting",
+                "org.kde.kwin.Scripting.start",
+            )
+        except Exception:
+            pass
+
+        ran = self.dbus_simple_call_v638(
+            backend,
+            binary,
+            f"/Scripting/Script{script_id}",
+            "org.kde.kwin.Script.run",
+        )
+
+        # Some KWin builds execute the script from Scripting.start() already.
+        # Either route is followed by a geometry/redraw verification.
+        if not ran:
+            self.write_log(
+                f"KWin maximize 6.3.9: Script.run returned false "
+                f"via {backend}; verifying state anyway"
+            )
+
+        def cleanup(
+            backend=backend,
+            binary=binary,
+            script_id=script_id,
+            script_name=script_name,
+            script_path=script_path,
+        ):
+            try:
+                self.dbus_simple_call_v638(
+                    backend,
+                    binary,
+                    f"/Scripting/Script{script_id}",
+                    "org.kde.kwin.Script.stop",
+                )
+            except Exception:
+                pass
+
+            try:
+                self.dbus_simple_call_v638(
+                    backend,
+                    binary,
+                    "/Scripting",
+                    "org.kde.kwin.Scripting.unloadScript",
+                    script_name,
+                )
+            except Exception:
+                pass
+
+            try:
+                script_path.unlink(missing_ok=True)
+            except Exception:
+                pass
+
+        self.after(1200, cleanup)
+
+        self.write_log(
+            f"KWin maximize 6.3.9: "
+            f"{'maximize' if maximize else 'restore'} via {backend}"
+        )
+        return True
+
+    return False
+
+
+def _v639_redraw_widget_tree(self, widget):
+    """
+    Force CustomTkinter canvases to redraw after a WM-driven resize.
+
+    CTk widgets cache canvas geometry. A very large one-step resize could leave
+    parts of cards/buttons visually stale even though Tk had the correct final
+    dimensions.
+    """
+    try:
+        exists = widget.winfo_exists()
+    except Exception:
+        exists = False
+
+    if not exists:
+        return
+
+    try:
+        if not widget.winfo_viewable() and widget is not self:
+            return
+    except Exception:
+        pass
+
+    draw = getattr(widget, "_draw", None)
+    if callable(draw):
+        try:
+            draw()
+        except TypeError:
+            try:
+                draw(no_color_updates=False)
+            except Exception:
+                pass
+        except Exception:
+            pass
+
+    # CTkScrollableFrame owns an internal canvas. Refresh its scrollregion
+    # after width/height changes.
+    canvas = getattr(widget, "_parent_canvas", None)
+    if canvas is not None:
+        try:
+            bbox = canvas.bbox("all")
+            if bbox:
+                canvas.configure(scrollregion=bbox)
+        except Exception:
+            pass
+
+    try:
+        children = widget.winfo_children()
+    except Exception:
+        children = []
+
+    for child in children:
+        self.redraw_widget_tree_v639(child)
+
+
+def _v639_finish_window_transition(self):
+    self._window_transition_after_v639 = None
+
+    try:
+        self.update_idletasks()
+    except Exception:
+        pass
+
+    # Redraw only after KWin/Tk has reached the settled size.
+    self.redraw_widget_tree_v639(self)
+
+    try:
+        self.update_idletasks()
+    except Exception:
+        pass
+
+    # Preserve the already-working 6.3.8 custom titlebar.
+    if sys.platform.startswith("linux"):
+        state = None
+
+        try:
+            state = self.native_decoration_state_v636()
+        except Exception:
+            pass
+
+        if state is True:
+            # KWin unexpectedly recreated its decoration.
+            self.run_kwin_no_border_v638()
+            self.after(
+                250,
+                self.probe_titlebar_v638,
+            )
+        else:
+            self.show_custom_titlebar_layout_v63()
+
+    if hasattr(self, "_title_max_button"):
+        try:
+            self._title_max_button.configure(
+                text=(
+                    "❐"
+                    if getattr(
+                        self,
+                        "_custom_maximized",
+                        False,
+                    )
+                    else "□"
+                )
+            )
+        except Exception:
+            pass
+
+
+def _v639_schedule_window_redraw(self, delay=100):
+    old = getattr(
+        self,
+        "_window_transition_after_v639",
+        None,
+    )
+
+    if old is not None:
+        try:
+            self.after_cancel(old)
+        except Exception:
+            pass
+
+    self._window_transition_after_v639 = self.after(
+        int(delay),
+        self.finish_window_transition_v639,
+    )
+
+
+def _v639_configure_event(self, event=None):
+    # Ignore Configure events emitted by child widgets.
+    if event is not None and getattr(event, "widget", None) is not self:
+        return
+
+    try:
+        size = (
+            int(self.winfo_width()),
+            int(self.winfo_height()),
+        )
+    except Exception:
+        return
+
+    previous = getattr(
+        self,
+        "_last_root_size_v639",
+        None,
+    )
+
+    if size == previous:
+        return
+
+    self._last_root_size_v639 = size
+    self.schedule_window_redraw_v639(120)
+
+
+def _v639_native_maximize_fallback(self, maximize):
+    """
+    Non-KDE / Windows fallback. Prefer native WM state over manual geometry.
+    """
+    # Windows Tk supports the zoomed state reliably.
+    if sys.platform.startswith("win"):
+        try:
+            self.state("zoomed" if maximize else "normal")
+            return True
+        except Exception:
+            pass
+
+    # Tk/X11 may expose -zoomed depending on the Tk build/WM.
+    try:
+        self.attributes("-zoomed", bool(maximize))
+        return True
+    except Exception:
+        pass
+
+    # Last resort: use normal/zoomed state if supported.
+    try:
+        self.state("zoomed" if maximize else "normal")
+        return True
+    except Exception:
+        pass
+
+    return False
+
+
+def _v639_toggle_maximize(self):
+    desired = not bool(
+        getattr(
+            self,
+            "_custom_maximized",
+            False,
+        )
+    )
+
+    # Keep restore geometry only for a fallback path. KWin setMaximize itself
+    # remembers the correct restore geometry.
+    if desired:
+        try:
+            self.update_idletasks()
+            self._custom_restore_geometry = (
+                int(self.winfo_x()),
+                int(self.winfo_y()),
+                int(self.winfo_width()),
+                int(self.winfo_height()),
+            )
+        except Exception:
+            self._custom_restore_geometry = None
+
+    success = False
+
+    if (
+        sys.platform.startswith("linux")
+        and self.is_kde_v635()
+    ):
+        success = self.run_kwin_maximize_v639(desired)
+
+    if not success:
+        success = self.native_maximize_fallback_v639(desired)
+
+    if not success:
+        # Absolute last fallback for unusual WMs. This is intentionally no
+        # longer the normal KDE path.
+        if desired:
+            x, y, width, height = self.custom_work_area_v5101()
+            self.geometry(
+                f"{width}x{height}+{x}+{y}"
+            )
+        else:
+            geometry = getattr(
+                self,
+                "_custom_restore_geometry",
+                None,
+            )
+
+            if geometry:
+                x, y, width, height = geometry
+                self.geometry(
+                    f"{width}x{height}+{x}+{y}"
+                )
+
+    self._custom_maximized = desired
+
+    if hasattr(self, "_title_max_button"):
+        try:
+            self._title_max_button.configure(
+                text="❐" if desired else "□"
+            )
+        except Exception:
+            pass
+
+    # KWin resize + Tk/CTk canvas redraw happen asynchronously.
+    self.schedule_window_redraw_v639(220)
+
+
+def _v639_show_whats_new(self, mark_seen=True):
+    self.set_active_page("whats_new")
+    self.clear_content()
+
+    outer = ctk.CTkScrollableFrame(
+        self.content,
+        fg_color=BG,
+        corner_radius=0,
+        scrollbar_button_color=SURFACE_3,
+        scrollbar_button_hover_color=BORDER,
+    )
+    outer.grid(row=0, column=0, sticky="nsew")
+    outer.grid_columnconfigure(0, weight=1)
+
+    self.page_header(
+        outer,
+        self.t("v639_whats_new_eyebrow"),
+        self.t("v61_whats_new_title"),
+        self.t("v61_whats_new_subtitle"),
+    )
+
+    self._whats_new_state_v63 = {
+        "header": self.t("v61_whats_new_title"),
+        "versions": [
+            "6.3.9", "6.3.8", "6.3.7", "6.3.6",
+            "6.3.5", "6.3.4", "6.3.3", "6.3.2",
+            "6.3.1", "6.3", "6.2", "6.1", "6.0",
+        ],
+        "current": "6.3.9",
+    }
+
+    self.release_card_v63(
+        outer,
+        1,
+        self.t("v61_current_version"),
+        self.t("v639_whats_new_title"),
+        self.t("v639_whats_new_date"),
+        [
+            self.t("v639_change_maximize"),
+            self.t("v639_change_redraw"),
+        ],
+        current=True,
+    )
+
+    self.release_card_v63(
+        outer,
+        2,
+        self.t("v61_previous_version"),
+        self.t("v638_whats_new_title"),
+        self.t("v638_whats_new_date"),
+        [self.t("v638_change_titlebar")],
+    )
+
+    if mark_seen:
+        self.mark_whats_new_seen_v62()
+
+
+def _v639_init(self):
+    self._window_transition_after_v639 = None
+    self._last_root_size_v639 = None
+
+    _V639_INIT_BASE(self)
+
+    # Root-only resize debounce. This also fixes resize artifacts from manual
+    # edge resizing and external WM shortcuts.
+    self.bind(
+        "<Configure>",
+        self.root_configure_v639,
+        add="+",
+    )
+
+
+OuterClient.kwin_maximize_script_source_v639 = _v639_kwin_maximize_script_source
+OuterClient.run_kwin_maximize_v639 = _v639_run_kwin_maximize
+OuterClient.redraw_widget_tree_v639 = _v639_redraw_widget_tree
+OuterClient.finish_window_transition_v639 = _v639_finish_window_transition
+OuterClient.schedule_window_redraw_v639 = _v639_schedule_window_redraw
+OuterClient.root_configure_v639 = _v639_configure_event
+OuterClient.native_maximize_fallback_v639 = _v639_native_maximize_fallback
+
+# Replace the ancient manual-geometry maximize handler.
+OuterClient.custom_toggle_maximize_v5101 = _v639_toggle_maximize
+
+OuterClient.show_whats_new_v61 = _v639_show_whats_new
+OuterClient.__init__ = _v639_init
 
 
 
