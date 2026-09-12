@@ -1,0 +1,75 @@
+OuterClient 6.4.0 — Core Update validation
+
+PROFILE CREATION 2.0
+- Removed the giant CTkOptionMenu Minecraft-version dropdown.
+- Added a compact version selector with an in-page overlay.
+- Added version search and limited batched rendering.
+- Added loader cards for Vanilla, Fabric, Forge, NeoForge and Quilt.
+- Loader cards include distinct icon badges, descriptions and selected state.
+- Default profile icon remains the OuterClient icon when the user chooses none.
+- Fabric profiles still receive Fabric API automatically.
+
+MINECRAFT LAUNCH CORE
+- Final prepare_profile_for_launch binding: _v640_prepare_profile.
+- install_minecraft_version is used as the verification/repair step before launch.
+- Required Java is resolved before loader installation.
+- Loader installation uses minecraft-launcher-lib 8 mod_loader API with:
+    loader_version
+    callback
+    java
+- Modded version libraries get a secondary repair pass when supported.
+- Fabric API / incompatible Fabric mod handling is preserved.
+- Existing Windows CREATE_NO_WINDOW launch behavior is preserved through the
+  existing launch implementation.
+- Existing play statistics / process monitoring are preserved.
+
+MICROSOFT LOGIN 2.0
+- Fixed redirect URI:
+    http://localhost:8765/callback
+- Local HTTP server binds:
+    127.0.0.1:8765
+- No random-port OAuth fallback is used.
+- Secure login still uses PKCE + state through get_secure_login_data().
+- complete_login() uses the PKCE verifier.
+- complete_refresh() refreshes the active account before game launch.
+- Dedicated messages exist for:
+    AzureAppNotPermitted
+    AccountNotOwnMinecraft
+    InvalidRefreshToken
+    port 8765 busy
+
+JAVA MANAGER 2.0
+- Final runtime worker: _v640_download_runtime_worker.
+- Minecraft runtime metadata is read through get_version_runtime_information().
+- Missing runtime is installed through install_jvm_runtime().
+- Automatic mode prefers the Minecraft-provided runtime.
+- Manual system Java is accepted only when it matches the required major.
+- Java Manager cards show compatible / incompatible Java installations.
+- Runtime repair button now uses the same Java preparation logic as game launch.
+
+REGRESSIONS PRESERVED
+- 6.3.8 custom KDE titlebar remains the active Linux titlebar implementation.
+- 6.3.9 KWin/native maximize remains the active maximize implementation.
+- 6.3.5 Taskbar / dock scroll-parent fix is preserved.
+- 6.3.4 Diagnostics rebuild is preserved.
+
+STATIC VALIDATION
+- Python compile: OK
+- AST parse: OK
+- PL/EN translation parity: OK
+- literal translation lookup coverage: OK
+- final method binding order: OK
+- fixed OAuth callback verified: OK
+- no CTkOptionMenu in the new profile-creation implementation: OK
+- GitHub Actions YAML parse: OK
+- Linux scripts bash -n: OK
+- ZIP integrity: OK
+
+NOTE
+The local sandbox cannot download pip dependencies, so the real CustomTkinter
+Xvfb runtime smoke test could not be executed here. The GitHub Actions workflow
+still performs its normal runtime smoke test during the release build.
+
+ARTIFACTS
+- OuterClient-v6.4.0-x86_64.AppImage
+- OuterClient-v6.4.0.exe

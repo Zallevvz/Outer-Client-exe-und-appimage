@@ -38,7 +38,7 @@ except Exception:
 
 
 APP_NAME = "OuterClient"
-APP_VERSION = "6.3.9"
+APP_VERSION = "6.4.0"
 CONFIG_PATH = Path.home() / ".outerclient.json"
 REDIRECT_URI = "http://localhost:8765/callback"
 MICROSOFT_CLIENT_ID = "fb14d1c4-7d14-4a35-99a7-3f921f7a1e77"
@@ -636,6 +636,43 @@ TEXTS = {
         "v639_whats_new_date": "Wrzesień 2026",
         "v639_change_maximize": "Naprawiono maksymalizację: na KDE rozmiarem okna zarządza teraz KWin przez Window.setMaximize(), zamiast ręcznego ustawiania geometry().",
         "v639_change_redraw": "Dodano bezpieczny redraw po maksymalizacji, przywróceniu i zmianie rozmiaru, aby karty, przyciski i paski CustomTkinter nie zostawały częściowo narysowane.",
+        "v640_whats_new_eyebrow": "OUTERCLIENT 6.4",
+        "v640_whats_new_title": "OuterClient 6.4 — Core Update",
+        "v640_whats_new_date": "Wrzesień 2026",
+        "v640_change_profiles": "Przebudowano tworzenie profilu: wyszukiwarka wersji Minecrafta, kompaktowy selektor i kafelki modloaderów z ikonami.",
+        "v640_change_launch": "Przebudowano przygotowanie gry: przed uruchomieniem OuterClient weryfikuje i naprawia Minecrafta, loader oraz wymaganą Javę.",
+        "v640_change_microsoft": "Logowanie Microsoft używa stałego callbacku localhost:8765, PKCE i automatycznego odświeżania sesji przed uruchomieniem gry.",
+        "v640_change_java": "Java Manager automatycznie pobiera właściwy runtime Minecrafta, pokazuje zgodność znalezionych Jav i pozwala naprawić runtime jednym przyciskiem.",
+        "v640_profile_version": "WERSJA MINECRAFTA",
+        "v640_choose_version": "Wybierz wersję",
+        "v640_search_version": "Szukaj wersji…",
+        "v640_recent_versions": "NAJNOWSZE WERSJE",
+        "v640_all_versions": "WSZYSTKIE WERSJE",
+        "v640_no_versions": "Brak pasujących wersji.",
+        "v640_loader": "MODLOADER",
+        "v640_loader_hint": "Loader zostanie zainstalowany w najnowszej kompatybilnej wersji.",
+        "v640_loader_vanilla": "Czysty Minecraft",
+        "v640_loader_fabric": "Lekki, szybki i popularny",
+        "v640_loader_forge": "Klasyczny duży ekosystem modów",
+        "v640_loader_neoforge": "Nowoczesny fork Forge",
+        "v640_loader_quilt": "Lekki fork ekosystemu Fabric",
+        "v640_create_summary": "Minecraft {version} • {loader} • Java {java}",
+        "v640_fabric_note": "Fabric API zostanie dodane automatycznie.",
+        "v640_launch_verify": "Sprawdzanie plików Minecrafta…",
+        "v640_launch_runtime": "Sprawdzanie Javy…",
+        "v640_launch_loader": "Sprawdzanie modloadera…",
+        "v640_launch_ready": "Profil gotowy — uruchamianie Minecrafta…",
+        "v640_runtime_install": "Pobieranie runtime Java {major}…",
+        "v640_runtime_ok": "Runtime Minecrafta jest gotowy",
+        "v640_java_compatible": "Zgodna",
+        "v640_java_incompatible": "Niezgodna",
+        "v640_java_runtime_auto": "Automatyczny runtime Minecrafta",
+        "v640_java_runtime_desc": "OuterClient dobiera Javę do wersji Minecrafta i pobiera ją tylko wtedy, gdy jest potrzebna.",
+        "v640_login_port_busy": "Port 8765 jest zajęty. Zamknij program używający tego portu i spróbuj ponownie.",
+        "v640_login_not_permitted": "Microsoft zaakceptował logowanie, ale AppID OuterClient nie ma jeszcze uprawnień Minecraft Services.",
+        "v640_login_no_game": "To konto Microsoft nie posiada Minecraft: Java Edition.",
+        "v640_login_expired": "Sesja Microsoft wygasła. Zaloguj konto ponownie.",
+        "v640_login_wait": "Oczekiwanie na logowanie Microsoft w przeglądarce…",
         "v58_update_checking": "Sprawdzanie aktualizacji OuterClient…",
         "v58_update_failed": "Nie udało się sprawdzić aktualizacji: {error}",
         "v58_latest": "Masz najnowszą wersję OuterClient ({version}).",
@@ -1251,6 +1288,43 @@ TEXTS = {
         "v639_whats_new_date": "September 2026",
         "v639_change_maximize": "Fixed maximization: on KDE the window is now maximized by KWin through Window.setMaximize() instead of manually forcing geometry().",
         "v639_change_redraw": "Added a safe redraw pass after maximize, restore and resize so CustomTkinter cards, buttons and bars cannot remain partially rendered.",
+        "v640_whats_new_eyebrow": "OUTERCLIENT 6.4",
+        "v640_whats_new_title": "OuterClient 6.4 — Core Update",
+        "v640_whats_new_date": "September 2026",
+        "v640_change_profiles": "Rebuilt profile creation with Minecraft version search, a compact selector and mod-loader cards with icons.",
+        "v640_change_launch": "Rebuilt game preparation: before launch OuterClient verifies and repairs Minecraft, the loader and the required Java runtime.",
+        "v640_change_microsoft": "Microsoft login now uses the fixed localhost:8765 callback, PKCE and automatic session refresh before launching the game.",
+        "v640_change_java": "Java Manager can automatically install the correct Minecraft runtime, shows Java compatibility and repairs the runtime with one click.",
+        "v640_profile_version": "MINECRAFT VERSION",
+        "v640_choose_version": "Choose version",
+        "v640_search_version": "Search versions…",
+        "v640_recent_versions": "RECENT VERSIONS",
+        "v640_all_versions": "ALL VERSIONS",
+        "v640_no_versions": "No matching versions.",
+        "v640_loader": "MOD LOADER",
+        "v640_loader_hint": "The latest compatible loader version will be installed automatically.",
+        "v640_loader_vanilla": "Pure Minecraft",
+        "v640_loader_fabric": "Lightweight, fast and popular",
+        "v640_loader_forge": "Classic large mod ecosystem",
+        "v640_loader_neoforge": "Modern Forge fork",
+        "v640_loader_quilt": "Lightweight Fabric ecosystem fork",
+        "v640_create_summary": "Minecraft {version} • {loader} • Java {java}",
+        "v640_fabric_note": "Fabric API will be added automatically.",
+        "v640_launch_verify": "Verifying Minecraft files…",
+        "v640_launch_runtime": "Checking Java…",
+        "v640_launch_loader": "Checking mod loader…",
+        "v640_launch_ready": "Profile ready — launching Minecraft…",
+        "v640_runtime_install": "Downloading Java {major} runtime…",
+        "v640_runtime_ok": "Minecraft runtime is ready",
+        "v640_java_compatible": "Compatible",
+        "v640_java_incompatible": "Incompatible",
+        "v640_java_runtime_auto": "Automatic Minecraft runtime",
+        "v640_java_runtime_desc": "OuterClient selects Java for the Minecraft version and downloads it only when required.",
+        "v640_login_port_busy": "Port 8765 is busy. Close the application using it and try again.",
+        "v640_login_not_permitted": "Microsoft login succeeded, but the OuterClient AppID is not yet permitted to use Minecraft Services.",
+        "v640_login_no_game": "This Microsoft account does not own Minecraft: Java Edition.",
+        "v640_login_expired": "The Microsoft session expired. Sign in again.",
+        "v640_login_wait": "Waiting for Microsoft sign-in in your browser…",
         "v5_change_profile": "Change profile",
         "v5_previous": "Previous",
         "v5_next": "Next",
@@ -1641,7 +1715,7 @@ class OuterClient(ctk.CTk):
                 try:
                     import ctypes
                     ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(
-                        "OuterClient.Launcher.6.3.9"
+                        "OuterClient.Launcher.6.4.0"
                     )
                 except Exception:
                     pass
@@ -36899,6 +36973,2206 @@ OuterClient.custom_toggle_maximize_v5101 = _v639_toggle_maximize
 
 OuterClient.show_whats_new_v61 = _v639_show_whats_new
 OuterClient.__init__ = _v639_init
+
+
+
+# ============================================================
+# OuterClient 6.4.0 — Core Update
+# - profile creation selector redesign
+# - reliable Minecraft / loader / Java preparation
+# - Microsoft PKCE login reliability
+# - Java Manager runtime repair
+# ============================================================
+
+_V640_INIT_BASE = OuterClient.__init__
+_V640_RENDER_JAVA_BASE = OuterClient.render_java_manager
+_V640_LAUNCH_INSTALLED_BASE = OuterClient.launch_installed_v54
+
+
+# ------------------------------------------------------------
+# Profile creation 2.0
+# ------------------------------------------------------------
+
+V640_LOADER_META = {
+    "Vanilla": {
+        "icon": "◆",
+        "color": "#69A05A",
+        "desc_key": "v640_loader_vanilla",
+    },
+    "Fabric": {
+        "icon": "F",
+        "color": "#C9B8A4",
+        "desc_key": "v640_loader_fabric",
+    },
+    "Forge": {
+        "icon": "⚒",
+        "color": "#5B6FA8",
+        "desc_key": "v640_loader_forge",
+    },
+    "NeoForge": {
+        "icon": "N",
+        "color": "#E2723A",
+        "desc_key": "v640_loader_neoforge",
+    },
+    "Quilt": {
+        "icon": "Q",
+        "color": "#8C63D9",
+        "desc_key": "v640_loader_quilt",
+    },
+}
+
+
+def _v640_close_version_picker(self):
+    overlay = getattr(self, "_create_version_overlay_v640", None)
+
+    if overlay is not None:
+        try:
+            if overlay.winfo_exists():
+                overlay.place_forget()
+        except Exception:
+            pass
+
+    self._create_version_picker_open_v640 = False
+
+
+def _v640_create_versions(self):
+    versions = list(self.version_cache or [])
+
+    if not versions:
+        versions = [
+            "26.2",
+            "26.1.2",
+            "26.1.1",
+            "26.1",
+            "1.21.11",
+            "1.21.10",
+            "1.21.9",
+            "1.21.8",
+            "1.21.7",
+            "1.21.6",
+            "1.21.5",
+            "1.21.4",
+            "1.21.3",
+            "1.21.2",
+            "1.21.1",
+            "1.21",
+            "1.20.6",
+            "1.20.5",
+            "1.20.4",
+            "1.20.3",
+            "1.20.2",
+            "1.20.1",
+            "1.20",
+            "1.19.4",
+            "1.19.3",
+            "1.19.2",
+            "1.19.1",
+            "1.19",
+            "1.18.2",
+            "1.18.1",
+            "1.18",
+            "1.17.1",
+            "1.17",
+            "1.16.5",
+            "1.16.4",
+            "1.16.3",
+            "1.16.2",
+            "1.16.1",
+            "1.16",
+            "1.15.2",
+            "1.15.1",
+            "1.15",
+            "1.14.4",
+            "1.14.3",
+            "1.14.2",
+            "1.14.1",
+            "1.14",
+            "1.13.2",
+            "1.13.1",
+            "1.13",
+            "1.12.2",
+            "1.12.1",
+            "1.12",
+        ]
+
+    clean = []
+    seen = set()
+
+    for value in versions:
+        value = str(value or "").strip()
+
+        if not value or value in seen:
+            continue
+
+        seen.add(value)
+        clean.append(value)
+
+    return clean
+
+
+def _v640_update_create_summary(self):
+    label = getattr(self, "_create_summary_label_v640", None)
+
+    if label is None:
+        return
+
+    try:
+        if not label.winfo_exists():
+            return
+    except Exception:
+        return
+
+    version = self._create_version_var_v640.get()
+    loader = self._create_loader_var_v640.get()
+    required = self.required_java_major(version)
+
+    text = self.t(
+        "v640_create_summary",
+        version=version,
+        loader=loader,
+        java=required,
+    )
+
+    if loader == "Fabric":
+        text += "  •  " + self.t("v640_fabric_note")
+
+    label.configure(text=text)
+
+
+def _v640_refresh_loader_cards(self):
+    selected = self._create_loader_var_v640.get()
+
+    for loader, widgets in getattr(
+        self,
+        "_create_loader_cards_v640",
+        {},
+    ).items():
+        active = loader == selected
+        card = widgets["card"]
+        badge = widgets["badge"]
+        title = widgets["title"]
+        desc = widgets["desc"]
+        meta = V640_LOADER_META[loader]
+
+        try:
+            card.configure(
+                fg_color=(
+                    "#1A2130"
+                    if active
+                    else SURFACE_2
+                ),
+                border_color=(
+                    self.accent
+                    if active
+                    else BORDER
+                ),
+                border_width=(2 if active else 1),
+            )
+            badge.configure(
+                fg_color=(
+                    self.accent
+                    if active
+                    else meta["color"]
+                ),
+            )
+            title.configure(
+                text_color=(
+                    "white"
+                    if active
+                    else TEXT
+                )
+            )
+            desc.configure(
+                text_color=(
+                    "#C7D2E3"
+                    if active
+                    else MUTED
+                )
+            )
+        except Exception:
+            pass
+
+    self.update_create_summary_v640()
+
+
+def _v640_select_loader(self, loader):
+    if loader not in V640_LOADER_META:
+        return
+
+    self._create_loader_var_v640.set(loader)
+    self.refresh_loader_cards_v640()
+
+
+def _v640_select_create_version(self, version):
+    if not version:
+        return
+
+    self._create_version_var_v640.set(str(version))
+
+    button = getattr(
+        self,
+        "_create_version_button_v640",
+        None,
+    )
+
+    if button is not None:
+        try:
+            button.configure(
+                text=f"Minecraft {version}                         ⌄"
+            )
+        except Exception:
+            pass
+
+    self.close_version_picker_v640()
+    self.update_create_summary_v640()
+
+
+def _v640_render_version_picker(self):
+    overlay = getattr(
+        self,
+        "_create_version_overlay_v640",
+        None,
+    )
+
+    if overlay is None:
+        return
+
+    try:
+        if not overlay.winfo_exists():
+            return
+    except Exception:
+        return
+
+    results = getattr(
+        self,
+        "_create_version_results_v640",
+        None,
+    )
+
+    if results is None:
+        return
+
+    for child in results.winfo_children():
+        try:
+            child.destroy()
+        except Exception:
+            pass
+
+    query = (
+        self._create_version_search_v640.get()
+        .strip()
+        .casefold()
+    )
+
+    versions = self.create_versions_v640()
+
+    if query:
+        versions = [
+            value
+            for value in versions
+            if query in value.casefold()
+        ]
+
+    # Rendering hundreds of buttons at once is unnecessary.
+    versions = versions[:140]
+
+    if not versions:
+        ctk.CTkLabel(
+            results,
+            text=self.t("v640_no_versions"),
+            text_color=MUTED,
+        ).grid(
+            row=0,
+            column=0,
+            sticky="w",
+            padx=12,
+            pady=16,
+        )
+        return
+
+    selected = self._create_version_var_v640.get()
+
+    for row, version in enumerate(versions):
+        active = version == selected
+
+        button = ctk.CTkButton(
+            results,
+            text=version,
+            height=34,
+            corner_radius=8,
+            anchor="w",
+            fg_color=(
+                self.accent
+                if active
+                else "transparent"
+            ),
+            hover_color=(
+                self.accent_hover
+                if active
+                else SURFACE_3
+            ),
+            border_width=0,
+            text_color=(
+                "white"
+                if active
+                else TEXT
+            ),
+            command=lambda v=version:
+                self.select_create_version_v640(v),
+        )
+        button.grid(
+            row=row,
+            column=0,
+            sticky="ew",
+            padx=5,
+            pady=2,
+        )
+
+    results.grid_columnconfigure(0, weight=1)
+
+
+def _v640_toggle_version_picker(self):
+    button = getattr(
+        self,
+        "_create_version_button_v640",
+        None,
+    )
+
+    if button is None:
+        return
+
+    if getattr(
+        self,
+        "_create_version_picker_open_v640",
+        False,
+    ):
+        self.close_version_picker_v640()
+        return
+
+    overlay = getattr(
+        self,
+        "_create_version_overlay_v640",
+        None,
+    )
+
+    try:
+        valid = overlay is not None and overlay.winfo_exists()
+    except Exception:
+        valid = False
+
+    if not valid:
+        overlay = ctk.CTkFrame(
+            self.content,
+            fg_color="#111824",
+            corner_radius=13,
+            border_width=1,
+            border_color=self.accent,
+        )
+        self._create_version_overlay_v640 = overlay
+
+        header = ctk.CTkFrame(
+            overlay,
+            fg_color="transparent",
+        )
+        header.pack(
+            fill="x",
+            padx=12,
+            pady=(12, 8),
+        )
+
+        self._create_version_search_v640 = ctk.StringVar()
+
+        search = ctk.CTkEntry(
+            header,
+            textvariable=self._create_version_search_v640,
+            placeholder_text=self.t("v640_search_version"),
+            height=38,
+            fg_color=SURFACE_2,
+            border_color=BORDER,
+        )
+        search.pack(
+            side="left",
+            fill="x",
+            expand=True,
+        )
+
+        ctk.CTkButton(
+            header,
+            text="×",
+            width=38,
+            height=38,
+            corner_radius=9,
+            fg_color=SURFACE_3,
+            hover_color="#512933",
+            command=self.close_version_picker_v640,
+        ).pack(
+            side="left",
+            padx=(8, 0),
+        )
+
+        results = ctk.CTkScrollableFrame(
+            overlay,
+            fg_color="transparent",
+            corner_radius=0,
+            scrollbar_button_color=SURFACE_3,
+            scrollbar_button_hover_color=BORDER,
+        )
+        results.pack(
+            fill="both",
+            expand=True,
+            padx=8,
+            pady=(0, 9),
+        )
+
+        self._create_version_results_v640 = results
+
+        def changed(*_args):
+            self.after(
+                70,
+                self.render_version_picker_v640,
+            )
+
+        self._create_version_search_v640.trace_add(
+            "write",
+            changed,
+        )
+
+    self.update_idletasks()
+
+    try:
+        button_x = (
+            button.winfo_rootx()
+            - self.content.winfo_rootx()
+        )
+        button_y = (
+            button.winfo_rooty()
+            - self.content.winfo_rooty()
+        )
+        button_w = button.winfo_width()
+        content_w = self.content.winfo_width()
+        content_h = self.content.winfo_height()
+
+        width = min(
+            560,
+            max(390, button_w),
+        )
+        width = min(
+            width,
+            max(320, content_w - 32),
+        )
+
+        x = button_x + button_w - width
+        x = max(
+            16,
+            min(
+                x,
+                max(16, content_w - width - 16),
+            ),
+        )
+
+        y = button_y + button.winfo_height() + 7
+
+        available = max(
+            250,
+            content_h - y - 18,
+        )
+        height = min(
+            430,
+            available,
+        )
+
+        overlay.place(
+            x=x,
+            y=y,
+            width=width,
+            height=height,
+        )
+        overlay.lift()
+    except Exception:
+        overlay.place(
+            relx=0.5,
+            rely=0.22,
+            anchor="n",
+            width=520,
+            height=420,
+        )
+        overlay.lift()
+
+    self._create_version_picker_open_v640 = True
+
+    try:
+        self._create_version_search_v640.set("")
+    except Exception:
+        pass
+
+    self.render_version_picker_v640()
+
+    try:
+        overlay.winfo_children()[0].winfo_children()[0].focus_set()
+    except Exception:
+        pass
+
+
+def _v640_open_create_profile(self):
+    self.set_active_page("profiles")
+    self.clear_content()
+
+    self._create_version_overlay_v640 = None
+    self._create_version_picker_open_v640 = False
+
+    page = self.page()
+
+    top = ctk.CTkFrame(
+        page,
+        fg_color="transparent",
+    )
+    top.grid(
+        row=0,
+        column=0,
+        sticky="ew",
+        padx=36,
+        pady=(28, 12),
+    )
+
+    ctk.CTkButton(
+        top,
+        text=self.t("v51_back"),
+        width=100,
+        height=36,
+        fg_color=SURFACE_3,
+        hover_color="#2B3749",
+        command=self.show_profiles,
+    ).pack(
+        side="left",
+        padx=(0, 14),
+    )
+
+    title = ctk.CTkFrame(
+        top,
+        fg_color="transparent",
+    )
+    title.pack(side="left")
+
+    ctk.CTkLabel(
+        title,
+        text=self.t("v51_create_profile"),
+        text_color=TEXT,
+        font=ctk.CTkFont(
+            size=29,
+            weight="bold",
+        ),
+    ).pack(anchor="w")
+
+    ctk.CTkLabel(
+        title,
+        text=self.t("v51_create_profile_subtitle"),
+        text_color=MUTED,
+    ).pack(anchor="w")
+
+    form = self.card(page, 18)
+    form.grid(
+        row=1,
+        column=0,
+        sticky="ew",
+        padx=36,
+        pady=(0, 24),
+    )
+    form.grid_columnconfigure(0, weight=1)
+
+    # ----- icon -----
+    icon_state = {"path": None}
+
+    icon_box = ctk.CTkFrame(
+        form,
+        fg_color=SURFACE_2,
+        corner_radius=12,
+    )
+    icon_box.grid(
+        row=0,
+        column=0,
+        sticky="ew",
+        padx=20,
+        pady=(18, 4),
+    )
+    icon_box.grid_columnconfigure(1, weight=1)
+
+    default_icon = self.profile_icon_pil(
+        "__new__",
+        72,
+    )
+    icon_image = ctk.CTkImage(
+        light_image=default_icon,
+        dark_image=default_icon,
+        size=(72, 72),
+    )
+
+    preview = ctk.CTkLabel(
+        icon_box,
+        text="",
+        image=icon_image,
+        width=80,
+        height=80,
+        fg_color=SURFACE_3,
+        corner_radius=14,
+    )
+    preview._outerclient_profile_image = icon_image
+    preview.grid(
+        row=0,
+        column=0,
+        rowspan=2,
+        padx=14,
+        pady=14,
+    )
+
+    ctk.CTkLabel(
+        icon_box,
+        text=self.t("v52_profile_icon"),
+        text_color=MUTED,
+        font=ctk.CTkFont(
+            size=10,
+            weight="bold",
+        ),
+    ).grid(
+        row=0,
+        column=1,
+        sticky="sw",
+        pady=(16, 4),
+    )
+
+    def choose_icon():
+        selected = self.choose_profile_icon_file()
+
+        if not selected:
+            return
+
+        try:
+            image = Image.open(
+                selected
+            ).convert("RGBA")
+
+            side = min(
+                image.width,
+                image.height,
+            )
+            left = (
+                image.width - side
+            ) // 2
+            top_crop = (
+                image.height - side
+            ) // 2
+
+            image = image.crop(
+                (
+                    left,
+                    top_crop,
+                    left + side,
+                    top_crop + side,
+                )
+            )
+            image = image.resize(
+                (72, 72),
+                Image.Resampling.LANCZOS,
+            )
+
+            ctk_image = ctk.CTkImage(
+                light_image=image,
+                dark_image=image,
+                size=(72, 72),
+            )
+
+            preview._outerclient_profile_image = ctk_image
+            preview.configure(image=ctk_image)
+            icon_state["path"] = selected
+
+        except Exception as exc:
+            messagebox.showerror(
+                "OuterClient",
+                str(exc),
+            )
+
+    ctk.CTkButton(
+        icon_box,
+        text=self.t("v52_choose_icon"),
+        width=145,
+        fg_color=SURFACE_3,
+        hover_color=self.accent,
+        command=choose_icon,
+    ).grid(
+        row=1,
+        column=1,
+        sticky="nw",
+        pady=(0, 16),
+    )
+
+    default_word = (
+        "Profil"
+        if self.cfg.get("language") == "pl"
+        else "Profile"
+    )
+
+    name_var = ctk.StringVar(
+        value=(
+            f"{default_word} "
+            f"{len(self.cfg['profiles']) + 1}"
+        )
+    )
+
+    versions = self.create_versions_v640()
+    default_version = versions[0]
+
+    self._create_version_var_v640 = ctk.StringVar(
+        value=default_version
+    )
+    self._create_loader_var_v640 = ctk.StringVar(
+        value="Fabric"
+    )
+
+    # ----- profile name -----
+    fields = ctk.CTkFrame(
+        form,
+        fg_color="transparent",
+    )
+    fields.grid(
+        row=1,
+        column=0,
+        sticky="ew",
+        padx=20,
+        pady=(10, 0),
+    )
+    fields.grid_columnconfigure(0, weight=1)
+
+    ctk.CTkLabel(
+        fields,
+        text=self.t("profile_name"),
+        text_color=MUTED,
+        font=ctk.CTkFont(
+            size=10,
+            weight="bold",
+        ),
+    ).grid(
+        row=0,
+        column=0,
+        sticky="w",
+        pady=(0, 5),
+    )
+
+    ctk.CTkEntry(
+        fields,
+        textvariable=name_var,
+        height=42,
+        fg_color=SURFACE_2,
+        border_color=BORDER,
+    ).grid(
+        row=1,
+        column=0,
+        sticky="ew",
+    )
+
+    # ----- version selector -----
+    version_wrap = ctk.CTkFrame(
+        fields,
+        fg_color="transparent",
+    )
+    version_wrap.grid(
+        row=2,
+        column=0,
+        sticky="ew",
+        pady=(16, 0),
+    )
+    version_wrap.grid_columnconfigure(0, weight=1)
+
+    ctk.CTkLabel(
+        version_wrap,
+        text=self.t("v640_profile_version"),
+        text_color=MUTED,
+        font=ctk.CTkFont(
+            size=10,
+            weight="bold",
+        ),
+    ).grid(
+        row=0,
+        column=0,
+        sticky="w",
+        pady=(0, 5),
+    )
+
+    self._create_version_button_v640 = ctk.CTkButton(
+        version_wrap,
+        text=(
+            f"Minecraft {default_version}"
+            "                         ⌄"
+        ),
+        height=46,
+        corner_radius=10,
+        anchor="w",
+        fg_color=SURFACE_2,
+        hover_color=SURFACE_3,
+        border_width=1,
+        border_color=BORDER,
+        command=self.toggle_version_picker_v640,
+    )
+    self._create_version_button_v640.grid(
+        row=1,
+        column=0,
+        sticky="ew",
+    )
+
+    # ----- loader cards -----
+    loader_wrap = ctk.CTkFrame(
+        fields,
+        fg_color="transparent",
+    )
+    loader_wrap.grid(
+        row=3,
+        column=0,
+        sticky="ew",
+        pady=(18, 0),
+    )
+    loader_wrap.grid_columnconfigure(0, weight=1)
+
+    ctk.CTkLabel(
+        loader_wrap,
+        text=self.t("v640_loader"),
+        text_color=MUTED,
+        font=ctk.CTkFont(
+            size=10,
+            weight="bold",
+        ),
+    ).grid(
+        row=0,
+        column=0,
+        sticky="w",
+    )
+
+    ctk.CTkLabel(
+        loader_wrap,
+        text=self.t("v640_loader_hint"),
+        text_color=MUTED,
+        font=ctk.CTkFont(size=10),
+    ).grid(
+        row=1,
+        column=0,
+        sticky="w",
+        pady=(2, 8),
+    )
+
+    loader_grid = ctk.CTkFrame(
+        loader_wrap,
+        fg_color="transparent",
+    )
+    loader_grid.grid(
+        row=2,
+        column=0,
+        sticky="ew",
+    )
+
+    for column in range(3):
+        loader_grid.grid_columnconfigure(
+            column,
+            weight=1,
+            uniform="loader",
+        )
+
+    self._create_loader_cards_v640 = {}
+
+    loaders = [
+        "Vanilla",
+        "Fabric",
+        "Forge",
+        "NeoForge",
+        "Quilt",
+    ]
+
+    for index, loader in enumerate(loaders):
+        row = index // 3
+        column = index % 3
+        meta = V640_LOADER_META[loader]
+
+        card = ctk.CTkFrame(
+            loader_grid,
+            fg_color=SURFACE_2,
+            corner_radius=12,
+            border_width=1,
+            border_color=BORDER,
+            cursor="hand2",
+        )
+        card.grid(
+            row=row,
+            column=column,
+            sticky="nsew",
+            padx=(
+                0 if column == 0 else 5,
+                5 if column < 2 else 0,
+            ),
+            pady=(0, 7),
+        )
+        card.grid_columnconfigure(1, weight=1)
+
+        badge = ctk.CTkLabel(
+            card,
+            text=meta["icon"],
+            width=46,
+            height=46,
+            corner_radius=12,
+            fg_color=meta["color"],
+            text_color="#FFFFFF",
+            font=ctk.CTkFont(
+                size=18,
+                weight="bold",
+            ),
+        )
+        badge.grid(
+            row=0,
+            column=0,
+            rowspan=2,
+            padx=(11, 9),
+            pady=11,
+        )
+
+        title_label = ctk.CTkLabel(
+            card,
+            text=loader,
+            text_color=TEXT,
+            anchor="w",
+            font=ctk.CTkFont(
+                size=13,
+                weight="bold",
+            ),
+        )
+        title_label.grid(
+            row=0,
+            column=1,
+            sticky="sw",
+            padx=(0, 10),
+            pady=(11, 0),
+        )
+
+        desc_label = ctk.CTkLabel(
+            card,
+            text=self.t(meta["desc_key"]),
+            text_color=MUTED,
+            anchor="w",
+            justify="left",
+            wraplength=210,
+            font=ctk.CTkFont(size=10),
+        )
+        desc_label.grid(
+            row=1,
+            column=1,
+            sticky="nw",
+            padx=(0, 10),
+            pady=(2, 11),
+        )
+
+        self._create_loader_cards_v640[loader] = {
+            "card": card,
+            "badge": badge,
+            "title": title_label,
+            "desc": desc_label,
+        }
+
+        for widget in (
+            card,
+            badge,
+            title_label,
+            desc_label,
+        ):
+            widget.bind(
+                "<Button-1>",
+                lambda _event, value=loader:
+                    self.select_loader_v640(value),
+            )
+
+    # ----- summary / create -----
+    footer = ctk.CTkFrame(
+        form,
+        fg_color="transparent",
+    )
+    footer.grid(
+        row=2,
+        column=0,
+        sticky="ew",
+        padx=20,
+        pady=(12, 20),
+    )
+    footer.grid_columnconfigure(0, weight=1)
+
+    self._create_summary_label_v640 = ctk.CTkLabel(
+        footer,
+        text="",
+        text_color=MUTED,
+        anchor="w",
+        justify="left",
+    )
+    self._create_summary_label_v640.grid(
+        row=0,
+        column=0,
+        sticky="w",
+        padx=(0, 14),
+    )
+
+    ctk.CTkButton(
+        footer,
+        text=self.t("create"),
+        width=150,
+        height=44,
+        fg_color=self.accent,
+        hover_color=self.accent_hover,
+        command=lambda:
+            self.create_profile_v53(
+                name_var.get(),
+                self._create_version_var_v640.get(),
+                self._create_loader_var_v640.get(),
+                icon_state["path"],
+            ),
+    ).grid(
+        row=0,
+        column=1,
+        sticky="e",
+    )
+
+    self.refresh_loader_cards_v640()
+    self.update_create_summary_v640()
+
+
+# ------------------------------------------------------------
+# Microsoft login 2.0
+# ------------------------------------------------------------
+
+def _v640_login_error_text(self, exc):
+    name = exc.__class__.__name__
+
+    if name == "AzureAppNotPermitted":
+        return self.t("v640_login_not_permitted")
+
+    if name == "AccountNotOwnMinecraft":
+        return self.t("v640_login_no_game")
+
+    if name == "InvalidRefreshToken":
+        return self.t("v640_login_expired")
+
+    return str(exc)
+
+
+def _v640_login_worker(self, client_id):
+    server = None
+
+    try:
+        CallbackHandler.callback_url = None
+
+        # The Azure application is configured with this exact redirect URI.
+        # Do not silently change to a random port: OAuth redirect URIs must
+        # match the application registration.
+        try:
+            server = ReusableHTTPServer(
+                ("127.0.0.1", 8765),
+                CallbackHandler,
+            )
+        except OSError as exc:
+            raise RuntimeError(
+                self.t("v640_login_port_busy")
+            ) from exc
+
+        server.timeout = 1
+        redirect_uri = "http://localhost:8765/callback"
+
+        url, state, verifier = (
+            minecraft_launcher_lib.microsoft_account
+            .get_secure_login_data(
+                client_id,
+                redirect_uri,
+            )
+        )
+
+        if "prompt=" not in url:
+            separator = "&" if "?" in url else "?"
+            url = (
+                f"{url}{separator}"
+                "prompt=select_account"
+            )
+
+        self.events.put(
+            ("oauth_link_ready", url)
+        )
+        self.events.put(
+            ("open_url", url)
+        )
+        self.events.put(
+            (
+                "status",
+                self.t("v640_login_wait"),
+            )
+        )
+
+        deadline = time.time() + 600
+
+        while (
+            time.time() < deadline
+            and not CallbackHandler.callback_url
+        ):
+            server.handle_request()
+
+        if not CallbackHandler.callback_url:
+            raise TimeoutError(
+                "Microsoft login timed out."
+            )
+
+        code = (
+            minecraft_launcher_lib.microsoft_account
+            .parse_auth_code_url(
+                CallbackHandler.callback_url,
+                state,
+            )
+        )
+
+        auth = (
+            minecraft_launcher_lib.microsoft_account
+            .complete_login(
+                client_id,
+                None,
+                redirect_uri,
+                code,
+                verifier,
+            )
+        )
+
+        auth["_outerclient_redirect_uri"] = redirect_uri
+
+        self.events.put(
+            ("account", auth)
+        )
+
+    except Exception as exc:
+        self.events.put(
+            (
+                "error",
+                (
+                    "Microsoft login:\n"
+                    + self.login_error_text_v640(exc)
+                ),
+            )
+        )
+
+    finally:
+        self.microsoft_login_in_progress = False
+
+        if server is not None:
+            try:
+                server.server_close()
+            except Exception:
+                pass
+
+
+def _v640_refresh_microsoft_account(self):
+    if not self.auth:
+        raise RuntimeError(
+            self.t("microsoft_not_authenticated")
+        )
+
+    refresh_token = self.auth.get(
+        "refresh_token"
+    )
+
+    if not refresh_token:
+        return self.auth
+
+    self.events.put(
+        (
+            "status",
+            self.t("refreshing_account"),
+        )
+    )
+
+    try:
+        refreshed = (
+            minecraft_launcher_lib.microsoft_account
+            .complete_refresh(
+                MICROSOFT_CLIENT_ID,
+                None,
+                None,
+                refresh_token,
+            )
+        )
+
+        refreshed[
+            "_outerclient_redirect_uri"
+        ] = "http://localhost:8765/callback"
+
+        self.store_microsoft_account(
+            refreshed
+        )
+
+        return refreshed
+
+    except Exception as exc:
+        text = self.login_error_text_v640(exc)
+
+        if exc.__class__.__name__ == "InvalidRefreshToken":
+            raise RuntimeError(
+                self.t("v640_login_expired")
+            ) from exc
+
+        raise RuntimeError(text) from exc
+
+
+# ------------------------------------------------------------
+# Java / launch preparation 2.0
+# ------------------------------------------------------------
+
+def _v640_install_callback(self, title):
+    state = {
+        "max": 1.0,
+        "value": 0.0,
+        "status": str(title),
+    }
+
+    def publish():
+        maximum = max(
+            1.0,
+            float(state["max"]),
+        )
+        ratio = max(
+            0.01,
+            min(
+                0.98,
+                float(state["value"]) / maximum,
+            ),
+        )
+        text = (
+            f"{title}"
+            if not state["status"]
+            else f"{title} • {state['status']}"
+        )
+
+        self.events.put(
+            ("status", text)
+        )
+
+        try:
+            self.queue_bar_event(
+                text,
+                ratio,
+                None,
+            )
+        except Exception:
+            pass
+
+    def set_status(value):
+        state["status"] = str(value or "")
+        publish()
+
+    def set_max(value):
+        try:
+            state["max"] = max(
+                1.0,
+                float(value),
+            )
+        except Exception:
+            state["max"] = 1.0
+
+    def set_progress(value):
+        try:
+            state["value"] = float(value)
+        except Exception:
+            state["value"] = 0.0
+        publish()
+
+    return {
+        "setStatus": set_status,
+        "setMax": set_max,
+        "setProgress": set_progress,
+    }
+
+
+def _v640_system_java_for_profile(self, profile_name):
+    profile = self.cfg["profiles"].get(
+        profile_name,
+        {},
+    )
+
+    required = self.required_java_major(
+        profile.get("version")
+    )
+
+    manual = self.profile_manual_java(
+        profile_name
+    )
+
+    if (
+        not self.cfg.get("auto_java", True)
+        and manual is not None
+    ):
+        if int(manual.get("major", 0)) != int(required):
+            raise RuntimeError(
+                self.t(
+                    "v53_java_missing",
+                    version=profile.get(
+                        "version",
+                        "?",
+                    ),
+                    major=required,
+                )
+            )
+        return manual
+
+    found = list(
+        self.java_installations
+        or []
+    )
+
+    if not found:
+        try:
+            found = list(
+                self.detect_java_installations()
+                or []
+            )
+        except Exception:
+            found = []
+
+    exact = [
+        item
+        for item in found
+        if int(item.get("major", 0)) == int(required)
+    ]
+
+    if exact:
+        return exact[-1]
+
+    return None
+
+
+def _v640_ensure_profile_java(
+    self,
+    profile_name,
+    force_runtime=False,
+):
+    profile = self.cfg["profiles"][
+        profile_name
+    ]
+
+    version = profile.get("version")
+    instance = self.profile_instance_dir(
+        profile_name
+    )
+    instance.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+
+    required = self.required_java_major(
+        version
+    )
+
+    # Respect an explicitly selected Java only when automatic runtime is off.
+    manual = self.profile_manual_java(
+        profile_name
+    )
+
+    if (
+        not self.cfg.get("auto_java", True)
+        and manual is not None
+    ):
+        if int(manual.get("major", 0)) != int(required):
+            raise RuntimeError(
+                self.t(
+                    "v53_java_missing",
+                    version=version,
+                    major=required,
+                )
+            )
+        return manual
+
+    info = None
+
+    try:
+        info = (
+            minecraft_launcher_lib.runtime
+            .get_version_runtime_information(
+                version,
+                str(instance),
+            )
+        )
+    except Exception:
+        info = None
+
+    if info and info.get("name"):
+        runtime_name = info["name"]
+
+        executable = (
+            minecraft_launcher_lib.runtime
+            .get_executable_path(
+                runtime_name,
+                str(instance),
+            )
+        )
+
+        if (
+            force_runtime
+            or not executable
+            or not Path(str(executable)).exists()
+        ):
+            callback = self.install_callback_v640(
+                self.t(
+                    "v640_runtime_install",
+                    major=required,
+                )
+            )
+
+            minecraft_launcher_lib.runtime.install_jvm_runtime(
+                runtime_name,
+                str(instance),
+                callback=callback,
+            )
+
+            executable = (
+                minecraft_launcher_lib.runtime
+                .get_executable_path(
+                    runtime_name,
+                    str(instance),
+                )
+            )
+
+        if executable and Path(str(executable)).exists():
+            return {
+                "path": str(executable),
+                "major": int(
+                    info.get(
+                        "javaMajorVersion",
+                        required,
+                    )
+                    or required
+                ),
+                "runtime": runtime_name,
+            }
+
+    # Old versions may not define a Mojang runtime.
+    system_java = self.system_java_for_profile_v640(
+        profile_name
+    )
+
+    if system_java is not None:
+        return system_java
+
+    raise RuntimeError(
+        self.t(
+            "v53_java_missing",
+            version=version,
+            major=required,
+        )
+    )
+
+
+def _v640_prepare_profile(self, profile_name):
+    profile = self.cfg["profiles"][
+        profile_name
+    ]
+
+    version = str(
+        profile.get("version") or ""
+    ).strip()
+
+    loader = profile.get(
+        "loader",
+        "Vanilla",
+    )
+
+    instance = self.profile_instance_dir(
+        profile_name
+    )
+    instance.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+
+    self.events.put(
+        (
+            "status",
+            self.t("v640_launch_verify"),
+        )
+    )
+
+    base_callback = self.install_callback_v640(
+        self.t("v640_launch_verify")
+    )
+
+    # minecraft-launcher-lib documents install_minecraft_version as the
+    # verification / repair step and recommends running it before launch.
+    minecraft_launcher_lib.install.install_minecraft_version(
+        version,
+        str(instance),
+        callback=base_callback,
+    )
+
+    self.events.put(
+        (
+            "status",
+            self.t("v640_launch_runtime"),
+        )
+    )
+
+    java_info = self.ensure_profile_java_v640(
+        profile_name,
+        False,
+    )
+
+    self.events.put(
+        (
+            "status",
+            self.t("v640_launch_loader"),
+        )
+    )
+
+    if loader == "Vanilla":
+        launch_version = version
+
+    else:
+        launch_version = self.installed_launch_version(
+            profile_name
+        )
+
+        if not launch_version:
+            mod_loader = (
+                minecraft_launcher_lib.mod_loader
+                .get_mod_loader(
+                    loader.lower()
+                )
+            )
+
+            loader_version = profile.get(
+                "loader_version"
+            )
+
+            kwargs = {
+                "callback":
+                    self.install_callback_v640(
+                        f"{loader}"
+                    ),
+                "java": java_info["path"],
+            }
+
+            if loader_version:
+                kwargs[
+                    "loader_version"
+                ] = loader_version
+
+            launch_version = mod_loader.install(
+                version,
+                str(instance),
+                **kwargs,
+            )
+
+        # Repair loader libraries using its local version JSON.
+        try:
+            minecraft_launcher_lib.install.install_minecraft_version(
+                launch_version,
+                str(instance),
+                callback=self.install_callback_v640(
+                    loader
+                ),
+            )
+        except Exception as exc:
+            # Some loader installers do all dependency work themselves.
+            # Do not discard a valid installed loader just because this
+            # secondary repair route is unsupported.
+            self.write_log(
+                "Loader secondary repair: "
+                + str(exc)
+            )
+
+    if loader == "Fabric":
+        self.disable_incompatible_fabric_mods(
+            profile_name
+        )
+        self.ensure_fabric_api(
+            profile_name
+        )
+
+    profile["launch_version"] = (
+        launch_version
+    )
+    profile["_last_core_verify"] = int(
+        time.time()
+    )
+
+    save_config(self.cfg)
+
+    self.events.put(
+        (
+            "status",
+            self.t("v640_launch_ready"),
+        )
+    )
+
+    try:
+        self.queue_bar_event(
+            self.t("v640_launch_ready"),
+            1.0,
+            0,
+        )
+    except Exception:
+        pass
+
+    return (
+        instance,
+        launch_version,
+        java_info,
+    )
+
+
+def _v640_download_runtime_worker(self, profile_name):
+    try:
+        profile = self.cfg[
+            "profiles"
+        ][profile_name]
+
+        instance = self.profile_instance_dir(
+            profile_name
+        )
+        instance.mkdir(
+            parents=True,
+            exist_ok=True,
+        )
+
+        # Runtime metadata lives in the vanilla version JSON, so repair that
+        # first if the profile has never been installed.
+        minecraft_launcher_lib.install.install_minecraft_version(
+            profile["version"],
+            str(instance),
+            callback=self.install_callback_v640(
+                self.t("v640_launch_verify")
+            ),
+        )
+
+        runtime = self.ensure_profile_java_v640(
+            profile_name,
+            True,
+        )
+
+        self.events.put(
+            (
+                "java_runtime_ready",
+                profile_name,
+            )
+        )
+        self.events.put(
+            (
+                "status",
+                self.t("v640_runtime_ok"),
+            )
+        )
+
+        try:
+            self.queue_bar_event(
+                self.t("v640_runtime_ok"),
+                1.0,
+                0,
+            )
+        except Exception:
+            pass
+
+        return runtime
+
+    except Exception as exc:
+        self.events.put(
+            (
+                "error",
+                "Java runtime:\n" + str(exc),
+            )
+        )
+
+
+# ------------------------------------------------------------
+# Java Manager cards 2.0
+# ------------------------------------------------------------
+
+def _v640_render_java_manager(self, found=None):
+    frame = getattr(
+        self,
+        "java_manager_list",
+        None,
+    )
+
+    if frame is None:
+        return
+
+    try:
+        if not frame.winfo_exists():
+            return
+    except Exception:
+        return
+
+    for child in frame.winfo_children():
+        try:
+            child.destroy()
+        except Exception:
+            pass
+
+    profile_name = self.cfg.get(
+        "selected"
+    )
+
+    if profile_name not in self.cfg.get(
+        "profiles",
+        {},
+    ):
+        return
+
+    profile = self.cfg[
+        "profiles"
+    ][profile_name]
+
+    required = self.required_java_major(
+        profile.get("version")
+    )
+
+    runtime = self.vanilla_runtime_for_profile(
+        profile.get("version"),
+        self.profile_instance_dir(
+            profile_name
+        ),
+    )
+
+    manual = self.profile_manual_java(
+        profile_name
+    )
+
+    # Automatic runtime card.
+    runtime_card = ctk.CTkFrame(
+        frame,
+        fg_color=SURFACE_2,
+        corner_radius=12,
+        border_width=1,
+        border_color=(
+            self.secondary
+            if runtime
+            else BORDER
+        ),
+    )
+    runtime_card.pack(
+        fill="x",
+        pady=(0, 9),
+    )
+    runtime_card.grid_columnconfigure(
+        1,
+        weight=1,
+    )
+
+    ctk.CTkLabel(
+        runtime_card,
+        text="☕",
+        width=48,
+        height=48,
+        corner_radius=12,
+        fg_color=(
+            "#315D4A"
+            if runtime
+            else SURFACE_3
+        ),
+        text_color=(
+            self.secondary
+            if runtime
+            else self.accent
+        ),
+        font=ctk.CTkFont(
+            size=20,
+            weight="bold",
+        ),
+    ).grid(
+        row=0,
+        column=0,
+        rowspan=3,
+        padx=12,
+        pady=12,
+    )
+
+    ctk.CTkLabel(
+        runtime_card,
+        text=self.t(
+            "v640_java_runtime_auto"
+        ),
+        text_color=TEXT,
+        anchor="w",
+        font=ctk.CTkFont(
+            size=14,
+            weight="bold",
+        ),
+    ).grid(
+        row=0,
+        column=1,
+        sticky="sw",
+        pady=(11, 0),
+    )
+
+    runtime_status = (
+        (
+            f"Java {runtime.get('major', required)}"
+            f" • {runtime.get('path', '')}"
+        )
+        if runtime
+        else (
+            f"Java {required} • "
+            + self.t("v55_runtime_missing")
+        )
+    )
+
+    ctk.CTkLabel(
+        runtime_card,
+        text=runtime_status,
+        text_color=(
+            self.secondary
+            if runtime
+            else MUTED
+        ),
+        anchor="w",
+        wraplength=720,
+    ).grid(
+        row=1,
+        column=1,
+        sticky="w",
+        pady=(2, 0),
+    )
+
+    ctk.CTkLabel(
+        runtime_card,
+        text=self.t(
+            "v640_java_runtime_desc"
+        ),
+        text_color=MUTED,
+        anchor="w",
+        justify="left",
+        wraplength=720,
+        font=ctk.CTkFont(size=10),
+    ).grid(
+        row=2,
+        column=1,
+        sticky="nw",
+        pady=(2, 11),
+    )
+
+    runtime_active = bool(
+        self.cfg.get(
+            "auto_java",
+            True,
+        )
+    )
+
+    ctk.CTkButton(
+        runtime_card,
+        text=(
+            self.t("v55_java_active")
+            if runtime_active and runtime
+            else self.t(
+                "v55_java_repair_runtime"
+            )
+        ),
+        width=150,
+        height=36,
+        fg_color=(
+            self.accent
+            if runtime_active and runtime
+            else SURFACE_3
+        ),
+        hover_color=self.accent_hover,
+        command=lambda:
+            self.run_bg(
+                lambda:
+                    self.download_profile_runtime_worker(
+                        profile_name
+                    )
+            ),
+    ).grid(
+        row=0,
+        column=2,
+        rowspan=3,
+        padx=12,
+    )
+
+    found = list(
+        found
+        if found is not None
+        else self.java_installations
+    )
+
+    if not found:
+        empty = ctk.CTkFrame(
+            frame,
+            fg_color="transparent",
+        )
+        empty.pack(
+            fill="x",
+            pady=7,
+        )
+
+        ctk.CTkLabel(
+            empty,
+            text=self.t("v55_java_none"),
+            text_color=MUTED,
+            anchor="w",
+        ).pack(
+            side="left",
+        )
+
+        return
+
+    for item in found:
+        major = int(
+            item.get("major", 0)
+            or 0
+        )
+        compatible = major == int(required)
+
+        active = False
+
+        if manual is not None:
+            try:
+                active = (
+                    Path(manual["path"]).resolve()
+                    == Path(item["path"]).resolve()
+                )
+            except Exception:
+                active = False
+
+        card = ctk.CTkFrame(
+            frame,
+            fg_color=SURFACE_2,
+            corner_radius=11,
+            border_width=1,
+            border_color=(
+                self.accent
+                if active
+                else BORDER
+            ),
+        )
+        card.pack(
+            fill="x",
+            pady=3,
+        )
+        card.grid_columnconfigure(
+            1,
+            weight=1,
+        )
+
+        ctk.CTkLabel(
+            card,
+            text=f"J{major}",
+            width=48,
+            height=42,
+            corner_radius=10,
+            fg_color=(
+                "#315D4A"
+                if compatible
+                else "#4A3030"
+            ),
+            text_color=(
+                self.secondary
+                if compatible
+                else "#FFB28A"
+            ),
+            font=ctk.CTkFont(
+                size=13,
+                weight="bold",
+            ),
+        ).grid(
+            row=0,
+            column=0,
+            rowspan=2,
+            padx=10,
+            pady=9,
+        )
+
+        ctk.CTkLabel(
+            card,
+            text=f"Java {major}",
+            text_color=TEXT,
+            anchor="w",
+            font=ctk.CTkFont(
+                size=13,
+                weight="bold",
+            ),
+        ).grid(
+            row=0,
+            column=1,
+            sticky="sw",
+            pady=(9, 0),
+        )
+
+        ctk.CTkLabel(
+            card,
+            text=(
+                (
+                    self.t("v640_java_compatible")
+                    if compatible
+                    else self.t("v640_java_incompatible")
+                )
+                + "  •  "
+                + item["path"]
+            ),
+            text_color=(
+                self.secondary
+                if compatible
+                else MUTED
+            ),
+            anchor="w",
+            wraplength=690,
+        ).grid(
+            row=1,
+            column=1,
+            sticky="nw",
+            pady=(1, 9),
+        )
+
+        button = ctk.CTkButton(
+            card,
+            text=(
+                self.t("v55_java_active")
+                if active
+                else self.t("v55_java_use")
+            ),
+            width=92,
+            height=32,
+            fg_color=(
+                self.accent
+                if active
+                else SURFACE_3
+            ),
+            hover_color=self.accent_hover,
+            state=(
+                "normal"
+                if compatible
+                else "disabled"
+            ),
+            command=lambda p=item["path"]:
+                self.set_profile_java(
+                    profile_name,
+                    p,
+                ),
+        )
+        button.grid(
+            row=0,
+            column=2,
+            rowspan=2,
+            padx=10,
+        )
+
+
+# ------------------------------------------------------------
+# What's New 6.4
+# ------------------------------------------------------------
+
+def _v640_show_whats_new(self, mark_seen=True):
+    self.set_active_page("whats_new")
+    self.clear_content()
+
+    outer = ctk.CTkScrollableFrame(
+        self.content,
+        fg_color=BG,
+        corner_radius=0,
+        scrollbar_button_color=SURFACE_3,
+        scrollbar_button_hover_color=BORDER,
+    )
+    outer.grid(
+        row=0,
+        column=0,
+        sticky="nsew",
+    )
+    outer.grid_columnconfigure(
+        0,
+        weight=1,
+    )
+
+    self.page_header(
+        outer,
+        self.t("v640_whats_new_eyebrow"),
+        self.t("v61_whats_new_title"),
+        self.t("v61_whats_new_subtitle"),
+    )
+
+    self._whats_new_state_v63 = {
+        "header": self.t(
+            "v61_whats_new_title"
+        ),
+        "versions": [
+            "6.4.0",
+            "6.3.9",
+            "6.3.8",
+            "6.3.7",
+            "6.3.6",
+            "6.3.5",
+            "6.3.4",
+            "6.3.3",
+            "6.3.2",
+            "6.3.1",
+            "6.3",
+            "6.2",
+            "6.1",
+            "6.0",
+        ],
+        "current": "6.4.0",
+    }
+
+    self.release_card_v63(
+        outer,
+        1,
+        self.t("v61_current_version"),
+        self.t("v640_whats_new_title"),
+        self.t("v640_whats_new_date"),
+        [
+            self.t("v640_change_profiles"),
+            self.t("v640_change_launch"),
+            self.t("v640_change_microsoft"),
+            self.t("v640_change_java"),
+        ],
+        current=True,
+    )
+
+    self.release_card_v63(
+        outer,
+        2,
+        self.t("v61_previous_version"),
+        self.t("v639_whats_new_title"),
+        self.t("v639_whats_new_date"),
+        [
+            self.t("v639_change_maximize"),
+            self.t("v639_change_redraw"),
+        ],
+    )
+
+    if mark_seen:
+        self.mark_whats_new_seen_v62()
+
+
+def _v640_init(self):
+    self._create_version_overlay_v640 = None
+    self._create_version_picker_open_v640 = False
+    self._create_loader_cards_v640 = {}
+
+    _V640_INIT_BASE(self)
+
+
+# Bind 6.4
+OuterClient.close_version_picker_v640 = _v640_close_version_picker
+OuterClient.create_versions_v640 = _v640_create_versions
+OuterClient.update_create_summary_v640 = _v640_update_create_summary
+OuterClient.refresh_loader_cards_v640 = _v640_refresh_loader_cards
+OuterClient.select_loader_v640 = _v640_select_loader
+OuterClient.select_create_version_v640 = _v640_select_create_version
+OuterClient.render_version_picker_v640 = _v640_render_version_picker
+OuterClient.toggle_version_picker_v640 = _v640_toggle_version_picker
+OuterClient.open_create_profile = _v640_open_create_profile
+
+OuterClient.login_error_text_v640 = _v640_login_error_text
+OuterClient.login_worker = _v640_login_worker
+OuterClient.refresh_active_microsoft_account = _v640_refresh_microsoft_account
+
+OuterClient.install_callback_v640 = _v640_install_callback
+OuterClient.system_java_for_profile_v640 = _v640_system_java_for_profile
+OuterClient.ensure_profile_java_v640 = _v640_ensure_profile_java
+OuterClient.prepare_profile_for_launch = _v640_prepare_profile
+OuterClient.download_profile_runtime_worker = _v640_download_runtime_worker
+OuterClient.render_java_manager = _v640_render_java_manager
+
+OuterClient.show_whats_new_v61 = _v640_show_whats_new
+OuterClient.__init__ = _v640_init
 
 
 
