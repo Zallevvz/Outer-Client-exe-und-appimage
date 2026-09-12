@@ -1,0 +1,51 @@
+OuterClient 7.0 — project link fix validation
+
+ROOT CAUSES
+1. The AppImage build launched xdg-open/web browsers with the AppImage/PyInstaller
+   environment still active. Variables such as LD_LIBRARY_PATH, APPDIR and
+   PYTHONHOME can make host desktop programs load the wrong libraries or fail.
+
+2. CurseForge search results can omit links.websiteUrl. The old Details/Open
+   button passed None directly to the browser opener, so clicking it could
+   appear to do nothing.
+
+7.0 FIX
+- All project URLs are normalized and restricted to http/https.
+- Modrinth URLs are rebuilt from category + slug/project ID when needed.
+- CurseForge URLs are rebuilt from category + slug when websiteUrl is missing.
+- Installed-mod Library URLs reuse the same source-aware logic.
+- On Linux/AppImage, host browser processes receive a cleaned environment.
+- Linux opening backends:
+    xdg-open
+    gio open
+    kioclient6/5
+    kde-open5/kde-open
+    sensible-browser
+    Python webbrowser fallback
+- Windows continues to use os.startfile().
+- If every opener fails, OuterClient copies the URL to the clipboard and shows
+  it to the user instead of silently doing nothing.
+- Unsafe schemes such as javascript:, file: and data: are rejected.
+
+REGRESSIONS PRESERVED
+- Minecraft launch core from 6.4 unchanged.
+- Version selector fix from 6.4.1 preserved.
+- Custom KDE titlebar from 6.3.8 preserved.
+- KWin/native maximize from 6.3.9 preserved.
+- Microsoft login and Java Manager 2.0 preserved.
+
+VALIDATION
+- Python compile / AST: OK
+- PL/EN translation parity: OK
+- final method bindings: OK
+- Modrinth URL tests: OK
+- CurseForge URL tests: OK
+- unsafe scheme rejection: OK
+- GitHub Actions YAML parse: OK
+- release smoke test remains non-visual
+- Linux scripts bash -n: OK
+- ZIP integrity: OK
+
+ARTIFACTS
+- OuterClient-v7.0-x86_64.AppImage
+- OuterClient-v7.0.exe

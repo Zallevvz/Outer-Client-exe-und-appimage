@@ -21,6 +21,7 @@ import webbrowser
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from io import BytesIO
 from pathlib import Path
+from urllib.parse import urlparse, quote
 
 import customtkinter as ctk
 import minecraft_launcher_lib
@@ -38,7 +39,7 @@ except Exception:
 
 
 APP_NAME = "OuterClient"
-APP_VERSION = "6.4.1"
+APP_VERSION = "7.0"
 CONFIG_PATH = Path.home() / ".outerclient.json"
 REDIRECT_URI = "http://localhost:8765/callback"
 MICROSOFT_CLIENT_ID = "fb14d1c4-7d14-4a35-99a7-3f921f7a1e77"
@@ -677,6 +678,14 @@ TEXTS = {
         "v641_whats_new_title": "OuterClient 6.4.1",
         "v641_whats_new_date": "Wrzesień 2026",
         "v641_change_version_picker": "Naprawiono wybór wersji Minecrafta przy tworzeniu profilu. Selektor jest teraz rozwijany wewnątrz formularza zamiast jako zawodny overlay nad CTkScrollableFrame.",
+        "v700_whats_new_eyebrow": "OUTERCLIENT 7.0",
+        "v700_whats_new_title": "OuterClient 7.0",
+        "v700_whats_new_date": "Wrzesień 2026",
+        "v700_change_links": "Naprawiono otwieranie stron modów, paczek i shaderów. AppImage uruchamia teraz systemową przeglądarkę z czystym środowiskiem, a brakujące linki CurseForge są odbudowywane ze sluga projektu.",
+        "v700_change_link_fallback": "Dodano kilka metod otwierania linków na Linuxie i bezpieczny fallback: jeśli przeglądarka nie wystartuje, link jest kopiowany do schowka i pokazywany użytkownikowi.",
+        "v700_open_failed_title": "Nie udało się otworzyć linku",
+        "v700_open_failed_body": "OuterClient nie mógł uruchomić przeglądarki. Link został skopiowany do schowka:\n\n{url}",
+        "v700_invalid_url": "Projekt nie ma poprawnego adresu strony.",
         "v58_update_checking": "Sprawdzanie aktualizacji OuterClient…",
         "v58_update_failed": "Nie udało się sprawdzić aktualizacji: {error}",
         "v58_latest": "Masz najnowszą wersję OuterClient ({version}).",
@@ -1333,6 +1342,14 @@ TEXTS = {
         "v641_whats_new_title": "OuterClient 6.4.1",
         "v641_whats_new_date": "September 2026",
         "v641_change_version_picker": "Fixed Minecraft version selection while creating a profile. The selector now expands inside the form instead of using a fragile overlay above CTkScrollableFrame.",
+        "v700_whats_new_eyebrow": "OUTERCLIENT 7.0",
+        "v700_whats_new_title": "OuterClient 7.0",
+        "v700_whats_new_date": "September 2026",
+        "v700_change_links": "Fixed opening mod, pack and shader project pages. AppImage now launches the system browser with a clean environment, and missing CurseForge links are rebuilt from the project slug.",
+        "v700_change_link_fallback": "Added multiple Linux URL-opening backends and a safe fallback: if the browser cannot be started, the URL is copied to the clipboard and shown to the user.",
+        "v700_open_failed_title": "Could not open link",
+        "v700_open_failed_body": "OuterClient could not start your browser. The link was copied to the clipboard:\n\n{url}",
+        "v700_invalid_url": "This project does not have a valid page URL.",
         "v5_change_profile": "Change profile",
         "v5_previous": "Previous",
         "v5_next": "Next",
@@ -1723,7 +1740,7 @@ class OuterClient(ctk.CTk):
                 try:
                     import ctypes
                     ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(
-                        "OuterClient.Launcher.6.4.1"
+                        "OuterClient.Launcher.7.0"
                     )
                 except Exception:
                     pass
@@ -39673,6 +39690,730 @@ OuterClient.select_create_version_v640 = _v641_select_create_version
 
 OuterClient.show_whats_new_v61 = _v641_show_whats_new
 OuterClient.__init__ = _v641_init
+
+
+
+# ============================================================
+# OuterClient 7.0
+# Reliable project links / host-browser launching from AppImage
+# ============================================================
+
+_V700_INIT_BASE = OuterClient.__init__
+
+
+def _v700_normalize_external_url(self, value):
+    url = str(value or "").strip()
+
+    if not url:
+        return None
+
+    # Accept bare domains from metadata, but never reinterpret an explicit
+    # non-web scheme such as javascript:, file:, data: or mailto: as HTTPS.
+    if "://" not in url:
+        if re.match(
+            r"^[A-Za-z][A-Za-z0-9+.-]*:",
+            url,
+        ):
+            return None
+
+        url = "https://" + url.lstrip("/")
+
+    try:
+        parsed = urlparse(url)
+    except Exception:
+        return None
+
+    if parsed.scheme.casefold() not in ("http", "https"):
+        return None
+
+    if not parsed.netloc:
+        return None
+
+    return url
+
+
+def _v700_project_page_url(self, hit, category=None):
+    hit = hit or {}
+    category = (
+        category
+        or hit.get("_category")
+        or getattr(self, "modrinth_category", None)
+        or "Mody"
+    )
+
+    # Prefer an explicit URL from the API if it is valid.
+    candidates = [
+        hit.get("website_url"),
+        hit.get("websiteUrl"),
+        hit.get("project_url"),
+        hit.get("url"),
+    ]
+
+    links = hit.get("links")
+    if isinstance(links, dict):
+        candidates.extend([
+            links.get("websiteUrl"),
+            links.get("website_url"),
+        ])
+
+    for candidate in candidates:
+        normalized = self.normalize_external_url_v700(candidate)
+        if normalized:
+            return normalized
+
+    slug = str(
+        hit.get("slug")
+        or hit.get("project_slug")
+        or ""
+    ).strip()
+
+    project_id = str(
+        hit.get("project_id")
+        or hit.get("id")
+        or hit.get("cf_mod_id")
+        or ""
+    ).strip()
+
+    source = str(
+        hit.get("_source")
+        or hit.get("source")
+        or "modrinth"
+    ).casefold()
+
+    # CurseForge API can omit websiteUrl for some search results even though
+    # the project slug is present. Build the public URL ourselves.
+    if source == "curseforge":
+        cf_paths = {
+            "Mody": "mc-mods",
+            "Resource packi": "texture-packs",
+            "Shadery": "shaders",
+            "Datapacki": "data-packs",
+            "Modpacki": "modpacks",
+        }
+
+        if slug:
+            return (
+                "https://www.curseforge.com/minecraft/"
+                + cf_paths.get(category, "mc-mods")
+                + "/"
+                + quote(slug, safe="-._~")
+            )
+
+        # Last-resort CurseForge search keeps the button useful even for
+        # incomplete API metadata.
+        title = str(
+            hit.get("title")
+            or hit.get("name")
+            or project_id
+            or ""
+        ).strip()
+
+        if title:
+            return (
+                "https://www.curseforge.com/minecraft/search"
+                "?search="
+                + quote(title)
+            )
+
+        return None
+
+    # Modrinth accepts a slug or project ID in project paths.
+    mr_path = MODRINTH_TABS.get(
+        category,
+        {},
+    ).get(
+        "path",
+        "mod",
+    )
+
+    identifier = slug or project_id
+    if identifier:
+        return (
+            "https://modrinth.com/"
+            + mr_path
+            + "/"
+            + quote(identifier, safe="-._~")
+        )
+
+    title = str(
+        hit.get("title")
+        or hit.get("name")
+        or ""
+    ).strip()
+
+    if title:
+        return (
+            "https://modrinth.com/discover/mods"
+            "?q="
+            + quote(title)
+        )
+
+    return None
+
+
+def _v700_host_desktop_env(self):
+    """
+    AppImage/PyInstaller may inject library/Python paths which are correct for
+    OuterClient but wrong for host programs such as xdg-open or a browser.
+    Build a clean environment before launching a desktop application.
+    """
+    env = os.environ.copy()
+
+    original_ld = env.pop(
+        "LD_LIBRARY_PATH_ORIG",
+        None,
+    )
+
+    if original_ld is not None:
+        if original_ld:
+            env["LD_LIBRARY_PATH"] = original_ld
+        else:
+            env.pop("LD_LIBRARY_PATH", None)
+    else:
+        env.pop("LD_LIBRARY_PATH", None)
+
+    for key in (
+        "LD_PRELOAD",
+        "PYTHONHOME",
+        "PYTHONPATH",
+        "PYTHONEXECUTABLE",
+        "_MEIPASS2",
+        "APPDIR",
+        "APPIMAGE",
+        "ARGV0",
+        "OWD",
+    ):
+        env.pop(key, None)
+
+    return env
+
+
+def _v700_try_desktop_command(self, command, env):
+    try:
+        process = subprocess.Popen(
+            command,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            stdin=subprocess.DEVNULL,
+            start_new_session=True,
+            env=env,
+        )
+
+        try:
+            code = process.wait(timeout=2.5)
+        except subprocess.TimeoutExpired:
+            # A long-running process usually means the desktop opener/browser
+            # accepted the request and stayed attached.
+            return True
+
+        return code == 0
+
+    except Exception as exc:
+        try:
+            self.write_log(
+                "Open URL command failed "
+                + repr(command)
+                + ": "
+                + str(exc)
+            )
+        except Exception:
+            pass
+        return False
+
+
+def _v700_copy_url_fallback(self, url):
+    try:
+        self.clipboard_clear()
+        self.clipboard_append(url)
+        self.update_idletasks()
+    except Exception:
+        pass
+
+    try:
+        messagebox.showwarning(
+            self.t("v700_open_failed_title"),
+            self.t(
+                "v700_open_failed_body",
+                url=url,
+            ),
+        )
+    except Exception:
+        pass
+
+    return False
+
+
+def _v700_open_external_url(self, value):
+    url = self.normalize_external_url_v700(value)
+
+    if not url:
+        try:
+            messagebox.showwarning(
+                self.t("v700_open_failed_title"),
+                self.t("v700_invalid_url"),
+            )
+        except Exception:
+            pass
+        return False
+
+    # Windows should use the registered URL handler directly.
+    if sys.platform.startswith("win"):
+        try:
+            os.startfile(url)
+            return True
+        except Exception as exc:
+            try:
+                self.write_log(
+                    "os.startfile URL failed: " + str(exc)
+                )
+            except Exception:
+                pass
+
+    # macOS.
+    if sys.platform == "darwin":
+        if self.try_desktop_command_v700(
+            ["open", url],
+            self.host_desktop_env_v700(),
+        ):
+            return True
+
+    # Linux / BSD desktop backends. KDE gets its own native opener as a
+    # fallback after the freedesktop methods.
+    if sys.platform.startswith("linux"):
+        env = self.host_desktop_env_v700()
+
+        commands = []
+
+        xdg_open = shutil.which("xdg-open")
+        if xdg_open:
+            commands.append([xdg_open, url])
+
+        gio = shutil.which("gio")
+        if gio:
+            commands.append([gio, "open", url])
+
+        for name in (
+            "kioclient6",
+            "kioclient5",
+            "kioclient",
+        ):
+            binary = shutil.which(name)
+            if binary:
+                commands.append(
+                    [binary, "exec", url]
+                )
+
+        for name in (
+            "kde-open5",
+            "kde-open",
+        ):
+            binary = shutil.which(name)
+            if binary:
+                commands.append(
+                    [binary, url]
+                )
+
+        sensible = shutil.which("sensible-browser")
+        if sensible:
+            commands.append(
+                [sensible, url]
+            )
+
+        for command in commands:
+            if self.try_desktop_command_v700(
+                command,
+                env,
+            ):
+                return True
+
+    # Python's browser controller is still useful on source installs and
+    # unusual desktop environments.
+    try:
+        if webbrowser.open(
+            url,
+            new=2,
+            autoraise=True,
+        ):
+            return True
+    except Exception as exc:
+        try:
+            self.write_log(
+                "webbrowser.open failed: " + str(exc)
+            )
+        except Exception:
+            pass
+
+    return self.copy_url_fallback_v700(url)
+
+
+def _v700_open_project_page(self, hit, category=None):
+    url = self.project_page_url_v700(
+        hit,
+        category,
+    )
+
+    if not url:
+        return self.open_external_url(
+            None
+        )
+
+    return self.open_external_url(url)
+
+
+def _v700_show_project_details(self, hit, category):
+    self.set_active_page("modrinth")
+    self.clear_content()
+
+    page = self.page()
+
+    ctk.CTkButton(
+        page,
+        text=self.t("v54_back_modrinth"),
+        width=160,
+        height=38,
+        fg_color=SURFACE_3,
+        hover_color=self.accent,
+        command=self.show_modrinth,
+    ).grid(
+        row=0,
+        column=0,
+        sticky="w",
+        padx=36,
+        pady=(28, 12),
+    )
+
+    card = self.card(page, 18)
+    card.grid(
+        row=1,
+        column=0,
+        sticky="ew",
+        padx=36,
+        pady=(0, 12),
+    )
+    card.grid_columnconfigure(1, weight=1)
+
+    icon = ctk.CTkLabel(
+        card,
+        text="◇",
+        width=88,
+        height=88,
+        corner_radius=16,
+        fg_color=SURFACE_2,
+        text_color=MUTED,
+        font=ctk.CTkFont(
+            size=28,
+            weight="bold",
+        ),
+    )
+    icon.grid(
+        row=0,
+        column=0,
+        rowspan=3,
+        padx=18,
+        pady=18,
+    )
+
+    if hit.get("icon_url"):
+        self.run_bg(
+            lambda u=hit.get("icon_url"), w=icon:
+                self.fetch_project_icon(
+                    u,
+                    w,
+                )
+        )
+
+    title = (
+        hit.get("title")
+        or hit.get("slug")
+        or self.t("unnamed")
+    )
+
+    ctk.CTkLabel(
+        card,
+        text=title,
+        text_color=TEXT,
+        font=ctk.CTkFont(
+            size=24,
+            weight="bold",
+        ),
+        anchor="w",
+    ).grid(
+        row=0,
+        column=1,
+        sticky="sw",
+        pady=(18, 0),
+    )
+
+    ctk.CTkLabel(
+        card,
+        text=(
+            hit.get("author")
+            or self.t("unknown_author")
+        ),
+        text_color=MUTED,
+        anchor="w",
+    ).grid(
+        row=1,
+        column=1,
+        sticky="w",
+    )
+
+    ctk.CTkLabel(
+        card,
+        text=(
+            hit.get("description")
+            or self.t("no_description")
+        ),
+        text_color="#A8B3C2",
+        anchor="w",
+        justify="left",
+        wraplength=760,
+    ).grid(
+        row=2,
+        column=1,
+        sticky="nw",
+        pady=(6, 18),
+    )
+
+    actions = ctk.CTkFrame(
+        card,
+        fg_color="transparent",
+    )
+    actions.grid(
+        row=0,
+        column=2,
+        rowspan=3,
+        padx=18,
+    )
+
+    install = ctk.CTkButton(
+        actions,
+        text=(
+            self.t("install_pack")
+            if category == "Modpacki"
+            else self.t("install")
+        ),
+        width=130,
+        height=40,
+        fg_color=self.accent,
+        hover_color=self.accent_hover,
+    )
+    install.pack(
+        pady=(0, 6),
+    )
+
+    if hit.get("_source") == "curseforge":
+        install.configure(
+            command=lambda h=hit, b=install, c=category:
+                self.enqueue_curseforge_install(
+                    h,
+                    b,
+                    c,
+                )
+        )
+    else:
+        install.configure(
+            command=lambda h=hit, c=category, b=install:
+                self.enqueue_modrinth_install(
+                    h,
+                    c,
+                    b,
+                )
+        )
+
+    ctk.CTkButton(
+        actions,
+        text=self.t("open"),
+        width=130,
+        height=36,
+        fg_color=SURFACE_3,
+        hover_color=self.accent,
+        command=lambda h=hit, c=category:
+            self.open_project_page_v700(
+                h,
+                c,
+            ),
+    ).pack()
+
+
+def _v700_mod_url(self, entry):
+    """
+    Installed-mod Library URL builder. Reuse the same source-aware URL rules
+    as Explore whenever metadata is available.
+    """
+    meta = dict(
+        entry.get("meta")
+        or {}
+    )
+
+    source = str(
+        meta.get("source")
+        or ""
+    )
+
+    if source.casefold() == "curseforge":
+        hit = dict(meta)
+        hit["_source"] = "curseforge"
+        hit["title"] = (
+            meta.get("title")
+            or entry.get("name")
+        )
+        hit["slug"] = (
+            meta.get("slug")
+            or ""
+        )
+        url = self.project_page_url_v700(
+            hit,
+            "Mody",
+        )
+        if url:
+            return url
+
+    if source.casefold() == "modrinth":
+        hit = dict(meta)
+        hit["_source"] = "modrinth"
+        hit["title"] = (
+            meta.get("title")
+            or entry.get("name")
+        )
+        hit["slug"] = (
+            meta.get("slug")
+            or meta.get("project_id")
+            or ""
+        )
+        url = self.project_page_url_v700(
+            hit,
+            "Mody",
+        )
+        if url:
+            return url
+
+    if meta.get("website_url"):
+        normalized = self.normalize_external_url_v700(
+            meta["website_url"]
+        )
+        if normalized:
+            return normalized
+
+    local = entry.get("local_meta") or {}
+    homepage = local.get("homepage")
+    normalized = self.normalize_external_url_v700(
+        homepage
+    )
+    if normalized:
+        return normalized
+
+    query = quote(
+        entry.get("name")
+        or Path(
+            entry.get(
+                "path",
+                "",
+            )
+        ).stem
+    )
+
+    return (
+        "https://modrinth.com/discover/mods"
+        f"?q={query}"
+    )
+
+
+def _v700_show_whats_new(self, mark_seen=True):
+    self.set_active_page("whats_new")
+    self.clear_content()
+
+    outer = ctk.CTkScrollableFrame(
+        self.content,
+        fg_color=BG,
+        corner_radius=0,
+        scrollbar_button_color=SURFACE_3,
+        scrollbar_button_hover_color=BORDER,
+    )
+    outer.grid(
+        row=0,
+        column=0,
+        sticky="nsew",
+    )
+    outer.grid_columnconfigure(
+        0,
+        weight=1,
+    )
+
+    self.page_header(
+        outer,
+        self.t("v700_whats_new_eyebrow"),
+        self.t("v61_whats_new_title"),
+        self.t("v61_whats_new_subtitle"),
+    )
+
+    self._whats_new_state_v63 = {
+        "header": self.t("v61_whats_new_title"),
+        "versions": [
+            "7.0",
+            "6.4.1",
+            "6.4.0",
+            "6.3.9",
+            "6.3.8",
+            "6.3.7",
+            "6.3.6",
+            "6.3.5",
+            "6.3.4",
+            "6.3.3",
+            "6.3.2",
+            "6.3.1",
+            "6.3",
+            "6.2",
+            "6.1",
+            "6.0",
+        ],
+        "current": "7.0",
+    }
+
+    self.release_card_v63(
+        outer,
+        1,
+        self.t("v61_current_version"),
+        self.t("v700_whats_new_title"),
+        self.t("v700_whats_new_date"),
+        [
+            self.t("v700_change_links"),
+            self.t("v700_change_link_fallback"),
+        ],
+        current=True,
+    )
+
+    self.release_card_v63(
+        outer,
+        2,
+        self.t("v61_previous_version"),
+        self.t("v641_whats_new_title"),
+        self.t("v641_whats_new_date"),
+        [
+            self.t("v641_change_version_picker"),
+        ],
+    )
+
+    if mark_seen:
+        self.mark_whats_new_seen_v62()
+
+
+def _v700_init(self):
+    _V700_INIT_BASE(self)
+
+
+OuterClient.normalize_external_url_v700 = _v700_normalize_external_url
+OuterClient.project_page_url_v700 = _v700_project_page_url
+OuterClient.host_desktop_env_v700 = _v700_host_desktop_env
+OuterClient.try_desktop_command_v700 = _v700_try_desktop_command
+OuterClient.copy_url_fallback_v700 = _v700_copy_url_fallback
+OuterClient.open_external_url = _v700_open_external_url
+OuterClient.open_project_page_v700 = _v700_open_project_page
+OuterClient.show_project_details = _v700_show_project_details
+OuterClient.mod_page_url = _v700_mod_url
+
+OuterClient.show_whats_new_v61 = _v700_show_whats_new
+OuterClient.__init__ = _v700_init
 
 
 
