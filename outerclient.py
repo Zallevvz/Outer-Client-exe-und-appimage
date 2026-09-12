@@ -38,7 +38,7 @@ except Exception:
 
 
 APP_NAME = "OuterClient"
-APP_VERSION = "6.3.3"
+APP_VERSION = "6.3.4"
 CONFIG_PATH = Path.home() / ".outerclient.json"
 REDIRECT_URI = "http://localhost:8765/callback"
 MICROSOFT_CLIENT_ID = "fb14d1c4-7d14-4a35-99a7-3f921f7a1e77"
@@ -609,6 +609,11 @@ TEXTS = {
         "v633_change_diagnostics": "Przebudowano wybór profilu w Diagnostyce — karta z ikoną, wersją i loaderem oraz wygodny popup z profilami.",
         "v633_change_titlebar": "Wzmocniono customowy pasek na Linuxie/KDE: Motif + fallback KWin no-border, bez trybu always-on-top.",
         "v633_change_taskbar": "Sekcja „Pasek zadań / dock” jest zwykłą częścią przewijanej strony i nie nakłada się już na pozostałe karty.",
+        "v634_whats_new_eyebrow": "OUTERCLIENT 6.3.4",
+        "v634_whats_new_title": "OuterClient 6.3.4",
+        "v634_whats_new_date": "Wrzesień 2026",
+        "v634_change_diagnostics": "Naprawiono Diagnostykę: nowy wybór profilu jest budowany bezpośrednio, bez zawodnego przeszukiwania wnętrza CTkScrollableFrame.",
+        "v634_change_ci": "Przebudowano smoke test GitHub Actions — testuje realne błędy uruchomienia i callbacków, a nie zależne od Xvfb szczegóły geometrii widgetów.",
         "v58_update_checking": "Sprawdzanie aktualizacji OuterClient…",
         "v58_update_failed": "Nie udało się sprawdzić aktualizacji: {error}",
         "v58_latest": "Masz najnowszą wersję OuterClient ({version}).",
@@ -1197,6 +1202,11 @@ TEXTS = {
         "v633_change_diagnostics": "Rebuilt the Diagnostics profile selector with a profile icon, version/loader metadata and a clean popup list.",
         "v633_change_titlebar": "Strengthened the custom Linux/KDE title bar using Motif plus a KWin no-border fallback, without always-on-top behavior.",
         "v633_change_taskbar": "The Taskbar / dock section now lives in the normal scroll flow and no longer overlaps the other settings cards.",
+        "v634_whats_new_eyebrow": "OUTERCLIENT 6.3.4",
+        "v634_whats_new_title": "OuterClient 6.3.4",
+        "v634_whats_new_date": "September 2026",
+        "v634_change_diagnostics": "Fixed Diagnostics: the new profile selector is now built directly instead of relying on fragile CTkScrollableFrame child discovery.",
+        "v634_change_ci": "Rebuilt the GitHub Actions smoke test so it blocks on real startup/callback failures rather than Xvfb-dependent widget geometry details.",
         "v5_change_profile": "Change profile",
         "v5_previous": "Previous",
         "v5_next": "Next",
@@ -1587,7 +1597,7 @@ class OuterClient(ctk.CTk):
                 try:
                     import ctypes
                     ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(
-                        "OuterClient.Launcher.6.3.3"
+                        "OuterClient.Launcher.6.3.4"
                     )
                 except Exception:
                     pass
@@ -33663,6 +33673,511 @@ OuterClient.custom_on_map_v5101 = _v633_linux_map
 OuterClient.set_active_page = _v633_set_active_page
 OuterClient.show_whats_new_v61 = _v633_show_whats_new
 OuterClient.__init__ = _v633_init
+
+
+
+# ============================================================
+# OuterClient 6.3.4
+# - Diagnostics page rebuilt directly (no CTkScrollableFrame introspection)
+# - CI smoke test redesigned separately in workflow
+# ============================================================
+
+_V634_INIT_BASE = OuterClient.__init__
+_V634_SET_ACTIVE_PAGE_BASE = OuterClient.set_active_page
+
+
+def _v634_show_diagnostics(self):
+    self.set_active_page("diagnostics")
+    self.clear_content()
+
+    outer = ctk.CTkScrollableFrame(
+        self.content,
+        fg_color=BG,
+        corner_radius=0,
+        scrollbar_button_color=SURFACE_3,
+        scrollbar_button_hover_color=BORDER,
+    )
+    outer.grid(row=0, column=0, sticky="nsew")
+    outer.grid_columnconfigure(0, weight=1)
+
+    name = self.diagnostic_profile_name_v61()
+    profile = self.cfg["profiles"][name]
+    report = self.profile_health_report_v6(name)
+
+    # ---- Profile selector, built directly ----
+    selector_wrap = ctk.CTkFrame(
+        outer,
+        fg_color="transparent",
+    )
+    selector_wrap.grid(
+        row=0,
+        column=0,
+        sticky="ew",
+        padx=36,
+        pady=(24, 7),
+    )
+    selector_wrap.grid_columnconfigure(1, weight=1)
+
+    card = ctk.CTkFrame(
+        selector_wrap,
+        fg_color=SURFACE,
+        corner_radius=13,
+        border_width=1,
+        border_color=BORDER,
+        cursor="hand2",
+    )
+    card.grid(row=0, column=0, sticky="w")
+    card.grid_columnconfigure(1, weight=1)
+
+    self.diagnostic_profile_selector_card_v633 = card
+    self.diagnostic_profile_selector_card_v634 = card
+
+    image = self.profile_icon_ctk(name, 46)
+
+    icon = ctk.CTkLabel(
+        card,
+        text="",
+        image=image,
+        width=58,
+        height=58,
+        fg_color=SURFACE_2,
+        corner_radius=11,
+    )
+    icon._outerclient_diag_selector_image_v634 = image
+    icon.grid(
+        row=0,
+        column=0,
+        rowspan=3,
+        padx=(10, 11),
+        pady=10,
+    )
+
+    label = ctk.CTkLabel(
+        card,
+        text=self.t("v61_diag_profile"),
+        text_color=MUTED,
+        font=ctk.CTkFont(size=9, weight="bold"),
+        anchor="w",
+    )
+    label.grid(
+        row=0,
+        column=1,
+        sticky="sw",
+        pady=(9, 0),
+    )
+
+    name_label = ctk.CTkLabel(
+        card,
+        text=name,
+        text_color=TEXT,
+        font=ctk.CTkFont(size=14, weight="bold"),
+        anchor="w",
+    )
+    name_label.grid(
+        row=1,
+        column=1,
+        sticky="w",
+        pady=(1, 0),
+    )
+
+    meta = ctk.CTkLabel(
+        card,
+        text=(
+            f"Minecraft {profile.get('version', '?')} • "
+            f"{profile.get('loader', '?')}"
+        ),
+        text_color=MUTED,
+        font=ctk.CTkFont(size=10),
+        anchor="w",
+    )
+    meta.grid(
+        row=2,
+        column=1,
+        sticky="nw",
+        pady=(1, 9),
+    )
+
+    arrow = ctk.CTkButton(
+        card,
+        text="⌄",
+        width=42,
+        height=42,
+        corner_radius=10,
+        fg_color=SURFACE_2,
+        hover_color=self.accent,
+        command=self.toggle_diag_profile_popup_v633,
+    )
+    arrow.grid(
+        row=0,
+        column=2,
+        rowspan=3,
+        padx=(14, 10),
+        pady=10,
+    )
+
+    self.diagnostic_profile_button_v633 = arrow
+    self.diagnostic_profile_button_v634 = arrow
+
+    for widget in (card, icon, label, name_label, meta):
+        widget.bind(
+            "<Button-1>",
+            lambda _event: self.toggle_diag_profile_popup_v633(),
+        )
+
+    ctk.CTkLabel(
+        selector_wrap,
+        text=self.t("v61_diag_profile_hint"),
+        text_color=MUTED,
+        anchor="w",
+        justify="left",
+        font=ctk.CTkFont(size=10),
+    ).grid(
+        row=0,
+        column=1,
+        sticky="w",
+        padx=(16, 0),
+    )
+
+    # ---- Header ----
+    header = ctk.CTkFrame(
+        outer,
+        fg_color="transparent",
+    )
+    header.grid(
+        row=1,
+        column=0,
+        sticky="ew",
+        padx=36,
+        pady=(4, 10),
+    )
+    header.grid_columnconfigure(0, weight=1)
+
+    ctk.CTkLabel(
+        header,
+        text=self.t("v6_diag_title"),
+        text_color=TEXT,
+        font=ctk.CTkFont(size=29, weight="bold"),
+    ).grid(row=0, column=0, sticky="w")
+
+    ctk.CTkLabel(
+        header,
+        text=(
+            f"{self.t('v6_diag_subtitle')}  •  {name}  •  "
+            f"Minecraft {profile.get('version','?')}  •  "
+            f"{profile.get('loader','?')}"
+        ),
+        text_color=MUTED,
+    ).grid(
+        row=1,
+        column=0,
+        sticky="w",
+        pady=(2, 0),
+    )
+
+    ctk.CTkButton(
+        header,
+        text=self.t("v61_repair_selected"),
+        height=36,
+        fg_color=self.accent,
+        hover_color=self.accent_hover,
+        command=self.repair_diagnostic_profile_v61,
+    ).grid(
+        row=0,
+        column=1,
+        rowspan=2,
+        padx=(8, 0),
+    )
+
+    # ---- Health components ----
+    game_item = next(
+        (x for x in report["items"] if x["component"] == "game"),
+        None,
+    )
+    java_item = next(
+        (x for x in report["items"] if x["component"] == "java"),
+        None,
+    )
+    mod_items = [
+        x for x in report["items"]
+        if x["component"] == "mods"
+    ]
+
+    def map_level(item):
+        if not item or item.get("level") == "ok":
+            return "good"
+        return "bad" if item.get("level") == "error" else "warning"
+
+    self.diagnostic_component_v6(
+        outer,
+        2,
+        self.t("v6_component_game"),
+        map_level(game_item),
+        game_item["text"]
+        if game_item
+        else self.t("v6_health_installed"),
+    )
+
+    self.diagnostic_component_v6(
+        outer,
+        3,
+        self.t("v6_component_java"),
+        map_level(java_item),
+        java_item["text"]
+        if java_item
+        else self.t(
+            "v6_health_java_ok",
+            major=report.get("java_major") or "?",
+        ),
+    )
+
+    mod_status = (
+        "bad"
+        if any(x["level"] == "error" for x in mod_items)
+        else (
+            "warning"
+            if any(x["level"] == "warning" for x in mod_items)
+            else "good"
+        )
+    )
+
+    mod_detail = (
+        " • ".join(
+            x["text"]
+            for x in mod_items
+            if x["level"] != "ok"
+        )
+        or self.t("v6_health_mods_ok")
+    )
+
+    self.diagnostic_component_v6(
+        outer,
+        4,
+        self.t("v6_component_mods"),
+        mod_status,
+        mod_detail,
+    )
+
+    if self.cfg.get("account_mode") == "Microsoft":
+        account_status = "good" if self.auth else "bad"
+        account_detail = (
+            self.t(
+                "v6_account_ms",
+                name=(self.auth or {}).get("name", "?"),
+            )
+            if self.auth
+            else self.t("microsoft_not_authenticated")
+        )
+    else:
+        account_status = "good"
+        account_detail = self.t("v6_account_offline")
+
+    self.diagnostic_component_v6(
+        outer,
+        5,
+        self.t("v6_component_account"),
+        account_status,
+        account_detail,
+    )
+
+    services_status = (
+        "good"
+        if BUILTIN_CURSEFORGE_API_KEY
+        else "warning"
+    )
+    services_detail = (
+        self.t("v6_api_ready")
+        if BUILTIN_CURSEFORGE_API_KEY
+        else self.t("v6_api_cf_missing")
+    )
+
+    self.diagnostic_component_v6(
+        outer,
+        6,
+        self.t("v6_component_services"),
+        services_status,
+        services_detail,
+    )
+
+    # ---- Actions ----
+    actions = ctk.CTkFrame(
+        outer,
+        fg_color="transparent",
+    )
+    actions.grid(
+        row=7,
+        column=0,
+        sticky="ew",
+        padx=36,
+        pady=(10, 8),
+    )
+
+    ctk.CTkButton(
+        actions,
+        text=self.t("v6_check_updates_short"),
+        fg_color=SURFACE_3,
+        hover_color=self.accent,
+        command=lambda: self.check_profile_updates(name),
+    ).pack(side="left")
+
+    ctk.CTkButton(
+        actions,
+        text=self.t("v5_copy_report"),
+        fg_color=SURFACE_3,
+        hover_color=self.accent,
+        command=self.copy_diagnostic_report,
+    ).pack(side="left", padx=7)
+
+    ctk.CTkButton(
+        actions,
+        text=self.t("v5_open_logs"),
+        fg_color=SURFACE_3,
+        hover_color=self.accent,
+        command=lambda: self.open_profile_folder_path(
+            self.logs_dir()
+        ),
+    ).pack(side="left")
+
+    # ---- Logs ----
+    log_card = self.card(outer, 12)
+    log_card.grid(
+        row=8,
+        column=0,
+        sticky="ew",
+        padx=36,
+        pady=(0, 18),
+    )
+
+    textbox = ctk.CTkTextbox(
+        log_card,
+        height=330,
+        fg_color=SURFACE_2,
+        border_width=0,
+        text_color="#B9C5D6",
+        font=ctk.CTkFont(
+            family="monospace",
+            size=11,
+        ),
+    )
+    textbox.pack(
+        fill="both",
+        expand=True,
+        padx=10,
+        pady=10,
+    )
+
+    log = self.logs_dir() / "latest-minecraft.log"
+    launcher = self.logs_dir() / "outerclient.log"
+
+    text = "=== OuterClient ===\n" + (
+        launcher.read_text(
+            encoding="utf-8",
+            errors="ignore",
+        )[-10000:]
+        if launcher.exists()
+        else ""
+    )
+
+    text += "\n\n=== Minecraft ===\n" + (
+        log.read_text(
+            encoding="utf-8",
+            errors="ignore",
+        )[-18000:]
+        if log.exists()
+        else ""
+    )
+
+    textbox.insert("1.0", text)
+    textbox.configure(state="disabled")
+
+
+def _v634_set_active_page(self, page):
+    if (
+        getattr(self, "active_page", None) == "diagnostics"
+        and page != "diagnostics"
+    ):
+        self.destroy_diag_popup_v633()
+
+    return _V634_SET_ACTIVE_PAGE_BASE(self, page)
+
+
+def _v634_show_whats_new(self, mark_seen=True):
+    self.set_active_page("whats_new")
+    self.clear_content()
+
+    outer = ctk.CTkScrollableFrame(
+        self.content,
+        fg_color=BG,
+        corner_radius=0,
+        scrollbar_button_color=SURFACE_3,
+        scrollbar_button_hover_color=BORDER,
+    )
+    outer.grid(row=0, column=0, sticky="nsew")
+    outer.grid_columnconfigure(0, weight=1)
+
+    self.page_header(
+        outer,
+        self.t("v634_whats_new_eyebrow"),
+        self.t("v61_whats_new_title"),
+        self.t("v61_whats_new_subtitle"),
+    )
+
+    self._whats_new_state_v63 = {
+        "header": self.t("v61_whats_new_title"),
+        "versions": [
+            "6.3.4",
+            "6.3.3",
+            "6.3.2",
+            "6.3.1",
+            "6.3",
+            "6.2",
+            "6.1",
+            "6.0",
+        ],
+        "current": "6.3.4",
+    }
+
+    self.release_card_v63(
+        outer,
+        1,
+        self.t("v61_current_version"),
+        self.t("v634_whats_new_title"),
+        self.t("v634_whats_new_date"),
+        [
+            self.t("v634_change_diagnostics"),
+            self.t("v634_change_ci"),
+        ],
+        current=True,
+    )
+
+    self.release_card_v63(
+        outer,
+        2,
+        self.t("v61_previous_version"),
+        self.t("v633_whats_new_title"),
+        self.t("v633_whats_new_date"),
+        [
+            self.t("v633_change_diagnostics"),
+            self.t("v633_change_titlebar"),
+            self.t("v633_change_taskbar"),
+        ],
+    )
+
+    if mark_seen:
+        self.mark_whats_new_seen_v62()
+
+
+def _v634_init(self):
+    _V634_INIT_BASE(self)
+
+    # The 6.3.3 implementations for custom titlebar / System Tools remain
+    # active. Only Diagnostics is replaced here.
+    self.set_topmost_false_v63()
+
+
+OuterClient.show_diagnostics = _v634_show_diagnostics
+OuterClient.set_active_page = _v634_set_active_page
+OuterClient.show_whats_new_v61 = _v634_show_whats_new
+OuterClient.__init__ = _v634_init
 
 
 

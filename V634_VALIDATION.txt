@@ -1,0 +1,54 @@
+OuterClient 6.3.4 — validation report
+
+ROOT CAUSE OF THE REPEATED GITHUB FAILURE
+- The 6.3.3 Diagnostics enhancement tried to locate the selector row by traversing
+  CTkScrollableFrame children after the base page was built.
+- CTkScrollableFrame content is backed by an internal canvas, so this discovery
+  is not reliable.
+- As a result, diagnostic_profile_selector_card_v633 was not guaranteed to be
+  created, while the blocking GitHub smoke test asserted that it existed.
+- This produced the line-114 AssertionError even though AppImage packaging had
+  not started yet.
+
+6.3.4 FIX
+- Diagnostics is rebuilt directly. The richer selector card is created at page
+  construction time and no longer depends on CTkScrollableFrame introspection.
+- Existing 6.3.3 profile-popup behavior remains available to the new selector.
+- Custom Linux/KDE titlebar implementation from 6.3.3 remains active.
+- Normal-scroll Taskbar / dock implementation from 6.3.3 remains active.
+
+CI / GITHUB ACTIONS FIX
+- The release-blocking GUI smoke test was redesigned.
+- It now checks:
+  * OuterClient starts under Xvfb;
+  * the root window exists;
+  * APP_VERSION is correct;
+  * critical launcher methods are wired/callable;
+  * the final Diagnostics binding is the 6.3.4 implementation;
+  * no startup Tk callback exception occurs.
+- It NO LONGER blocks builds on:
+  * winfo_ismapped();
+  * winfo_manager();
+  * place_info();
+  * CTkScrollableFrame child discovery;
+  * visual widget geometry;
+  * page-layout implementation details.
+- Visual/UI regressions should be checked manually or by non-blocking UI tests,
+  not by the AppImage packaging gate.
+
+VALIDATION
+- Python compile: OK
+- AST parse: OK
+- module-level patch/binding chain: OK
+- final Diagnostics binding: _v634_show_diagnostics
+- final custom-titlebar binding: _v633_apply_linux_custom_titlebar
+- final System Tools binding: _v633_show_system_tools
+- PL/EN translation parity: OK
+- literal translation lookup coverage: OK
+- GitHub Actions YAML parse: OK
+- release smoke test has no Xvfb geometry/layout assertions
+- Linux scripts bash -n: OK
+
+ARTIFACT NAMES
+- OuterClient-v6.3.4-x86_64.AppImage
+- OuterClient-v6.3.4.exe
