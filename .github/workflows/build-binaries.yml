@@ -1,4 +1,4 @@
-name: Build and Release OuterClient 6.3.9
+name: Build and Release OuterClient 6.4.0
 
 on:
   workflow_dispatch:
@@ -7,11 +7,11 @@ permissions:
   contents: write
 
 env:
-  OC_VERSION: "6.3.9"
+  OC_VERSION: "6.4.0"
 
 jobs:
   verify-source:
-    name: Verify OuterClient 6.3.9
+    name: Verify OuterClient 6.4.0
     runs-on: ubuntu-latest
 
     steps:
@@ -22,8 +22,12 @@ jobs:
         shell: bash
         run: |
           set -eux
-          echo "=== OUTERCLIENT 6.3.9 WORKFLOW LOADED ==="
-          grep -F 'APP_VERSION = "6.3.9"' outerclient.py
+          echo "=== OUTERCLIENT 6.4.0 WORKFLOW LOADED ==="
+          grep -F 'APP_VERSION = "6.4.0"' outerclient.py
+          grep -F 'def _v640_open_create_profile' outerclient.py
+          grep -F 'def _v640_prepare_profile' outerclient.py
+          grep -F 'def _v640_login_worker' outerclient.py
+          grep -F 'def _v640_ensure_profile_java' outerclient.py
           grep -F 'def _v639_toggle_maximize' outerclient.py
           grep -F 'target.setMaximize(desired, desired)' outerclient.py
           grep -F 'def _v639_finish_window_transition' outerclient.py
@@ -57,7 +61,7 @@ jobs:
           python3 -m py_compile outerclient.py
 
   linux-appimage:
-    name: Linux AppImage 6.3.9
+    name: Linux AppImage 6.4.0
     needs: verify-source
     runs-on: ubuntu-22.04
 
@@ -140,7 +144,7 @@ jobs:
 
           Path.home().mkdir(parents=True, exist_ok=True)
           (Path.home() / ".outerclient-state.json").write_text(
-              json.dumps({"whats_new_seen_version": "6.3.9"}),
+              json.dumps({"whats_new_seen_version": "6.4.0"}),
               encoding="utf-8",
           )
 
@@ -158,7 +162,7 @@ jobs:
           app.update()
 
           assert app.winfo_exists()
-          assert outerclient.APP_VERSION == "6.3.9"
+          assert outerclient.APP_VERSION == "6.4.0"
 
           # Release-blocking smoke test intentionally checks startup and
           # critical method wiring only. Visual layout belongs to manual/UI
@@ -185,6 +189,10 @@ jobs:
           assert app.apply_linux_custom_titlebar_v633.__func__.__name__ == "_v638_apply_linux_titlebar"
           assert app.apply_linux_window_mode_v63.__func__.__name__ == "_v638_apply_linux_titlebar"
           assert app.custom_toggle_maximize_v5101.__func__.__name__ == "_v639_toggle_maximize"
+          assert app.open_create_profile.__func__.__name__ == "_v640_open_create_profile"
+          assert app.prepare_profile_for_launch.__func__.__name__ == "_v640_prepare_profile"
+          assert app.login_worker.__func__.__name__ == "_v640_login_worker"
+          assert app.download_profile_runtime_worker.__func__.__name__ == "_v640_download_runtime_worker"
           assert callable(app.native_decoration_state_v636)
           assert callable(app.run_kwin_no_border_v638)
           assert callable(app.kwin_dbus_tools_v638)
@@ -194,7 +202,7 @@ jobs:
               raise RuntimeError(f"Tk startup callback failures: {callback_errors}")
 
           app.destroy()
-          print("OuterClient 6.3.9 startup smoke test: OK")
+          print("OuterClient 6.4.0 startup smoke test: OK")
           PY
 
 
@@ -247,7 +255,7 @@ jobs:
           Categories=Game;
           Terminal=false
           StartupWMClass=Outerclient
-          X-AppImage-Version=6.3.9
+          X-AppImage-Version=6.4.0
           EOF
 
           cat > AppDir/AppRun <<'EOF'
@@ -272,25 +280,25 @@ jobs:
         shell: bash
         env:
           ARCH: x86_64
-          VERSION: "6.3.9"
+          VERSION: "6.4.0"
           APPIMAGE_EXTRACT_AND_RUN: "1"
         run: |
           ./appimagetool.AppImage \
             AppDir \
-            OuterClient-v6.3.9-x86_64.AppImage
+            OuterClient-v6.4.0-x86_64.AppImage
 
-          chmod +x OuterClient-v6.3.9-x86_64.AppImage
-          test -f OuterClient-v6.3.9-x86_64.AppImage
+          chmod +x OuterClient-v6.4.0-x86_64.AppImage
+          test -f OuterClient-v6.4.0-x86_64.AppImage
 
       - name: Upload AppImage
         uses: actions/upload-artifact@v4
         with:
-          name: OuterClient-v6.3.9-AppImage
-          path: OuterClient-v6.3.9-x86_64.AppImage
+          name: OuterClient-v6.4.0-AppImage
+          path: OuterClient-v6.4.0-x86_64.AppImage
           if-no-files-found: error
 
   windows-exe:
-    name: Windows EXE 6.3.9
+    name: Windows EXE 6.4.0
     needs: verify-source
     runs-on: windows-latest
 
@@ -332,7 +340,7 @@ jobs:
       - name: Source import smoke test
         shell: pwsh
         run: |
-          python -c "import outerclient; assert outerclient.APP_VERSION == '6.3.9'; assert hasattr(outerclient.OuterClient, 'show_content_library_v6'); assert hasattr(outerclient.OuterClient, 'profile_health_report_v6'); print('OuterClient 6.3.9 source import: OK')"
+          python -c "import outerclient; assert outerclient.APP_VERSION == '6.4.0'; assert hasattr(outerclient.OuterClient, 'show_content_library_v6'); assert hasattr(outerclient.OuterClient, 'profile_health_report_v6'); print('OuterClient 6.4.0 source import: OK')"
 
       - name: Build EXE
         shell: pwsh
@@ -342,7 +350,7 @@ jobs:
             --clean `
             --onefile `
             --windowed `
-            --name "OuterClient-v6.3.9" `
+            --name "OuterClient-v6.4.0" `
             --icon assets/outerclient.ico `
             --add-data "assets;assets" `
             --collect-all customtkinter `
@@ -353,19 +361,19 @@ jobs:
             --hidden-import outerclient_build_secrets `
             outerclient.py
 
-          if (-not (Test-Path "dist\OuterClient-v6.3.9.exe")) {
-            throw "OuterClient-v6.3.9.exe was not created"
+          if (-not (Test-Path "dist\OuterClient-v6.4.0.exe")) {
+            throw "OuterClient-v6.4.0.exe was not created"
           }
 
       - name: Upload Windows EXE
         uses: actions/upload-artifact@v4
         with:
-          name: OuterClient-v6.3.9-Windows
-          path: dist/OuterClient-v6.3.9.exe
+          name: OuterClient-v6.4.0-Windows
+          path: dist/OuterClient-v6.4.0.exe
           if-no-files-found: error
 
   release:
-    name: Make 6.3.9 Latest
+    name: Make 6.4.0 Latest
     needs:
       - linux-appimage
       - windows-exe
@@ -378,13 +386,13 @@ jobs:
           path: release
           merge-multiple: true
 
-      - name: Publish OuterClient 6.3.9
+      - name: Publish OuterClient 6.4.0
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v6.3.9
-          name: OuterClient v6.3.9
+          tag_name: v6.4.0
+          name: OuterClient v6.4.0
           make_latest: true
           generate_release_notes: true
           files: |
-            release/OuterClient-v6.3.9-x86_64.AppImage
-            release/OuterClient-v6.3.9.exe
+            release/OuterClient-v6.4.0-x86_64.AppImage
+            release/OuterClient-v6.4.0.exe
