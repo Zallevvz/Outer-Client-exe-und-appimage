@@ -1,0 +1,59 @@
+OuterClient 6.3.6 — validation report
+
+TITLEBAR ROOT FIX
+
+The previous KDE solutions depended on Motif hints / kwinrulesrc being applied
+to the right window. The screenshot from 6.3.5 proved the actual KWin-managed
+window still retained native decoration.
+
+6.3.6 now:
+
+1. Scans _NET_CLIENT_LIST and finds the real top-level OuterClient client by:
+   - PID
+   - WM_CLASS
+   - window title
+
+2. Applies _MOTIF_WM_HINTS to the real client(s), not only Tk winfo_id().
+
+3. Probes _NET_FRAME_EXTENTS to determine whether KWin decoration is actually
+   still present.
+
+4. If native decoration remains, activates OuterClient and invokes KWin's own:
+       Window No Border
+   action through org.kde.kglobalaccel.
+
+5. The custom OuterClient titlebar is shown ONLY when native decoration is
+   confirmed gone.
+
+6. If decoration state cannot be removed/confirmed, OuterClient falls back to
+   one native bar instead of reproducing a native+custom double titlebar.
+
+7. The main window stays WM-managed:
+   - taskbar/dock
+   - Alt+Tab
+   - normal focus
+   - minimize/maximize
+   remain available.
+
+OTHER
+- The real 6.3.5 Taskbar / dock scroll-parent fix is retained.
+- Release smoke test remains non-visual and does not block AppImage builds on
+  Xvfb widget geometry.
+
+VALIDATION
+- Python compile: OK
+- AST parse: OK
+- full module-level binding-chain import: OK
+- final Linux titlebar binding: _v636_apply_linux_titlebar
+- final Linux map binding: _v636_linux_map
+- real X11/XWayland client discovery: present
+- _NET_FRAME_EXTENTS detection: present
+- KWin Window No Border invocation: present
+- PL/EN translation parity: OK
+- GitHub Actions YAML parse: OK
+- bash -n on Linux scripts: OK
+- ZIP integrity: OK
+
+ARTIFACTS
+- OuterClient-v6.3.6-x86_64.AppImage
+- OuterClient-v6.3.6.exe

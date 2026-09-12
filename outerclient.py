@@ -38,7 +38,7 @@ except Exception:
 
 
 APP_NAME = "OuterClient"
-APP_VERSION = "6.3.5"
+APP_VERSION = "6.3.6"
 CONFIG_PATH = Path.home() / ".outerclient.json"
 REDIRECT_URI = "http://localhost:8765/callback"
 MICROSOFT_CLIENT_ID = "fb14d1c4-7d14-4a35-99a7-3f921f7a1e77"
@@ -619,6 +619,10 @@ TEXTS = {
         "v635_whats_new_date": "Wrzesień 2026",
         "v635_change_taskbar": "Naprawiono sekcję „Pasek zadań / dock” u źródła: jest dodawana do prawdziwej przewijanej strony, a nie do wrappera CTkScrollableFrame.",
         "v635_change_titlebar": "Customowy pasek KDE używa teraz dedykowanej reguły KWin „bez obramowania”, dzięki czemu okno pozostaje normalnie zarządzane, ale bez natywnego paska.",
+        "v636_whats_new_eyebrow": "OUTERCLIENT 6.3.6",
+        "v636_whats_new_title": "OuterClient 6.3.6",
+        "v636_whats_new_date": "Wrzesień 2026",
+        "v636_change_titlebar": "Przebudowano pasek KDE: OuterClient wykrywa rzeczywiste okno X11/XWayland i w razie potrzeby wywołuje natywną akcję KWin „Window No Border”. Customowy pasek pojawia się dopiero po usunięciu dekoracji systemowej.",
         "v58_update_checking": "Sprawdzanie aktualizacji OuterClient…",
         "v58_update_failed": "Nie udało się sprawdzić aktualizacji: {error}",
         "v58_latest": "Masz najnowszą wersję OuterClient ({version}).",
@@ -1217,6 +1221,10 @@ TEXTS = {
         "v635_whats_new_date": "September 2026",
         "v635_change_taskbar": "Fixed the Taskbar / dock section at the source: it is now added to the actual scrollable page instead of the CTkScrollableFrame wrapper.",
         "v635_change_titlebar": "The KDE custom title bar now uses a dedicated KWin no-border rule, keeping the window normally managed while removing the native decoration.",
+        "v636_whats_new_eyebrow": "OUTERCLIENT 6.3.6",
+        "v636_whats_new_title": "OuterClient 6.3.6",
+        "v636_whats_new_date": "September 2026",
+        "v636_change_titlebar": "Rebuilt KDE title-bar handling: OuterClient discovers the real X11/XWayland client and, when needed, invokes KWin's native “Window No Border” action. The custom bar is shown only after native decoration is gone.",
         "v5_change_profile": "Change profile",
         "v5_previous": "Previous",
         "v5_next": "Next",
@@ -1607,7 +1615,7 @@ class OuterClient(ctk.CTk):
                 try:
                     import ctypes
                     ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(
-                        "OuterClient.Launcher.6.3.5"
+                        "OuterClient.Launcher.6.3.6"
                     )
                 except Exception:
                     pass
@@ -34645,6 +34653,563 @@ OuterClient.custom_on_map_v5101 = _v635_linux_map
 
 OuterClient.show_whats_new_v61 = _v635_show_whats_new
 OuterClient.__init__ = _v635_init
+
+
+
+# ============================================================
+# OuterClient 6.3.6
+# KDE titlebar fix:
+# - find the actual WM-managed X11/XWayland client
+# - inspect _NET_FRAME_EXTENTS
+# - use Motif/KWin rule first
+# - if still decorated, invoke KWin's own "Window No Border" action
+# - NEVER show native + custom bars at the same time
+# ============================================================
+
+_V636_INIT_BASE = OuterClient.__init__
+
+
+def _v636_parse_xids(self, text):
+    result = []
+
+    for value in re.findall(r"0x[0-9a-fA-F]+", text or ""):
+        if value not in result:
+            result.append(value)
+
+    return result
+
+
+def _v636_real_x11_clients(self):
+    """
+    Find the actual top-level WM-managed X11/XWayland client.
+
+    Tk's winfo_id() can point at an inner Tk window, so applying Motif hints
+    only to it is not reliable. We also scan _NET_CLIENT_LIST and match
+    OuterClient by PID / WM_CLASS / title.
+    """
+    result = []
+
+    def add(value):
+        value = str(value or "").strip()
+        if value and value not in result:
+            result.append(value)
+
+    # Existing Tk candidates.
+    try:
+        add(hex(int(self.winfo_id())))
+    except Exception:
+        pass
+
+    try:
+        add(self.tk.call("wm", "frame", self._w))
+    except Exception:
+        pass
+
+    xprop = shutil.which("xprop")
+    if not xprop:
+        return result
+
+    try:
+        root = subprocess.run(
+            [xprop, "-root", "_NET_CLIENT_LIST"],
+            capture_output=True,
+            text=True,
+            timeout=2,
+        )
+
+        if root.returncode != 0:
+            return result
+
+        pid = str(os.getpid())
+
+        for xid in self.parse_xids_v636(root.stdout):
+            try:
+                info = subprocess.run(
+                    [
+                        xprop,
+                        "-id",
+                        xid,
+                        "_NET_WM_PID",
+                        "WM_CLASS",
+                        "_NET_WM_NAME",
+                        "WM_NAME",
+                    ],
+                    capture_output=True,
+                    text=True,
+                    timeout=2,
+                )
+
+                if info.returncode != 0:
+                    continue
+
+                raw = (info.stdout or "").casefold()
+
+                pid_match = (
+                    "_net_wm_pid" in raw
+                    and re.search(
+                        rf"_net_wm_pid[^=]*=\s*{re.escape(pid)}\b",
+                        raw,
+                    )
+                    is not None
+                )
+
+                app_match = (
+                    "outerclient" in raw
+                    or "outerclient 6." in raw
+                )
+
+                if pid_match or app_match:
+                    add(xid)
+            except Exception:
+                pass
+    except Exception:
+        pass
+
+    return result
+
+
+def _v636_frame_extents(self, xid):
+    xprop = shutil.which("xprop")
+    if not xprop or not xid:
+        return None
+
+    try:
+        result = subprocess.run(
+            [
+                xprop,
+                "-id",
+                str(xid),
+                "_NET_FRAME_EXTENTS",
+            ],
+            capture_output=True,
+            text=True,
+            timeout=2,
+        )
+
+        if result.returncode != 0:
+            return None
+
+        if "not found" in (result.stdout or "").casefold():
+            return None
+
+        rhs = (result.stdout or "").split("=", 1)
+        if len(rhs) != 2:
+            return None
+
+        values = [
+            int(value)
+            for value in re.findall(r"-?\d+", rhs[1])
+        ]
+
+        if len(values) < 4:
+            return None
+
+        return tuple(values[-4:])
+    except Exception:
+        return None
+
+
+def _v636_native_decoration_state(self):
+    """
+    Returns:
+      True  -> native frame definitely present
+      False -> native frame definitely gone
+      None  -> cannot determine
+    """
+    states = []
+
+    for xid in self.real_x11_clients_v636():
+        extents = self.frame_extents_v636(xid)
+
+        if extents is None:
+            continue
+
+        # left, right, top, bottom. A decorated KDE window has non-zero frame
+        # extents, especially top.
+        states.append(any(value > 0 for value in extents))
+
+    if not states:
+        return None
+
+    return any(states)
+
+
+def _v636_apply_motif_to_real_clients(self):
+    xprop = shutil.which("xprop")
+    if not xprop:
+        return False
+
+    success = False
+
+    for xid in self.real_x11_clients_v636():
+        try:
+            result = subprocess.run(
+                [
+                    xprop,
+                    "-id",
+                    str(xid),
+                    "-f",
+                    "_MOTIF_WM_HINTS",
+                    "32c",
+                    "-set",
+                    "_MOTIF_WM_HINTS",
+                    "2, 0, 0, 0, 0",
+                ],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                timeout=2,
+            )
+
+            success = success or result.returncode == 0
+        except Exception:
+            pass
+
+    return success
+
+
+def _v636_kwin_shortcut_command(self):
+    qdbus = (
+        shutil.which("qdbus6")
+        or shutil.which("qdbus-qt6")
+        or shutil.which("qdbus")
+    )
+
+    if not qdbus:
+        return None
+
+    return [
+        qdbus,
+        "org.kde.kglobalaccel",
+        "/component/kwin",
+        "org.kde.kglobalaccel.Component.invokeShortcut",
+        "Window No Border",
+    ]
+
+
+def _v636_invoke_kwin_no_border(self):
+    """
+    Toggle KWin's native "Window No Border" action for the active OuterClient
+    window. Call ONLY after checking that native decoration is still present.
+    """
+    if not self.is_kde_v635():
+        return False
+
+    command = self.kwin_shortcut_command_v636()
+    if not command:
+        return False
+
+    try:
+        self.deiconify()
+        self.lift()
+        self.focus_force()
+        self.update_idletasks()
+        self.update()
+    except Exception:
+        pass
+
+    try:
+        result = subprocess.run(
+            command,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            timeout=4,
+        )
+
+        if result.returncode == 0:
+            self._kwin_shortcut_used_v636 = True
+            return True
+    except Exception as exc:
+        self.write_log(
+            "KWin Window No Border shortcut: " + str(exc)
+        )
+
+    return False
+
+
+def _v636_prepare_native_decoration_removal(self):
+    # 1) Apply Motif to the actual top-level X11 clients.
+    self.apply_motif_to_real_clients_v636()
+
+    # 2) Keep the 6.3.5 persistent KWin rule as a second route.
+    try:
+        self.install_kwin_rule_v635()
+    except Exception as exc:
+        self.write_log("KWin rule 6.3.6: " + str(exc))
+
+    try:
+        self.reconfigure_kwin_v635()
+    except Exception:
+        pass
+
+
+def _v636_decide_titlebar_after_rules(self):
+    if not sys.platform.startswith("linux"):
+        return
+
+    if os.environ.get("OUTERCLIENT_SMOKE_TEST") == "1":
+        self.set_topmost_false_v63()
+        return
+
+    state = self.native_decoration_state_v636()
+
+    if state is False:
+        # Confirmed: KDE/native border is gone.
+        self.show_custom_titlebar_layout_v63()
+        self._linux_titlebar_mode_v636 = "custom"
+        self.set_topmost_false_v63()
+        return
+
+    if state is True and not getattr(
+        self,
+        "_kwin_shortcut_used_v636",
+        False,
+    ):
+        # Confirmed native frame still present -> use KWin's own supported
+        # window action on the currently active OuterClient window.
+        self.invoke_kwin_no_border_v636()
+
+        self.after(
+            180,
+            self.finish_titlebar_after_kwin_shortcut_v636,
+        )
+        return
+
+    if state is None:
+        # No trustworthy frame-extents signal yet. Retry once after the WM has
+        # finished mapping the window instead of immediately stacking two bars.
+        retries = getattr(self, "_titlebar_probe_retries_v636", 0)
+
+        if retries < 3:
+            self._titlebar_probe_retries_v636 = retries + 1
+            self.after(
+                150,
+                self.decide_titlebar_after_rules_v636,
+            )
+            return
+
+    # Safety fallback: ONE native bar is better than two bars.
+    self.show_native_titlebar_layout_v63()
+    self._linux_titlebar_mode_v636 = "native"
+    self.set_topmost_false_v63()
+
+
+def _v636_finish_titlebar_after_kwin_shortcut(self):
+    state = self.native_decoration_state_v636()
+
+    if state is False:
+        self.show_custom_titlebar_layout_v63()
+        self._linux_titlebar_mode_v636 = "custom"
+    else:
+        # Do not recreate the bug shown in the user's screenshot.
+        self.show_native_titlebar_layout_v63()
+        self._linux_titlebar_mode_v636 = "native"
+
+    self.set_topmost_false_v63()
+
+
+def _v636_apply_linux_titlebar(self, force=False):
+    if not sys.platform.startswith("linux"):
+        return _V632_LINUX_WINDOW_BASE(self, force)
+
+    if os.environ.get("OUTERCLIENT_SMOKE_TEST") == "1":
+        self.set_topmost_false_v63()
+        return
+
+    self.set_topmost_false_v63()
+
+    # Keep WM management for taskbar, Alt+Tab, normal minimize/maximize.
+    try:
+        self.overrideredirect(False)
+    except Exception:
+        pass
+
+    try:
+        self.attributes("-type", "normal")
+    except Exception:
+        pass
+
+    # Hide the custom bar while decoration removal is being negotiated.
+    # This guarantees there is never a persistent two-bar state.
+    self.show_native_titlebar_layout_v63()
+
+    try:
+        self.update_idletasks()
+    except Exception:
+        pass
+
+    self.prepare_native_decoration_removal_v636()
+
+    if force and not getattr(
+        self,
+        "_linux_titlebar_remap_done_v636",
+        False,
+    ):
+        self._linux_titlebar_remap_done_v636 = True
+
+        try:
+            self.withdraw()
+        except Exception:
+            pass
+
+        def remap():
+            self.prepare_native_decoration_removal_v636()
+
+            try:
+                self.deiconify()
+                self.lift()
+                self.focus_force()
+            except Exception:
+                pass
+
+            self.after(
+                180,
+                self.decide_titlebar_after_rules_v636,
+            )
+
+        self.after(45, remap)
+        return
+
+    self.after(
+        130,
+        self.decide_titlebar_after_rules_v636,
+    )
+
+
+def _v636_linux_map(self, event=None):
+    if not sys.platform.startswith("linux"):
+        return _V63_WINDOW_MAP_BASE(self, event)
+
+    if event is not None and getattr(event, "widget", None) is not self:
+        return
+
+    self.set_topmost_false_v63()
+
+    if os.environ.get("OUTERCLIENT_SMOKE_TEST") == "1":
+        return
+
+    # Do not blindly toggle anything on every Map. Probe actual decoration.
+    self.after(
+        120,
+        self.decide_titlebar_after_rules_v636,
+    )
+
+
+def _v636_show_whats_new(self, mark_seen=True):
+    self.set_active_page("whats_new")
+    self.clear_content()
+
+    outer = ctk.CTkScrollableFrame(
+        self.content,
+        fg_color=BG,
+        corner_radius=0,
+        scrollbar_button_color=SURFACE_3,
+        scrollbar_button_hover_color=BORDER,
+    )
+    outer.grid(row=0, column=0, sticky="nsew")
+    outer.grid_columnconfigure(0, weight=1)
+
+    self.page_header(
+        outer,
+        self.t("v636_whats_new_eyebrow"),
+        self.t("v61_whats_new_title"),
+        self.t("v61_whats_new_subtitle"),
+    )
+
+    self._whats_new_state_v63 = {
+        "header": self.t("v61_whats_new_title"),
+        "versions": [
+            "6.3.6",
+            "6.3.5",
+            "6.3.4",
+            "6.3.3",
+            "6.3.2",
+            "6.3.1",
+            "6.3",
+            "6.2",
+            "6.1",
+            "6.0",
+        ],
+        "current": "6.3.6",
+    }
+
+    self.release_card_v63(
+        outer,
+        1,
+        self.t("v61_current_version"),
+        self.t("v636_whats_new_title"),
+        self.t("v636_whats_new_date"),
+        [
+            self.t("v636_change_titlebar"),
+        ],
+        current=True,
+    )
+
+    self.release_card_v63(
+        outer,
+        2,
+        self.t("v61_previous_version"),
+        self.t("v635_whats_new_title"),
+        self.t("v635_whats_new_date"),
+        [
+            self.t("v635_change_taskbar"),
+            self.t("v635_change_titlebar"),
+        ],
+    )
+
+    if mark_seen:
+        self.mark_whats_new_seen_v62()
+
+
+def _v636_init(self):
+    self._linux_titlebar_mode_v636 = "probing"
+    self._linux_titlebar_remap_done_v636 = False
+    self._kwin_shortcut_used_v636 = False
+    self._titlebar_probe_retries_v636 = 0
+
+    _V636_INIT_BASE(self)
+
+    self.set_topmost_false_v63()
+
+    if sys.platform.startswith("linux"):
+        # Start with exactly one bar (native), then switch to custom only after
+        # native decoration is confirmed gone.
+        self.show_native_titlebar_layout_v63()
+
+        self.after(
+            130,
+            lambda: self.apply_linux_titlebar_v636(
+                force=True
+            ),
+        )
+
+
+OuterClient.parse_xids_v636 = _v636_parse_xids
+OuterClient.real_x11_clients_v636 = _v636_real_x11_clients
+OuterClient.frame_extents_v636 = _v636_frame_extents
+OuterClient.native_decoration_state_v636 = _v636_native_decoration_state
+OuterClient.apply_motif_to_real_clients_v636 = _v636_apply_motif_to_real_clients
+OuterClient.kwin_shortcut_command_v636 = _v636_kwin_shortcut_command
+OuterClient.invoke_kwin_no_border_v636 = _v636_invoke_kwin_no_border
+OuterClient.prepare_native_decoration_removal_v636 = _v636_prepare_native_decoration_removal
+OuterClient.decide_titlebar_after_rules_v636 = _v636_decide_titlebar_after_rules
+OuterClient.finish_titlebar_after_kwin_shortcut_v636 = _v636_finish_titlebar_after_kwin_shortcut
+OuterClient.apply_linux_titlebar_v636 = _v636_apply_linux_titlebar
+
+# Redirect every old titlebar callback to 6.3.6.
+OuterClient.apply_linux_custom_titlebar_v635 = _v636_apply_linux_titlebar
+OuterClient.apply_linux_custom_titlebar_v633 = _v636_apply_linux_titlebar
+OuterClient.apply_linux_titlebar_v632 = _v636_apply_linux_titlebar
+OuterClient.apply_linux_window_mode_v631 = _v636_apply_linux_titlebar
+OuterClient.apply_linux_window_mode_v63 = _v636_apply_linux_titlebar
+OuterClient.apply_linux_titlebar_v62 = _v636_apply_linux_titlebar
+OuterClient.apply_linux_managed_titlebar_v61 = _v636_apply_linux_titlebar
+OuterClient.apply_borderless_once_v5103 = _v636_apply_linux_titlebar
+OuterClient.force_borderless_v5102 = _v636_apply_linux_titlebar
+OuterClient.reapply_custom_titlebar_v633 = _v636_decide_titlebar_after_rules
+OuterClient.custom_on_map_v5101 = _v636_linux_map
+
+OuterClient.show_whats_new_v61 = _v636_show_whats_new
+OuterClient.__init__ = _v636_init
 
 
 

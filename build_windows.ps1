@@ -1,6 +1,6 @@
 $ErrorActionPreference = "Stop"
 
-$Version = "6.3.5"
+$Version = "6.3.6"
 
 py -3.13 -m venv .build-venv
 & .\.build-venv\Scripts\Activate.ps1
