@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Virtual environments
+.venv/
+.build-venv/
+venv/
+
+# Build outputs
+build/
+dist/
+dist-release/
+AppDir/
+*.spec
+*.AppImage
+*.exe
+appimagetool.AppImage
+
+# Local/private build data
+outerclient_build_secrets.py
+.env
+.env.*
+
+# Editor / OS noise
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
