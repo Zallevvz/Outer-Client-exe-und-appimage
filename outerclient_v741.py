@@ -1,0 +1,19 @@
+"""OuterClient 7.4.1 packaged entry point."""
+import outerclient as _outerclient
+from outerclient_v730_patch import apply_v730
+from outerclient_v731_patch import install as apply_v731
+from outerclient_v732_patch import install as apply_v732
+from outerclient_v740_patch import install as apply_v740
+from outerclient_v741_patch import install as apply_v741
+
+apply_v730(_outerclient)
+apply_v731(_outerclient)
+apply_v732(_outerclient)
+apply_v740(_outerclient)
+apply_v741(_outerclient)
+
+APP_VERSION = _outerclient.APP_VERSION
+OuterClient = _outerclient.OuterClient
+
+if __name__ == "__main__":
+    OuterClient().mainloop()
