@@ -1,0 +1,214 @@
+name: Build and Release OuterClient 7.3.0
+
+on:
+  pull_request:
+    paths:
+      - "outerclient.py"
+      - "outerclient_v730*.py"
+      - "test_v730_core.py"
+      - ".github/workflows/build-binaries-v730.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  OC_VERSION: "7.3.0"
+
+jobs:
+  verify-source:
+    name: Verify OuterClient 7.3.0
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify syntax and core tests
+        shell: bash
+        run: |
+          set -eux
+          python3 -m py_compile outerclient.py outerclient_v730.py outerclient_v730_patch.py outerclient_v730_launch.py outerclient_v730_duplicates.py outerclient_v730_versions.py test_v730_core.py
+          python3 -m unittest -v test_v730_core.py
+          grep -F 'VERSION = "7.3.0"' outerclient_v730_patch.py
+          grep -F 'def finish_launch_session' outerclient_v730_launch.py
+          grep -F 'def repair(self, profile_name, selections)' outerclient_v730_duplicates.py
+          grep -F 'def load_versions(self)' outerclient_v730_versions.py
+
+  linux-appimage:
+    name: Linux AppImage 7.3.0
+    if: github.event_name == 'workflow_dispatch'
+    needs: verify-source
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: "pip"
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libfuse2 tk-dev tcl-dev xvfb x11-utils
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt pyinstaller
+      - name: Prepare private CurseForge build secret
+        env:
+          CURSEFORGE_API_KEY: ${{ secrets.CURSEFORGE_API_KEY }}
+        run: |
+          python - <<'PY'
+          import os
+          from pathlib import Path
+          key = os.environ.get("CURSEFORGE_API_KEY", "").strip()
+          if not key:
+              raise SystemExit("Missing GitHub Actions secret: CURSEFORGE_API_KEY")
+          Path("outerclient_build_secrets.py").write_text("CURSEFORGE_API_KEY = " + repr(key) + "\n", encoding="utf-8")
+          PY
+      - name: Source UI smoke test
+        env:
+          OUTERCLIENT_SMOKE_TEST: "1"
+          HOME: ${{ runner.temp }}/outerclient-smoke-home
+        run: |
+          mkdir -p "$HOME"
+          timeout 20s xvfb-run -a python - <<'PY'
+          import outerclient_v730 as appmod
+          assert appmod.APP_VERSION == "7.3.0"
+          app = appmod.OuterClient()
+          required = [
+              "show_diagnostics",
+              "repair_duplicates_v730",
+              "restore_duplicate_backup_v730",
+              "finish_launch_session_v730",
+              "toggle_version_picker_v640",
+              "refresh_versions_v730",
+          ]
+          for name in required:
+              assert callable(getattr(app, name, None)), name
+          app.update_idletasks()
+          app.update()
+          app.destroy()
+          print("OuterClient 7.3.0 source smoke test: OK")
+          PY
+      - name: Build PyInstaller bundle
+        run: |
+          rm -rf build dist AppDir *.spec OuterClient-v7.3.0-x86_64.AppImage
+          pyinstaller \
+            --noconfirm \
+            --clean \
+            --onedir \
+            --windowed \
+            --name OuterClient \
+            --add-data "assets:assets" \
+            --collect-all customtkinter \
+            --collect-all minecraft_launcher_lib \
+            --collect-all PIL \
+            --collect-all tkinterdnd2 \
+            --hidden-import PIL.ImageTk \
+            --hidden-import PIL._tkinter_finder \
+            --hidden-import outerclient_build_secrets \
+            outerclient_v730.py
+      - name: Create AppImage
+        env:
+          ARCH: x86_64
+          VERSION: "7.3.0"
+          APPIMAGE_EXTRACT_AND_RUN: "1"
+        run: |
+          mkdir -p AppDir/usr/bin/OuterClient
+          cp -a dist/OuterClient/. AppDir/usr/bin/OuterClient/
+          cp assets/outerclient-logo.png AppDir/outerclient.png
+          cat > AppDir/OuterClient.desktop <<'EOF'
+          [Desktop Entry]
+          Type=Application
+          Name=OuterClient
+          Comment=OuterClient Minecraft Launcher
+          Exec=OuterClient
+          Icon=outerclient
+          Categories=Game;
+          Terminal=false
+          StartupWMClass=Outerclient
+          X-AppImage-Version=7.3.0
+          EOF
+          cat > AppDir/AppRun <<'EOF'
+          #!/bin/sh
+          HERE="$(dirname "$(readlink -f "$0")")"
+          exec "$HERE/usr/bin/OuterClient/OuterClient" "$@"
+          EOF
+          chmod +x AppDir/AppRun AppDir/usr/bin/OuterClient/OuterClient
+          curl -L https://github.com/AppImage/appimagetool/releases/download/1.9.1/appimagetool-x86_64.AppImage -o appimagetool.AppImage
+          chmod +x appimagetool.AppImage
+          ./appimagetool.AppImage AppDir OuterClient-v7.3.0-x86_64.AppImage
+          chmod +x OuterClient-v7.3.0-x86_64.AppImage
+      - uses: actions/upload-artifact@v4
+        with:
+          name: OuterClient-v7.3.0-AppImage
+          path: OuterClient-v7.3.0-x86_64.AppImage
+          if-no-files-found: error
+
+  windows-exe:
+    name: Windows EXE 7.3.0
+    if: github.event_name == 'workflow_dispatch'
+    needs: verify-source
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: "pip"
+      - name: Install dependencies
+        shell: pwsh
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt pyinstaller
+      - name: Prepare private CurseForge build secret
+        shell: pwsh
+        env:
+          CURSEFORGE_API_KEY: ${{ secrets.CURSEFORGE_API_KEY }}
+        run: |
+          python -c "import os,pathlib; key=os.environ.get('CURSEFORGE_API_KEY','').strip(); (_ for _ in ()).throw(SystemExit('Missing GitHub Actions secret: CURSEFORGE_API_KEY')) if not key else pathlib.Path('outerclient_build_secrets.py').write_text('CURSEFORGE_API_KEY = ' + repr(key) + '\n', encoding='utf-8')"
+      - name: Source import smoke test
+        shell: pwsh
+        run: |
+          python -c "import outerclient_v730 as m; assert m.APP_VERSION == '7.3.0'; assert hasattr(m.OuterClient,'repair_duplicates_v730'); assert hasattr(m.OuterClient,'finish_launch_session_v730'); print('OuterClient 7.3.0 source import: OK')"
+      - name: Build EXE
+        shell: pwsh
+        run: |
+          Remove-Item -Recurse -Force build, dist -ErrorAction SilentlyContinue
+          Remove-Item -Force *.spec -ErrorAction SilentlyContinue
+          pyinstaller `
+            --noconfirm `
+            --clean `
+            --onefile `
+            --windowed `
+            --name OuterClient-v7.3.0 `
+            --add-data "assets;assets" `
+            --collect-all customtkinter `
+            --collect-all minecraft_launcher_lib `
+            --collect-all PIL `
+            --collect-all tkinterdnd2 `
+            --hidden-import PIL.ImageTk `
+            --hidden-import PIL._tkinter_finder `
+            --hidden-import outerclient_build_secrets `
+            outerclient_v730.py
+          Test-Path dist/OuterClient-v7.3.0.exe
+      - uses: actions/upload-artifact@v4
+        with:
+          name: OuterClient-v7.3.0-Windows
+          path: dist/OuterClient-v7.3.0.exe
+          if-no-files-found: error
+
+  release:
+    name: Release 7.3.0
+    if: github.event_name == 'workflow_dispatch'
+    needs: [linux-appimage, windows-exe]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: release-assets
+          merge-multiple: true
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v7.3.0
+          name: OuterClient 7.3.0
+          generate_release_notes: true
+          files: |
+            release-assets/OuterClient-v7.3.0-x86_64.AppImage
+            release-assets/OuterClient-v7.3.0.exe
