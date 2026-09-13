@@ -41,7 +41,7 @@ except Exception:
 
 
 APP_NAME = "OuterClient"
-APP_VERSION = "7.1.0"
+APP_VERSION = "7.2.0"
 CONFIG_PATH = Path.home() / ".outerclient.json"
 REDIRECT_URI = "http://localhost:8765/callback"
 MICROSOFT_CLIENT_ID = "fb14d1c4-7d14-4a35-99a7-3f921f7a1e77"
@@ -1856,7 +1856,7 @@ class OuterClient(ctk.CTk):
                 try:
                     import ctypes
                     ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(
-                        "OuterClient.Launcher.7.1.0"
+                        "OuterClient.Launcher.7.2.0"
                     )
                 except Exception:
                     pass
@@ -40788,7 +40788,7 @@ def _v710_apply_windows_taskbar(self):
         shell32 = ctypes.windll.shell32
         user32 = ctypes.windll.user32
 
-        app_id = "OuterClient.Launcher.7.1.0"
+        app_id = "OuterClient.Launcher.7.2.0"
         shell32.SetCurrentProcessExplicitAppUserModelID(
             app_id
         )
@@ -41180,7 +41180,7 @@ def _v710_load_loader_logo_worker(self, loader):
             timeout=12,
             headers={
                 "User-Agent":
-                    "OuterClient/7.1",
+                    f"OuterClient/{APP_VERSION}",
             },
         )
         response.raise_for_status()
@@ -44560,6 +44560,1597 @@ def _v710_open_create_profile(self):
 
 
 OuterClient.open_create_profile = _v710_open_create_profile
+
+
+# ============================================================
+# OuterClient 7.2.0 — Accounts + Explore reliability
+# ============================================================
+
+TEXTS["pl"].update({
+    "v720_change_skin": "Zmień skina",
+    "v720_change_name": "Zmień nick",
+    "v720_skin_title": "Zmień skina Minecraft",
+    "v720_skin_file": "Plik skina",
+    "v720_skin_choose": "Wybierz plik PNG",
+    "v720_skin_model": "Model postaci",
+    "v720_skin_upload": "Ustaw skina",
+    "v720_skin_ready": "Wybierz skin 64×64 lub 64×32 PNG.",
+    "v720_skin_selected": "Wybrano: {name}",
+    "v720_skin_invalid": "Skin musi być plikiem PNG o rozmiarze 64×64 lub 64×32.",
+    "v720_skin_uploading": "Wysyłanie skina…",
+    "v720_skin_done": "Skin został zmieniony.",
+    "v720_name_title": "Zmień nick Minecraft",
+    "v720_name_current": "Obecny nick: {name}",
+    "v720_name_new": "Nowy nick",
+    "v720_name_hint": "Nick można zmienić raz na 30 dni.",
+    "v720_name_save": "Zmień nick",
+    "v720_name_checking": "Sprawdzanie dostępności i zmiana nicku…",
+    "v720_name_done": "Nick został zmieniony na {name}.",
+    "v720_name_taken": "Ten nick jest zajęty.",
+    "v720_name_not_allowed": "Tego nicku nie można użyć.",
+    "v720_account_error": "Nie udało się zmienić danych konta: {error}",
+    "v720_whats_new_eyebrow": "OUTERCLIENT 7.2",
+    "v720_whats_new_title": "OuterClient 7.2 — Konta i Eksploruj",
+    "v720_whats_new_date": "Wrzesień 2026",
+    "v720_change_accounts": "Kafelki kont Microsoft pokazują główkę aktualnego skina oraz pozwalają zmienić skin i nick.",
+    "v720_change_explore": "Eksploruj ponownie rozpoznaje zainstalowane mody i odświeża ich stan po instalacji.",
+    "v720_change_downloads": "Naprawiono kolejkę pobierania — po zakończeniu moda można od razu pobierać następne.",
+})
+
+TEXTS["en"].update({
+    "v720_change_skin": "Change skin",
+    "v720_change_name": "Change name",
+    "v720_skin_title": "Change Minecraft skin",
+    "v720_skin_file": "Skin file",
+    "v720_skin_choose": "Choose PNG file",
+    "v720_skin_model": "Player model",
+    "v720_skin_upload": "Set skin",
+    "v720_skin_ready": "Choose a 64×64 or 64×32 PNG skin.",
+    "v720_skin_selected": "Selected: {name}",
+    "v720_skin_invalid": "The skin must be a 64×64 or 64×32 PNG file.",
+    "v720_skin_uploading": "Uploading skin…",
+    "v720_skin_done": "Your skin was changed.",
+    "v720_name_title": "Change Minecraft name",
+    "v720_name_current": "Current name: {name}",
+    "v720_name_new": "New name",
+    "v720_name_hint": "The name can be changed once every 30 days.",
+    "v720_name_save": "Change name",
+    "v720_name_checking": "Checking availability and changing name…",
+    "v720_name_done": "Your name was changed to {name}.",
+    "v720_name_taken": "That name is already taken.",
+    "v720_name_not_allowed": "That name cannot be used.",
+    "v720_account_error": "Could not change the account: {error}",
+    "v720_whats_new_eyebrow": "OUTERCLIENT 7.2",
+    "v720_whats_new_title": "OuterClient 7.2 — Accounts and Explore",
+    "v720_whats_new_date": "September 2026",
+    "v720_change_accounts": "Microsoft account cards now show the current skin head and let you change the skin and name.",
+    "v720_change_explore": "Explore detects installed mods again and refreshes their state after installation.",
+    "v720_change_downloads": "Fixed the download queue so more mods can be downloaded immediately after one finishes.",
+})
+
+
+_V720_INIT_BASE = OuterClient.__init__
+_V720_SHOW_ACCOUNTS_BASE = OuterClient.show_accounts_page
+_V720_SHOW_EXPLORE_BASE = OuterClient.show_modrinth
+_V720_SET_EXPLORE_PROFILE_BASE = OuterClient.set_modrinth_target_profile
+_V720_MODRINTH_CARD_BASE = OuterClient.modrinth_card
+_V720_PROCESS_DOWNLOAD_BASE = OuterClient.process_download_job
+_V720_SCAN_RECENT_BASE = OuterClient.scan_recent_modrinth_files
+_V720_WHATS_NEW_BASE = OuterClient.show_whats_new_v61
+
+
+def _v720_apply_account_card_head(self, label, account_key, image):
+    try:
+        if not label.winfo_exists():
+            return
+        if getattr(
+            label,
+            "_outerclient_account_key_v720",
+            None,
+        ) != account_key:
+            return
+        ctk_image = ctk.CTkImage(
+            light_image=image,
+            dark_image=image,
+            size=(54, 54),
+        )
+        label._outerclient_skin_head_v720 = ctk_image
+        label.configure(
+            image=ctk_image,
+            text="",
+            fg_color="transparent",
+        )
+    except Exception:
+        pass
+
+
+def _v720_account_card_head_worker(self, account, label, cache_key):
+    head = None
+    try:
+        url = None
+        for skin in account.get("skins") or []:
+            if isinstance(skin, dict) and skin.get("url"):
+                url = skin["url"]
+                break
+
+        if not url:
+            url = self.mojang_skin_url(
+                account.get("name", "")
+            )
+
+        if url:
+            response = requests.get(
+                url,
+                timeout=15,
+                headers={
+                    "User-Agent": f"OuterClient/{APP_VERSION}",
+                },
+            )
+            response.raise_for_status()
+            texture = Image.open(
+                BytesIO(response.content)
+            )
+            head = self.skin_head_from_texture(
+                texture
+            )
+    except Exception:
+        head = None
+
+    if head is None:
+        head = self.default_head_pil()
+
+    self.skin_head_cache[cache_key] = head
+    self.patch_events_v720.put(
+        (
+            "account_card_head",
+            label,
+            cache_key,
+            head,
+        )
+    )
+
+
+def _v720_request_account_card_head(self, account, label):
+    key = self.account_key(account)
+    skin_url = next(
+        (
+            item.get("url")
+            for item in account.get("skins") or []
+            if isinstance(item, dict)
+            and item.get("url")
+        ),
+        "",
+    )
+    cache_key = (
+        "account-card:"
+        + str(key)
+        + ":"
+        + str(skin_url)
+    )
+    label._outerclient_account_key_v720 = cache_key
+
+    cached = self.skin_head_cache.get(
+        cache_key
+    )
+    if cached is not None:
+        self.apply_account_card_head_v720(
+            label,
+            cache_key,
+            cached,
+        )
+        return
+
+    self.run_bg(
+        lambda a=dict(account), w=label, k=cache_key:
+            self.account_card_head_worker_v720(
+                a,
+                w,
+                k,
+            )
+    )
+
+
+def _v720_api_error(response):
+    try:
+        payload = response.json()
+    except Exception:
+        payload = {}
+
+    if isinstance(payload, dict):
+        for key in (
+            "errorMessage",
+            "error",
+            "message",
+            "details",
+        ):
+            value = payload.get(key)
+            if value:
+                return str(value)
+
+    text = str(
+        getattr(response, "text", "")
+        or ""
+    ).strip()
+    if text:
+        return text[:500]
+    return f"HTTP {response.status_code}"
+
+
+def _v720_fetch_minecraft_profile(token):
+    response = requests.get(
+        "https://api.minecraftservices.com/minecraft/profile",
+        headers={
+            "Authorization": f"Bearer {token}",
+            "Accept": "application/json",
+            "User-Agent": f"OuterClient/{APP_VERSION}",
+        },
+        timeout=25,
+    )
+    if not response.ok:
+        raise RuntimeError(
+            _v720_api_error(response)
+        )
+    return response.json()
+
+
+def _v720_upload_skin_worker(self, path, variant, dialog):
+    try:
+        auth = self.refresh_active_microsoft_account()
+        token = str(
+            auth.get("access_token", "")
+        ).strip()
+        if not token:
+            raise RuntimeError(
+                self.t("refresh_failed")
+            )
+
+        with Path(path).open("rb") as handle:
+            response = requests.post(
+                "https://api.minecraftservices.com/minecraft/profile/skins",
+                headers={
+                    "Authorization": f"Bearer {token}",
+                    "Accept": "application/json",
+                    "User-Agent": f"OuterClient/{APP_VERSION}",
+                },
+                data={
+                    "variant": str(variant).lower(),
+                },
+                files={
+                    "file": (
+                        Path(path).name,
+                        handle,
+                        "image/png",
+                    ),
+                },
+                timeout=45,
+            )
+
+        if not response.ok:
+            raise RuntimeError(
+                _v720_api_error(response)
+            )
+
+        try:
+            profile = response.json()
+        except Exception:
+            profile = _v720_fetch_minecraft_profile(
+                token
+            )
+
+        updated = dict(auth)
+        if isinstance(profile, dict):
+            updated.update(profile)
+
+        self.patch_events_v720.put(
+            (
+                "account_changed",
+                updated,
+                "skin",
+                dialog,
+            )
+        )
+    except Exception as exc:
+        self.patch_events_v720.put(
+            (
+                "account_change_failed",
+                "skin",
+                str(exc),
+                dialog,
+            )
+        )
+
+
+def _v720_choose_skin_file(self, path_var, preview, status, upload):
+    selected = filedialog.askopenfilename(
+        parent=preview.winfo_toplevel(),
+        title=self.t("v720_skin_choose"),
+        filetypes=[
+            ("PNG", "*.png"),
+            ("All files", "*.*"),
+        ],
+    )
+    if not selected:
+        return
+
+    try:
+        with Image.open(selected) as source:
+            source.load()
+            if (
+                source.format != "PNG"
+                or source.size
+                not in ((64, 64), (64, 32))
+            ):
+                raise ValueError
+            texture = source.convert("RGBA")
+
+        head = self.skin_head_from_texture(
+            texture
+        ).resize(
+            (80, 80),
+            Image.Resampling.NEAREST,
+        )
+        preview_image = ctk.CTkImage(
+            light_image=head,
+            dark_image=head,
+            size=(80, 80),
+        )
+        preview._outerclient_skin_preview_v720 = (
+            preview_image
+        )
+        preview.configure(
+            image=preview_image,
+            text="",
+        )
+        path_var.set(selected)
+        status.configure(
+            text=self.t(
+                "v720_skin_selected",
+                name=Path(selected).name,
+            ),
+            text_color=self.secondary,
+        )
+        upload.configure(state="normal")
+    except Exception:
+        path_var.set("")
+        upload.configure(state="disabled")
+        status.configure(
+            text=self.t(
+                "v720_skin_invalid"
+            ),
+            text_color=DANGER,
+        )
+
+
+def _v720_start_skin_upload(
+    self,
+    path_var,
+    model_var,
+    dialog,
+    status,
+    upload,
+):
+    path = str(path_var.get()).strip()
+    if not path:
+        return
+
+    upload.configure(state="disabled")
+    status.configure(
+        text=self.t("v720_skin_uploading"),
+        text_color=MUTED,
+    )
+    self.run_bg(
+        lambda:
+            self.upload_skin_worker_v720(
+                path,
+                model_var.get(),
+                dialog,
+            )
+    )
+
+
+def _v720_open_skin_dialog(self):
+    if not self.auth:
+        return
+
+    dialog = ctk.CTkToplevel(self)
+    dialog.title(
+        self.t("v720_skin_title")
+    )
+    dialog.geometry("520x410")
+    dialog.resizable(False, False)
+    dialog.configure(fg_color=BG)
+    dialog.transient(self)
+
+    card = self.card(dialog, 16)
+    card.pack(
+        fill="both",
+        expand=True,
+        padx=18,
+        pady=18,
+    )
+    card.grid_columnconfigure(1, weight=1)
+
+    ctk.CTkLabel(
+        card,
+        text=self.t("v720_skin_title"),
+        text_color=TEXT,
+        font=ctk.CTkFont(
+            size=22,
+            weight="bold",
+        ),
+    ).grid(
+        row=0,
+        column=0,
+        columnspan=2,
+        sticky="w",
+        padx=18,
+        pady=(18, 12),
+    )
+
+    preview = ctk.CTkLabel(
+        card,
+        text="◇",
+        width=96,
+        height=96,
+        corner_radius=14,
+        fg_color=SURFACE_2,
+        text_color=MUTED,
+        font=ctk.CTkFont(size=26),
+    )
+    preview.grid(
+        row=1,
+        column=0,
+        rowspan=3,
+        padx=(18, 16),
+        pady=8,
+    )
+
+    path_var = ctk.StringVar(value="")
+    model_var = ctk.StringVar(
+        value="classic"
+    )
+
+    status = ctk.CTkLabel(
+        card,
+        text=self.t("v720_skin_ready"),
+        text_color=MUTED,
+        anchor="w",
+        justify="left",
+        wraplength=330,
+    )
+    status.grid(
+        row=1,
+        column=1,
+        sticky="ew",
+        padx=(0, 18),
+        pady=(8, 4),
+    )
+
+    choose = ctk.CTkButton(
+        card,
+        text=self.t("v720_skin_choose"),
+        height=38,
+        fg_color=SURFACE_3,
+        hover_color=self.accent,
+    )
+    choose.grid(
+        row=2,
+        column=1,
+        sticky="ew",
+        padx=(0, 18),
+        pady=4,
+    )
+
+    model_row = ctk.CTkFrame(
+        card,
+        fg_color="transparent",
+    )
+    model_row.grid(
+        row=3,
+        column=1,
+        sticky="ew",
+        padx=(0, 18),
+        pady=4,
+    )
+    ctk.CTkLabel(
+        model_row,
+        text=self.t("v720_skin_model"),
+        text_color=MUTED,
+    ).pack(side="left")
+    self.themed_option_menu(
+        model_row,
+        variable=model_var,
+        values=["classic", "slim"],
+        width=130,
+    ).pack(side="right")
+
+    actions = ctk.CTkFrame(
+        card,
+        fg_color="transparent",
+    )
+    actions.grid(
+        row=4,
+        column=0,
+        columnspan=2,
+        sticky="e",
+        padx=18,
+        pady=(26, 18),
+    )
+
+    ctk.CTkButton(
+        actions,
+        text=self.t("v510_close"),
+        width=100,
+        fg_color=SURFACE_3,
+        hover_color="#2B3749",
+        command=dialog.destroy,
+    ).pack(side="left", padx=(0, 8))
+
+    upload = ctk.CTkButton(
+        actions,
+        text=self.t("v720_skin_upload"),
+        width=120,
+        fg_color=self.accent,
+        hover_color=self.accent_hover,
+        state="disabled",
+    )
+    upload.pack(side="left")
+
+    choose.configure(
+        command=lambda:
+            self.choose_skin_file_v720(
+                path_var,
+                preview,
+                status,
+                upload,
+            )
+    )
+    upload.configure(
+        command=lambda:
+            self.start_skin_upload_v720(
+                path_var,
+                model_var,
+                dialog,
+                status,
+                upload,
+            )
+    )
+
+    try:
+        dialog.grab_set()
+    except Exception:
+        pass
+
+
+def _v720_change_name_worker(self, new_name, dialog):
+    try:
+        auth = self.refresh_active_microsoft_account()
+        token = str(
+            auth.get("access_token", "")
+        ).strip()
+        if not token:
+            raise RuntimeError(
+                self.t("refresh_failed")
+            )
+
+        headers = {
+            "Authorization": f"Bearer {token}",
+            "Accept": "application/json",
+            "User-Agent": f"OuterClient/{APP_VERSION}",
+        }
+        encoded = quote(
+            new_name,
+            safe="",
+        )
+        availability = requests.get(
+            "https://api.minecraftservices.com/"
+            f"minecraft/profile/name/{encoded}/available",
+            headers=headers,
+            timeout=25,
+        )
+        if not availability.ok:
+            raise RuntimeError(
+                _v720_api_error(
+                    availability
+                )
+            )
+
+        state = str(
+            availability.json().get(
+                "status",
+                "",
+            )
+        ).upper()
+        if state == "DUPLICATE":
+            raise RuntimeError(
+                self.t("v720_name_taken")
+            )
+        if state and state != "AVAILABLE":
+            raise RuntimeError(
+                self.t(
+                    "v720_name_not_allowed"
+                )
+            )
+
+        response = requests.put(
+            "https://api.minecraftservices.com/"
+            f"minecraft/profile/name/{encoded}",
+            headers=headers,
+            timeout=30,
+        )
+        if not response.ok:
+            raise RuntimeError(
+                _v720_api_error(response)
+            )
+
+        try:
+            profile = response.json()
+        except Exception:
+            profile = _v720_fetch_minecraft_profile(
+                token
+            )
+
+        updated = dict(auth)
+        if isinstance(profile, dict):
+            updated.update(profile)
+        updated["name"] = (
+            profile.get("name")
+            if isinstance(profile, dict)
+            else None
+        ) or new_name
+
+        self.patch_events_v720.put(
+            (
+                "account_changed",
+                updated,
+                "name",
+                dialog,
+            )
+        )
+    except Exception as exc:
+        self.patch_events_v720.put(
+            (
+                "account_change_failed",
+                "name",
+                str(exc),
+                dialog,
+            )
+        )
+
+
+def _v720_start_name_change(
+    self,
+    name_var,
+    dialog,
+    status,
+    button,
+):
+    new_name = str(
+        name_var.get()
+    ).strip()
+    if not re.fullmatch(
+        r"[A-Za-z0-9_]{3,16}",
+        new_name,
+    ):
+        status.configure(
+            text=self.t(
+                "v56_nick_invalid"
+            ),
+            text_color=DANGER,
+        )
+        return
+
+    if (
+        self.auth
+        and new_name.casefold()
+        == str(
+            self.auth.get("name", "")
+        ).casefold()
+    ):
+        status.configure(
+            text=self.t("v720_name_taken"),
+            text_color=DANGER,
+        )
+        return
+
+    button.configure(state="disabled")
+    status.configure(
+        text=self.t("v720_name_checking"),
+        text_color=MUTED,
+    )
+    self.run_bg(
+        lambda:
+            self.change_name_worker_v720(
+                new_name,
+                dialog,
+            )
+    )
+
+
+def _v720_open_name_dialog(self):
+    if not self.auth:
+        return
+
+    current = str(
+        self.auth.get(
+            "name",
+            "Minecraft",
+        )
+    )
+    dialog = ctk.CTkToplevel(self)
+    dialog.title(
+        self.t("v720_name_title")
+    )
+    dialog.geometry("500x300")
+    dialog.resizable(False, False)
+    dialog.configure(fg_color=BG)
+    dialog.transient(self)
+
+    card = self.card(dialog, 16)
+    card.pack(
+        fill="both",
+        expand=True,
+        padx=18,
+        pady=18,
+    )
+    card.grid_columnconfigure(0, weight=1)
+
+    ctk.CTkLabel(
+        card,
+        text=self.t("v720_name_title"),
+        text_color=TEXT,
+        font=ctk.CTkFont(
+            size=22,
+            weight="bold",
+        ),
+    ).grid(
+        row=0,
+        column=0,
+        sticky="w",
+        padx=18,
+        pady=(18, 4),
+    )
+    ctk.CTkLabel(
+        card,
+        text=self.t(
+            "v720_name_current",
+            name=current,
+        ),
+        text_color=MUTED,
+    ).grid(
+        row=1,
+        column=0,
+        sticky="w",
+        padx=18,
+    )
+
+    name_var = ctk.StringVar(value="")
+    entry = ctk.CTkEntry(
+        card,
+        textvariable=name_var,
+        height=42,
+        fg_color=SURFACE_2,
+        border_color=BORDER,
+        placeholder_text=self.t(
+            "v720_name_new"
+        ),
+    )
+    entry.grid(
+        row=2,
+        column=0,
+        sticky="ew",
+        padx=18,
+        pady=(16, 5),
+    )
+
+    status = ctk.CTkLabel(
+        card,
+        text=self.t("v720_name_hint"),
+        text_color=MUTED,
+        anchor="w",
+    )
+    status.grid(
+        row=3,
+        column=0,
+        sticky="w",
+        padx=18,
+    )
+
+    actions = ctk.CTkFrame(
+        card,
+        fg_color="transparent",
+    )
+    actions.grid(
+        row=4,
+        column=0,
+        sticky="e",
+        padx=18,
+        pady=(20, 18),
+    )
+    ctk.CTkButton(
+        actions,
+        text=self.t("v510_close"),
+        width=100,
+        fg_color=SURFACE_3,
+        hover_color="#2B3749",
+        command=dialog.destroy,
+    ).pack(side="left", padx=(0, 8))
+
+    save_button = ctk.CTkButton(
+        actions,
+        text=self.t("v720_name_save"),
+        width=120,
+        fg_color=self.accent,
+        hover_color=self.accent_hover,
+    )
+    save_button.pack(side="left")
+    save_button.configure(
+        command=lambda:
+            self.start_name_change_v720(
+                name_var,
+                dialog,
+                status,
+                save_button,
+            )
+    )
+    entry.bind(
+        "<Return>",
+        lambda _event:
+            self.start_name_change_v720(
+                name_var,
+                dialog,
+                status,
+                save_button,
+            ),
+    )
+    entry.focus_set()
+
+    try:
+        dialog.grab_set()
+    except Exception:
+        pass
+
+
+def _v720_show_accounts_page(self):
+    _V720_SHOW_ACCOUNTS_BASE(self)
+
+    pages = self.content.winfo_children()
+    page = pages[0] if pages else None
+    if page is None:
+        return
+
+    accounts = list(
+        self.cfg.get(
+            "microsoft_accounts",
+            [],
+        )
+    )
+    active_key = self.cfg.get(
+        "selected_microsoft_account"
+    )
+
+    cards_by_row = {}
+    for child in page.winfo_children():
+        try:
+            row = int(
+                child.grid_info().get(
+                    "row",
+                    -1,
+                )
+            )
+            cards_by_row[row] = child
+        except Exception:
+            pass
+
+    for index, account in enumerate(
+        accounts
+    ):
+        card = cards_by_row.get(
+            index + 5
+        )
+        if card is None:
+            continue
+
+        avatar = None
+        for child in card.winfo_children():
+            try:
+                info = child.grid_info()
+                if int(
+                    info.get(
+                        "column",
+                        -1,
+                    )
+                ) == 0:
+                    avatar = child
+                    break
+            except Exception:
+                pass
+
+        if avatar is not None:
+            self.request_account_card_head_v720(
+                account,
+                avatar,
+            )
+
+        key = self.account_key(account)
+        active = (
+            self.cfg.get("account_mode")
+            == "Microsoft"
+            and key == active_key
+        )
+        if not active:
+            continue
+
+        for child in list(
+            card.winfo_children()
+        ):
+            try:
+                if int(
+                    child.grid_info().get(
+                        "column",
+                        -1,
+                    )
+                ) >= 2:
+                    child.destroy()
+            except Exception:
+                pass
+
+        actions = ctk.CTkFrame(
+            card,
+            fg_color="transparent",
+        )
+        actions.grid(
+            row=0,
+            column=2,
+            rowspan=2,
+            padx=14,
+        )
+        ctk.CTkButton(
+            actions,
+            text=self.t(
+                "v720_change_skin"
+            ),
+            width=105,
+            fg_color=SURFACE_3,
+            hover_color=self.accent,
+            command=self.open_skin_dialog_v720,
+        ).pack(side="left", padx=(0, 6))
+        ctk.CTkButton(
+            actions,
+            text=self.t(
+                "v720_change_name"
+            ),
+            width=105,
+            fg_color=SURFACE_3,
+            hover_color=self.accent,
+            command=self.open_name_dialog_v720,
+        ).pack(side="left", padx=(0, 6))
+        ctk.CTkButton(
+            actions,
+            text=self.t("logout"),
+            width=92,
+            fg_color="#3B2028",
+            hover_color="#512933",
+            text_color="#FFB7C0",
+            command=lambda k=key:
+                self.remove_microsoft_account(
+                    k
+                ),
+        ).pack(side="left")
+
+
+def _v720_explore_needs_index(self, profile_name):
+    if profile_name not in self.cfg.get(
+        "profiles",
+        {},
+    ):
+        return False
+
+    mods = (
+        self.profile_instance_dir(
+            profile_name
+        )
+        / "mods"
+    )
+    if not mods.exists():
+        return False
+
+    metadata = self.load_content_metadata(
+        profile_name
+    )
+    known = {
+        str(key).replace("\\", "/")
+        for key in metadata
+    }
+
+    try:
+        for path in mods.glob("*.jar"):
+            rel = str(
+                path.relative_to(
+                    self.profile_instance_dir(
+                        profile_name
+                    )
+                )
+            ).replace("\\", "/")
+            if rel not in known:
+                return True
+    except Exception:
+        return False
+
+    return False
+
+
+def _v720_ensure_explore_index(self, profile_name=None):
+    if profile_name is None:
+        try:
+            profile_name = self.modrinth_profile.get()
+        except Exception:
+            profile_name = self.cfg.get(
+                "selected"
+            )
+
+    if not self.explore_needs_index_v720(
+        profile_name
+    ):
+        return
+
+    if profile_name in self._explore_indexing_v720:
+        return
+
+    self._explore_indexing_v720.add(
+        profile_name
+    )
+
+    def worker():
+        try:
+            self.scan_profile_metadata_worker(
+                profile_name
+            )
+        finally:
+            self.patch_events_v720.put(
+                (
+                    "explore_indexed",
+                    profile_name,
+                )
+            )
+
+    self.run_bg(worker)
+
+
+def _v720_show_explore(self):
+    result = _V720_SHOW_EXPLORE_BASE(self)
+    self.after(
+        120,
+        self.ensure_explore_index_v720,
+    )
+    return result
+
+
+def _v720_set_explore_profile(self, profile_name):
+    result = _V720_SET_EXPLORE_PROFILE_BASE(
+        self,
+        profile_name,
+    )
+    self.after(
+        80,
+        lambda:
+            self.ensure_explore_index_v720(
+                profile_name
+            ),
+    )
+    return result
+
+
+def _v720_find_install_button(self, widget):
+    try:
+        children = widget.winfo_children()
+    except Exception:
+        return None
+
+    for child in children:
+        if isinstance(child, ctk.CTkButton):
+            try:
+                text = str(
+                    child.cget("text")
+                )
+            except Exception:
+                text = ""
+            if text in {
+                self.t("install"),
+                self.t("installed"),
+                self.t("v710_installed"),
+            }:
+                return child
+
+        nested = self.find_install_button_v720(
+            child
+        )
+        if nested is not None:
+            return nested
+
+    return None
+
+
+def _v720_modrinth_card(self, row, hit, category):
+    _V720_MODRINTH_CARD_BASE(
+        self,
+        row,
+        hit,
+        category,
+    )
+    try:
+        status, _state = self.project_status_v710(
+            hit,
+            category,
+        )
+        if status != self.t(
+            "v710_installed"
+        ):
+            return
+
+        card = self.modrinth_results.winfo_children()[
+            -1
+        ]
+        button = self.find_install_button_v720(
+            card
+        )
+        if button is not None:
+            button.configure(
+                text=self.t(
+                    "v710_installed"
+                ),
+                state="disabled",
+                fg_color=self.secondary,
+                hover_color=self.secondary,
+            )
+    except Exception:
+        pass
+
+
+def _v720_changed_files(
+    folder,
+    before,
+):
+    changed = []
+    try:
+        for path in folder.iterdir():
+            if not path.is_file():
+                continue
+            try:
+                signature = (
+                    path.stat().st_mtime_ns,
+                    path.stat().st_size,
+                )
+            except Exception:
+                continue
+            if before.get(path.name) != signature:
+                changed.append(path)
+    except Exception:
+        pass
+
+    return sorted(
+        changed,
+        key=lambda item:
+            item.stat().st_mtime_ns,
+    )
+
+
+def _v720_process_download_job(self, job):
+    category = job.get("category")
+    profile_name = job.get(
+        "profile_name"
+    )
+    source = str(
+        job.get("source", "modrinth")
+    ).casefold()
+    destination = None
+    before = {}
+
+    if (
+        source != "curseforge"
+        and profile_name
+        in self.cfg.get("profiles", {})
+        and category
+        in {
+            "Mody",
+            "Resource packi",
+            "Shadery",
+        }
+    ):
+        folder_name = {
+            "Mody": "mods",
+            "Resource packi":
+                "resourcepacks",
+            "Shadery": "shaderpacks",
+        }[category]
+        destination = (
+            self.profile_instance_dir(
+                profile_name
+            )
+            / folder_name
+        )
+        if destination.exists():
+            try:
+                before = {
+                    path.name: (
+                        path.stat().st_mtime_ns,
+                        path.stat().st_size,
+                    )
+                    for path in destination.iterdir()
+                    if path.is_file()
+                }
+            except Exception:
+                before = {}
+
+    _V720_PROCESS_DOWNLOAD_BASE(
+        self,
+        job,
+    )
+
+    if destination is not None:
+        changed = _v720_changed_files(
+            destination,
+            before,
+        )
+        if changed:
+            hit = job.get("hit") or {}
+            selected = (
+                job.get("selected_version")
+                or {}
+            )
+            target = changed[-1]
+            self.record_installed_content(
+                profile_name,
+                target,
+                {
+                    "source": "Modrinth",
+                    "project_id":
+                        selected.get(
+                            "project_id"
+                        )
+                        or hit.get(
+                            "project_id"
+                        )
+                        or hit.get("id")
+                        or hit.get("slug"),
+                    "version_id":
+                        selected.get("id"),
+                    "version_number":
+                        selected.get(
+                            "version_number"
+                        ),
+                    "title":
+                        hit.get("title")
+                        or hit.get("slug")
+                        or target.stem,
+                    "slug":
+                        hit.get("slug"),
+                    "icon_url":
+                        hit.get("icon_url"),
+                    "author":
+                        hit.get("author")
+                        or "",
+                    "category": category,
+                },
+            )
+
+    if profile_name:
+        self.patch_events_v720.put(
+            (
+                "content_installed",
+                profile_name,
+            )
+        )
+
+
+def _v720_scan_recent_async(self, profile_name, since):
+    def worker():
+        # The direct install record is written first. The slower hash lookup
+        # then enriches dependencies without keeping the download queue busy.
+        time.sleep(0.25)
+        _V720_SCAN_RECENT_BASE(
+            self,
+            profile_name,
+            since,
+        )
+
+    self.run_bg(
+        worker
+    )
+
+
+def _v720_download_queue_worker(self):
+    restart = False
+    try:
+        while True:
+            try:
+                job = self.download_queue.get(
+                    timeout=0.25
+                )
+            except queue.Empty:
+                break
+
+            try:
+                self.process_download_job(job)
+            except Exception as exc:
+                self.events.put(
+                    (
+                        "modrinth_failed",
+                        (
+                            job.get("button"),
+                            job.get(
+                                "title",
+                                self.t("project"),
+                            ),
+                            str(exc),
+                        ),
+                    )
+                )
+            finally:
+                self.download_queue.task_done()
+    finally:
+        with self.download_worker_lock:
+            if self.download_queue.empty():
+                self.download_worker_running = False
+            else:
+                self.download_worker_running = True
+                restart = True
+
+        if restart:
+            self.run_bg(
+                self.download_queue_worker
+            )
+        else:
+            self.events.put(
+                ("download_idle", None)
+            )
+
+
+def _v720_process_patch_events(self):
+    try:
+        while True:
+            event = (
+                self.patch_events_v720
+                .get_nowait()
+            )
+            kind = event[0]
+
+            if kind == "account_card_head":
+                self.apply_account_card_head_v720(
+                    event[1],
+                    event[2],
+                    event[3],
+                )
+
+            elif kind == "account_changed":
+                account = event[1]
+                change = event[2]
+                dialog = event[3]
+                self.store_microsoft_account(
+                    account
+                )
+                self.skin_head_cache.clear()
+                self.refresh_account_ui()
+                try:
+                    if dialog.winfo_exists():
+                        dialog.destroy()
+                except Exception:
+                    pass
+
+                if change == "skin":
+                    text = self.t(
+                        "v720_skin_done"
+                    )
+                else:
+                    text = self.t(
+                        "v720_name_done",
+                        name=account.get(
+                            "name",
+                            "Minecraft",
+                        ),
+                    )
+                self.set_status(text)
+                self.toast_v710(
+                    text,
+                    "success",
+                )
+                if getattr(
+                    self,
+                    "active_page",
+                    "",
+                ) == "accounts":
+                    self.show_accounts_page()
+
+            elif kind == "account_change_failed":
+                dialog = event[3]
+                try:
+                    if dialog.winfo_exists():
+                        pending = [dialog]
+                        while pending:
+                            widget = pending.pop()
+                            pending.extend(
+                                widget.winfo_children()
+                            )
+                            if isinstance(
+                                widget,
+                                ctk.CTkButton,
+                            ):
+                                widget.configure(
+                                    state="normal"
+                                )
+                except Exception:
+                    pass
+                messagebox.showerror(
+                    "OuterClient",
+                    self.t(
+                        "v720_account_error",
+                        error=event[2],
+                    ),
+                )
+
+            elif kind in {
+                "explore_indexed",
+                "content_installed",
+            }:
+                profile_name = event[1]
+                self._explore_indexing_v720.discard(
+                    profile_name
+                )
+                try:
+                    self.invalidate_library_cache_v62()
+                except Exception:
+                    pass
+                if getattr(
+                    self,
+                    "active_page",
+                    "",
+                ) == "modrinth":
+                    try:
+                        self.render_modrinth_page()
+                    except Exception:
+                        pass
+
+    except queue.Empty:
+        pass
+
+    try:
+        self.after(
+            90,
+            self.process_patch_events_v720,
+        )
+    except Exception:
+        pass
+
+
+def _v720_show_whats_new(self, mark_seen=True):
+    self.set_active_page("whats_new")
+    self.clear_content()
+
+    outer = ctk.CTkScrollableFrame(
+        self.content,
+        fg_color=BG,
+        corner_radius=0,
+        scrollbar_button_color=SURFACE_3,
+        scrollbar_button_hover_color=BORDER,
+    )
+    outer.grid(
+        row=0,
+        column=0,
+        sticky="nsew",
+    )
+    outer.grid_columnconfigure(0, weight=1)
+
+    self.page_header(
+        outer,
+        self.t("v720_whats_new_eyebrow"),
+        self.t("v61_whats_new_title"),
+        self.t("v61_whats_new_subtitle"),
+    )
+    self._whats_new_state_v63 = {
+        "header": self.t(
+            "v61_whats_new_title"
+        ),
+        "versions": [
+            "7.2.0",
+            "7.1.0",
+            "7.0",
+            "6.4.1",
+            "6.4.0",
+            "6.3.9",
+        ],
+        "current": "7.2.0",
+    }
+    self.release_card_v63(
+        outer,
+        1,
+        self.t(
+            "v61_current_version"
+        ),
+        self.t(
+            "v720_whats_new_title"
+        ),
+        self.t(
+            "v720_whats_new_date"
+        ),
+        [
+            self.t(
+                "v720_change_accounts"
+            ),
+            self.t(
+                "v720_change_explore"
+            ),
+            self.t(
+                "v720_change_downloads"
+            ),
+        ],
+        current=True,
+    )
+    self.release_card_v63(
+        outer,
+        2,
+        self.t(
+            "v61_previous_version"
+        ),
+        self.t(
+            "v710_whats_new_title"
+        ),
+        self.t(
+            "v710_whats_new_date"
+        ),
+        [
+            self.t(
+                "v710_change_profiles"
+            ),
+            self.t(
+                "v710_change_mods"
+            ),
+            self.t(
+                "v710_change_qol"
+            ),
+        ],
+    )
+    if mark_seen:
+        self.mark_whats_new_seen_v62()
+
+
+def _v720_init(self):
+    self.patch_events_v720 = queue.Queue()
+    self._explore_indexing_v720 = set()
+    _V720_INIT_BASE(self)
+    self.after(
+        90,
+        self.process_patch_events_v720,
+    )
+
+
+OuterClient.apply_account_card_head_v720 = _v720_apply_account_card_head
+OuterClient.account_card_head_worker_v720 = _v720_account_card_head_worker
+OuterClient.request_account_card_head_v720 = _v720_request_account_card_head
+OuterClient.upload_skin_worker_v720 = _v720_upload_skin_worker
+OuterClient.choose_skin_file_v720 = _v720_choose_skin_file
+OuterClient.start_skin_upload_v720 = _v720_start_skin_upload
+OuterClient.open_skin_dialog_v720 = _v720_open_skin_dialog
+OuterClient.change_name_worker_v720 = _v720_change_name_worker
+OuterClient.start_name_change_v720 = _v720_start_name_change
+OuterClient.open_name_dialog_v720 = _v720_open_name_dialog
+OuterClient.show_accounts_page = _v720_show_accounts_page
+OuterClient.account_action = _v720_show_accounts_page
+OuterClient.open_account_manager = _v720_show_accounts_page
+
+OuterClient.explore_needs_index_v720 = _v720_explore_needs_index
+OuterClient.ensure_explore_index_v720 = _v720_ensure_explore_index
+OuterClient.show_modrinth = _v720_show_explore
+OuterClient.set_modrinth_target_profile = _v720_set_explore_profile
+OuterClient.find_install_button_v720 = _v720_find_install_button
+OuterClient.modrinth_card = _v720_modrinth_card
+
+OuterClient.process_download_job = _v720_process_download_job
+OuterClient.scan_recent_modrinth_files = _v720_scan_recent_async
+OuterClient.download_queue_worker = _v720_download_queue_worker
+OuterClient.process_patch_events_v720 = _v720_process_patch_events
+
+OuterClient.show_whats_new_v61 = _v720_show_whats_new
+OuterClient.__init__ = _v720_init
 
 
 

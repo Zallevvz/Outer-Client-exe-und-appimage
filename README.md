@@ -1,6 +1,10 @@
-# OuterClient 7.1.0
+# OuterClient 7.2.0
 
 ## Fixes and optimization
+- Microsoft account cards now show the current Minecraft skin head.
+- Active Microsoft accounts can change their Java Edition skin (Classic/Slim) and profile name directly in OuterClient.
+- Explore rebuilds missing local mod metadata and clearly marks installed projects.
+- The download worker always returns to idle and accepts the next queued mod after success or failure.
 - What's New is persisted in `~/.outerclient-state.json` and opens automatically only once per release.
 - Explore's profile picker is a true overlay and no longer shifts the page.
 - The selected Explore target is hard-refreshed so icon/name/version/loader cannot remain blank.
@@ -13,8 +17,8 @@
 
 ## Build
 GitHub Actions:
-`Build and Release OuterClient 7.1.0`
+`Build and Release OuterClient 7.2.0`
 
 Expected artifacts:
-- `OuterClient-v7.1.0-x86_64.AppImage`
-- `OuterClient-v7.1.0.exe`
+- `OuterClient-v7.2.0-x86_64.AppImage`
+- `OuterClient-v7.2.0.exe`

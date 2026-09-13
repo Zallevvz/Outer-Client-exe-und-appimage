@@ -1,0 +1,22 @@
+OuterClient 7.2.0 — Accounts + Explore reliability
+
+Implemented:
+- Microsoft account cards render the current Minecraft skin head instead of a nickname initial.
+- The active Microsoft account has Change skin and Change name actions.
+- Skin upload validates 64x64/64x32 PNG files and supports Classic/Slim models.
+- Name changes validate the nickname, check availability, and preserve refreshed account tokens.
+- Explore indexes local JAR files when .outerclient-content.json is incomplete.
+- Successful Modrinth installs record project metadata immediately and refresh Explore badges.
+- Installed projects show an Installed badge and a disabled Installed button.
+- Modrinth metadata enrichment no longer keeps the download worker busy.
+- The queue worker always clears download_worker_running and restarts safely if a job arrived during shutdown.
+
+Preserved:
+- Minecraft version picker fix from 6.4.1.
+- Official loader-logo loading/cache from 7.1.0.
+- Discord Application ID remains absent from General Settings.
+
+Validation:
+- Python bytecode compile.
+- AST and binding checks for the 7.2 overrides.
+- Build workflow updated for 7.2.0 AppImage and Windows EXE artifacts.
