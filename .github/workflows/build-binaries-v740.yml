@@ -1,4 +1,4 @@
-name: Build and Release OuterClient 7.3.2
+name: Build and Release OuterClient 7.4.0
 
 on:
   pull_request:
@@ -7,42 +7,48 @@ on:
       - "outerclient_v730*.py"
       - "outerclient_v731*.py"
       - "outerclient_v732*.py"
+      - "outerclient_v740*.py"
       - "test_v730_core.py"
       - "test_outerclient_v731.py"
       - "test_outerclient_v732.py"
-      - ".github/workflows/build-binaries-v732.yml"
+      - "test_outerclient_v740.py"
+      - ".github/workflows/build-binaries-v740.yml"
   workflow_dispatch:
 
 permissions:
   contents: write
 
 env:
-  OC_VERSION: "7.3.2"
+  OC_VERSION: "7.4.0"
 
 jobs:
   verify-source:
-    name: Verify OuterClient 7.3.2
+    name: Verify OuterClient 7.4.0
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Verify syntax and tests
+      - name: Verify syntax, bindings and tests
         shell: bash
         run: |
           set -eux
-          python3 -m py_compile outerclient.py outerclient_v730.py outerclient_v730_patch.py outerclient_v730_launch.py outerclient_v730_duplicates.py outerclient_v730_versions.py outerclient_v731.py outerclient_v731_patch.py outerclient_v732.py outerclient_v732_patch.py test_v730_core.py test_outerclient_v731.py test_outerclient_v732.py
-          python3 -m unittest -v test_v730_core.py test_outerclient_v731.py test_outerclient_v732.py
-          grep -F 'VERSION = "7.3.2"' outerclient_v732_patch.py
-          grep -F 'OC.show_accounts_page = show_accounts_page' outerclient_v732_patch.py
-          grep -F 'OC.account_action = show_accounts_page' outerclient_v732_patch.py
-          grep -F 'OC.open_account_manager = show_accounts_page' outerclient_v732_patch.py
-          grep -F '"current": "7.3.2"' outerclient_v732_patch.py
-          if grep -F 'index + 5' outerclient_v732_patch.py; then
-            echo '7.3.2 must not depend on a fixed account-card grid row'
-            exit 1
-          fi
+          python3 -m py_compile \
+            outerclient.py \
+            outerclient_v730.py outerclient_v730_patch.py outerclient_v730_launch.py outerclient_v730_duplicates.py outerclient_v730_versions.py \
+            outerclient_v731.py outerclient_v731_patch.py \
+            outerclient_v732.py outerclient_v732_patch.py \
+            outerclient_v740.py outerclient_v740_patch.py \
+            test_v730_core.py test_outerclient_v731.py test_outerclient_v732.py test_outerclient_v740.py
+          python3 -m unittest -v test_v730_core.py test_outerclient_v731.py test_outerclient_v732.py test_outerclient_v740.py
+          grep -F 'VERSION = "7.4.0"' outerclient_v740_patch.py
+          grep -F 'def page_in' outerclient_v740_patch.py
+          grep -F 'def toplevel_in' outerclient_v740_patch.py
+          grep -F 'def decorate_button' outerclient_v740_patch.py
+          grep -F 'def decorate_entry' outerclient_v740_patch.py
+          grep -F 'def patch_progress' outerclient_v740_patch.py
+          grep -F '"current": "7.4.0"' outerclient_v740_patch.py
 
   linux-appimage:
-    name: Linux AppImage 7.3.2
+    name: Linux AppImage 7.4.0
     if: github.event_name == 'workflow_dispatch'
     needs: verify-source
     runs-on: ubuntu-22.04
@@ -77,42 +83,36 @@ jobs:
         run: |
           mkdir -p "$HOME"
           timeout 20s xvfb-run -a python - <<'PY'
-          import outerclient_v732 as appmod
-          assert appmod.APP_VERSION == "7.3.2"
+          import outerclient_v740 as appmod
+          assert appmod.APP_VERSION == "7.4.0"
           app = appmod.OuterClient()
           required = [
               "repair_duplicates_v730",
               "finish_launch_session_v730",
               "cleanup_launch_footer_v731",
               "request_account_card_head_v720",
-              "open_skin_dialog_v720",
-              "open_name_dialog_v720",
               "show_accounts_page",
-              "account_action",
-              "open_account_manager",
               "show_whats_new_v61",
-              "find_account_card_v732",
+              "animate_page_in_v740",
+              "scan_micro_interactions_v740",
+              "scan_toplevels_v740",
+              "animate_toplevel_v740",
           ]
           for name in required:
               assert callable(getattr(app, name, None)), name
-          assert app.show_accounts_page.__func__ is app.account_action.__func__
-          assert app.show_accounts_page.__func__ is app.open_account_manager.__func__
           app.update_idletasks()
           app.update()
           app.show_whats_new_v61(mark_seen=False)
           app.update_idletasks()
-          assert app._whats_new_state_v63["current"] == "7.3.2"
+          assert app._whats_new_state_v63["current"] == "7.4.0"
           app.destroy()
-          print("OuterClient 7.3.2 source smoke test: OK")
+          print("OuterClient 7.4.0 animation smoke test: OK")
           PY
       - name: Build PyInstaller bundle
         run: |
-          rm -rf build dist AppDir *.spec OuterClient-v7.3.2-x86_64.AppImage
+          rm -rf build dist AppDir *.spec OuterClient-v7.4.0-x86_64.AppImage
           pyinstaller \
-            --noconfirm \
-            --clean \
-            --onedir \
-            --windowed \
+            --noconfirm --clean --onedir --windowed \
             --name OuterClient \
             --icon assets/outerclient.ico \
             --add-data "assets:assets" \
@@ -123,11 +123,18 @@ jobs:
             --hidden-import PIL.ImageTk \
             --hidden-import PIL._tkinter_finder \
             --hidden-import outerclient_build_secrets \
-            outerclient_v732.py
+            --hidden-import outerclient_v730_patch \
+            --hidden-import outerclient_v730_launch \
+            --hidden-import outerclient_v730_duplicates \
+            --hidden-import outerclient_v730_versions \
+            --hidden-import outerclient_v731_patch \
+            --hidden-import outerclient_v732_patch \
+            --hidden-import outerclient_v740_patch \
+            outerclient_v740.py
       - name: Create AppImage
         env:
           ARCH: x86_64
-          VERSION: "7.3.2"
+          VERSION: "7.4.0"
           APPIMAGE_EXTRACT_AND_RUN: "1"
         run: |
           mkdir -p AppDir/usr/bin/OuterClient
@@ -143,7 +150,7 @@ jobs:
           Categories=Game;
           Terminal=false
           StartupWMClass=Outerclient
-          X-AppImage-Version=7.3.2
+          X-AppImage-Version=7.4.0
           EOF
           cat > AppDir/AppRun <<'EOF'
           #!/bin/sh
@@ -153,16 +160,16 @@ jobs:
           chmod +x AppDir/AppRun AppDir/usr/bin/OuterClient/OuterClient
           curl -L https://github.com/AppImage/appimagetool/releases/download/1.9.1/appimagetool-x86_64.AppImage -o appimagetool.AppImage
           chmod +x appimagetool.AppImage
-          ./appimagetool.AppImage AppDir OuterClient-v7.3.2-x86_64.AppImage
-          chmod +x OuterClient-v7.3.2-x86_64.AppImage
+          ./appimagetool.AppImage AppDir OuterClient-v7.4.0-x86_64.AppImage
+          chmod +x OuterClient-v7.4.0-x86_64.AppImage
       - uses: actions/upload-artifact@v4
         with:
-          name: OuterClient-v7.3.2-AppImage
-          path: OuterClient-v7.3.2-x86_64.AppImage
+          name: OuterClient-v7.4.0-AppImage
+          path: OuterClient-v7.4.0-x86_64.AppImage
           if-no-files-found: error
 
   windows-exe:
-    name: Windows EXE 7.3.2
+    name: Windows EXE 7.4.0
     if: github.event_name == 'workflow_dispatch'
     needs: verify-source
     runs-on: windows-latest
@@ -186,7 +193,7 @@ jobs:
       - name: Source import smoke test
         shell: pwsh
         run: |
-          python -c "import outerclient_v732 as m; assert m.APP_VERSION == '7.3.2'; assert m.OuterClient.show_accounts_page is m.OuterClient.account_action; assert m.OuterClient.show_accounts_page is m.OuterClient.open_account_manager; assert hasattr(m.OuterClient,'request_account_card_head_v720'); print('OuterClient 7.3.2 source import: OK')"
+          python -c "import outerclient_v740 as m; assert m.APP_VERSION == '7.4.0'; assert hasattr(m.OuterClient,'animate_page_in_v740'); assert hasattr(m.OuterClient,'scan_micro_interactions_v740'); assert hasattr(m.OuterClient,'scan_toplevels_v740'); print('OuterClient 7.4.0 source import: OK')"
       - name: Build EXE
         shell: pwsh
         run: |
@@ -197,7 +204,7 @@ jobs:
             --clean `
             --onefile `
             --windowed `
-            --name OuterClient-v7.3.2 `
+            --name OuterClient-v7.4.0 `
             --icon assets/outerclient.ico `
             --add-data "assets;assets" `
             --collect-all customtkinter `
@@ -207,16 +214,23 @@ jobs:
             --hidden-import PIL.ImageTk `
             --hidden-import PIL._tkinter_finder `
             --hidden-import outerclient_build_secrets `
-            outerclient_v732.py
-          if (-not (Test-Path dist/OuterClient-v7.3.2.exe)) { throw 'OuterClient-v7.3.2.exe was not created' }
+            --hidden-import outerclient_v730_patch `
+            --hidden-import outerclient_v730_launch `
+            --hidden-import outerclient_v730_duplicates `
+            --hidden-import outerclient_v730_versions `
+            --hidden-import outerclient_v731_patch `
+            --hidden-import outerclient_v732_patch `
+            --hidden-import outerclient_v740_patch `
+            outerclient_v740.py
+          if (-not (Test-Path dist/OuterClient-v7.4.0.exe)) { throw 'OuterClient-v7.4.0.exe was not created' }
       - uses: actions/upload-artifact@v4
         with:
-          name: OuterClient-v7.3.2-Windows
-          path: dist/OuterClient-v7.3.2.exe
+          name: OuterClient-v7.4.0-Windows
+          path: dist/OuterClient-v7.4.0.exe
           if-no-files-found: error
 
   release:
-    name: Release 7.3.2
+    name: Release 7.4.0
     if: github.event_name == 'workflow_dispatch'
     needs: [linux-appimage, windows-exe]
     runs-on: ubuntu-latest
@@ -227,10 +241,10 @@ jobs:
           merge-multiple: true
       - uses: softprops/action-gh-release@v2
         with:
-          tag_name: v7.3.2
-          name: OuterClient 7.3.2
+          tag_name: v7.4.0
+          name: OuterClient 7.4.0
           make_latest: true
           generate_release_notes: true
           files: |
-            release-assets/OuterClient-v7.3.2-x86_64.AppImage
-            release-assets/OuterClient-v7.3.2.exe
+            release-assets/OuterClient-v7.4.0-x86_64.AppImage
+            release-assets/OuterClient-v7.4.0.exe
