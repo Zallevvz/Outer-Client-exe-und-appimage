@@ -180,8 +180,10 @@ jobs:
           app.update_idletasks()
           app.update()
 
-          assert app.winfo_exists()
-          assert outerclient.APP_VERSION == "7.2.0"
+          assert app.winfo_exists(), "OuterClient did not create its main window"
+          assert outerclient.APP_VERSION == "7.2.0", (
+              f"Expected version 7.2.0, got {outerclient.APP_VERSION}"
+          )
 
           # Release-blocking smoke test intentionally checks startup and
           # critical method wiring only. Visual layout belongs to manual/UI
@@ -201,42 +203,54 @@ jobs:
               "open_name_dialog_v720",
               "ensure_explore_index_v720",
               "process_patch_events_v720",
+              "apply_windows_taskbar_v710",
+              "setup_drag_drop_v710",
+              "native_decoration_state_v636",
+              "run_kwin_no_border_v638",
+              "kwin_dbus_tools_v638",
+              "run_kwin_maximize_v639",
           ]
 
           for name in required_methods:
               method = getattr(app, name, None)
-              assert callable(method), name
+              assert callable(method), f"Missing callable OuterClient.{name}"
 
-          assert app.show_diagnostics.__func__.__name__ == "_v634_show_diagnostics"
-          assert app.show_system_tools_settings.__func__.__name__ == "_v635_show_system_tools"
-          assert app.apply_linux_custom_titlebar_v633.__func__.__name__ == "_v638_apply_linux_titlebar"
-          assert app.apply_linux_window_mode_v63.__func__.__name__ == "_v638_apply_linux_titlebar"
-          assert app.custom_toggle_maximize_v5101.__func__.__name__ == "_v639_toggle_maximize"
-          assert app.open_create_profile.__func__.__name__ == "_v710_open_create_profile"
-          assert app.toggle_version_picker_v640.__func__.__name__ == "_v641_toggle_version_picker"
-          assert app.select_create_version_v640.__func__.__name__ == "_v641_select_create_version"
-          assert app.open_external_url.__func__.__name__ == "_v700_open_external_url"
-          assert app.show_project_details.__func__.__name__ == "_v700_show_project_details"
-          assert app.show_accounts_page.__func__.__name__ == "_v720_show_accounts_page"
-          assert app.modrinth_card.__func__.__name__ == "_v720_modrinth_card"
-          assert app.download_queue_worker.__func__.__name__ == "_v720_download_queue_worker"
-          assert app.mod_page_url.__func__.__name__ == "_v700_mod_url"
-          assert app.prepare_profile_for_launch.__func__.__name__ == "_v640_prepare_profile"
-          assert app.login_worker.__func__.__name__ == "_v640_login_worker"
-          assert app.download_profile_runtime_worker.__func__.__name__ == "_v640_download_runtime_worker"
-          assert app.show_home.__func__.__name__ == "_v710_show_home"
-          assert app.show_profile_manager.__func__.__name__ == "_v710_show_profile_manager"
-          assert app.show_content_library_v6.__func__.__name__ == "_v710_show_library"
-          assert app.modrinth_card.__func__.__name__ == "_v710_modrinth_card"
-          assert app.launch_installed_v54.__func__.__name__ == "_v710_launch_installed"
-          assert app.monitor_minecraft_process.__func__.__name__ == "_v710_monitor_process"
-          assert app.show_settings.__func__.__name__ == "_v710_show_settings"
-          assert callable(app.apply_windows_taskbar_v710)
-          assert callable(app.setup_drag_drop_v710)
-          assert callable(app.native_decoration_state_v636)
-          assert callable(app.run_kwin_no_border_v638)
-          assert callable(app.kwin_dbus_tools_v638)
-          assert callable(app.run_kwin_maximize_v639)
+          # Keep one expected binding per method. Older implementations can
+          # remain in outerclient.py as wrapper bases without being active.
+          expected_bindings = {
+              "show_diagnostics": outerclient._v634_show_diagnostics,
+              "show_system_tools_settings": outerclient._v635_show_system_tools,
+              "apply_linux_custom_titlebar_v633": outerclient._v638_apply_linux_titlebar,
+              "apply_linux_window_mode_v63": outerclient._v638_apply_linux_titlebar,
+              "custom_toggle_maximize_v5101": outerclient._v639_toggle_maximize,
+              "open_create_profile": outerclient._v710_open_create_profile,
+              "toggle_version_picker_v640": outerclient._v641_toggle_version_picker,
+              "select_create_version_v640": outerclient._v641_select_create_version,
+              "open_external_url": outerclient._v700_open_external_url,
+              "show_project_details": outerclient._v700_show_project_details,
+              "show_accounts_page": outerclient._v720_show_accounts_page,
+              "modrinth_card": outerclient._v720_modrinth_card,
+              "download_queue_worker": outerclient._v720_download_queue_worker,
+              "mod_page_url": outerclient._v700_mod_url,
+              "prepare_profile_for_launch": outerclient._v640_prepare_profile,
+              "login_worker": outerclient._v640_login_worker,
+              "download_profile_runtime_worker": outerclient._v640_download_runtime_worker,
+              "show_home": outerclient._v710_show_home,
+              "show_profile_manager": outerclient._v710_show_profile_manager,
+              "show_content_library_v6": outerclient._v710_show_library,
+              "launch_installed_v54": outerclient._v710_launch_installed,
+              "monitor_minecraft_process": outerclient._v710_monitor_process,
+              "show_settings": outerclient._v710_show_settings,
+          }
+          for name, expected in expected_bindings.items():
+              actual = getattr(app, name, None)
+              actual_function = getattr(actual, "__func__", actual)
+              actual_name = getattr(actual_function, "__name__", type(actual_function).__name__)
+              assert actual_function is expected, (
+                  f"OuterClient.{name}: expected {expected.__name__}, got {actual_name}"
+              )
+
+          print(f"Verified {len(expected_bindings)} active method bindings.")
 
           if callback_errors:
               raise RuntimeError(f"Tk startup callback failures: {callback_errors}")
