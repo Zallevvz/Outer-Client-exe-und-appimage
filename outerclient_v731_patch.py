@@ -199,11 +199,15 @@ def _find_initial_avatar(card: Any) -> Any:
 
 
 def _ancestor_texts(widget: Any, levels: int = 4) -> str:
+    """Return local context without letting the application root pollute scoring."""
     current = widget
     pieces: list[str] = []
     for _ in range(levels):
         current = getattr(current, "master", None)
         if current is None:
+            break
+        descendants = list(_walk(current))
+        if len(descendants) > 30:
             break
         pieces.extend(_subtree_texts(current))
     return " ".join(pieces).casefold()
@@ -262,7 +266,30 @@ def _active_account_candidate(app: Any) -> Any:
     return None
 
 
-def _call_account_action(app: Any, method_name: str) -> None:
+def _find_account_record(app: Any, account_name: str) -> Any:
+    wanted = account_name.casefold().strip()
+    roots = [getattr(app, "cfg", None)]
+    for attr in ("accounts", "microsoft_accounts", "saved_accounts"):
+        roots.append(getattr(app, attr, None))
+    seen: set[int] = set()
+    stack = [v for v in roots if v is not None]
+    while stack:
+        value = stack.pop()
+        if id(value) in seen:
+            continue
+        seen.add(id(value))
+        if isinstance(value, dict):
+            if wanted:
+                for key in ("name", "username", "profile_name", "minecraft_name", "nick"):
+                    if _text(value.get(key)).casefold().strip() == wanted:
+                        return value
+            stack.extend(value.values())
+        elif isinstance(value, (list, tuple)):
+            stack.extend(value)
+    return None
+
+
+def _call_account_action(app: Any, method_name: str, account_name: str = "") -> None:
     method = getattr(app, method_name, None)
     if not callable(method):
         return
@@ -278,10 +305,19 @@ def _call_account_action(app: Any, method_name: str) -> None:
     if not required:
         method()
         return
-    candidate = _active_account_candidate(app)
-    if candidate is not None and len(required) == 1:
-        method(candidate)
-        return
+    if len(required) == 1:
+        param = required[0].name.casefold()
+        record = _find_account_record(app, account_name)
+        if record is not None:
+            method(record)
+            return
+        candidate = _active_account_candidate(app)
+        if candidate is not None:
+            method(candidate)
+            return
+        if account_name and any(part in param for part in ("name", "nick", "user")):
+            method(account_name)
+            return
     method()
 
 
@@ -300,6 +336,7 @@ def _add_action_buttons(app: Any, card: Any, logout: Any) -> bool:
     except Exception:
         manager = ""
 
+    account_name = _account_name_from_card(card)
     created = []
     for label, method in (
         ("Zmień skina", "open_skin_dialog_v720"),
@@ -312,7 +349,7 @@ def _add_action_buttons(app: Any, card: Any, logout: Any) -> bool:
             text=label,
             width=118,
             height=32,
-            command=lambda m=method: _call_account_action(app, m),
+            command=lambda m=method, n=account_name: _call_account_action(app, m, n),
         )
         created.append(button)
 
